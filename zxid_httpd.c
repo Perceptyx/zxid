@@ -211,7 +211,7 @@ static int status;
 static off_t bytes;
 static char* req_hostname;
 
-static char* authorization;
+char* authorization;
 size_t content_length;
 static char* content_type;
 static char* cookie;

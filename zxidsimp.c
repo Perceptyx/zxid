@@ -1392,7 +1392,7 @@ char* zxid_simple_ses_active_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int
    * F = IdP: Return SSO A7N after successful An; no ses case, generate IdP ui
    * V = Proxy IdP return
    *
-   * Still available: HUVWXacefghikqwxyz
+   * Still available: UWXacefghikqwxyz
    */
   
   if (cgi->enc_hint)

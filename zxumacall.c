@@ -722,7 +722,7 @@ int zxumacall_main(int argc, char** argv, char** env)
       ERR("Login using Authentication Service failed idp(%s)", idp);
       return 1;
     }
-    INFO("Logged in. NameID(%s) Session in %s" ZXID_SES_DIR "%s", ses->nid, cf->cpath, ses->sid);
+    INFO("Logged in. Session in %s" ZXID_SES_DIR "%s\n%s", cf->cpath, STRNULLCHKD(ses->sid),STRNULLCHKD(ses->access_token));
   }
 
   if (rsrc_name) {

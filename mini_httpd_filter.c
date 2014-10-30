@@ -221,6 +221,8 @@ void zxid_mini_httpd_wsp_response(zxid_conf* cf, zxid_ses* ses, int rfd, char** 
   D_DEDENT("wsp_resp");
 }
 
+extern char* authorization;
+
 /* Called by:  zxid_mini_httpd_filter */
 zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, const char* method, const char* uri_path, const char* qs)
 {  
