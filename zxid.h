@@ -266,6 +266,7 @@ struct zxid_conf {
   char* trustpdp_url;
   char* defaultqs;
   char* wsp_pat;
+  char* uma_pat;
   char* sso_pat;
   char* mod_saml_attr_prefix;  /* Prefix for req variables in mod_auth_saml */
   char* wsc_to_hdr;
@@ -364,7 +365,7 @@ struct zxid_conf {
   char  bus_rcpt;            /* Audit Bus receipt enable and signing flags */
   char  az_fail_mode;        /* What to do when authorization can not be done */
   char  md_authority_ena;
-  char  pad7;
+  char  backwards_compat_ena; /* Enable CBC (instead of GCM) and PKCS#1 v1.5 padding, both of which are vulnearable and can compromise modern crypto through Backwards Compatibility Attacks. */
 
 #ifdef USE_CURL
   CURL* curl;
@@ -535,6 +536,14 @@ struct zxid_ses {
   char* sesbuf;
   char* sso_a7n_buf;
   struct zxid_attr* at; /* Attributes extracted from a7n and translated using inmap. Linked list */
+  char* access_token;  /* OAuth2 */
+  char* refresh_token; /* OAuth2 */
+  char* token_type;    /* OAuth2 */
+  char* id_token;      /* OAuth2 */
+  int   expires_in;    /* OAuth2 */
+  char* client_id;     /* OAuth2 */
+  char* client_secret; /* OAuth2 */
+  char* rpt;           /* UMA */
 #ifdef USE_PTHREAD
   struct zx_lock mx;
 #endif
@@ -913,8 +922,7 @@ ZXID_DECL int zxid_pw_authn(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses);
 
 /* zxidcurl */
 
-ZXID_DECL char* zxid_http_get(zxid_conf* cf, const char* url, char** lim);
-ZXID_DECL struct zx_str* zxid_http_post_raw(zxid_conf* cf, int url_len, const char* url, int len, const char* data, const char* SOAPactionre);
+ZXID_DECL struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int len, const char* data, const char* content_type, const char* headers, int flags);
 ZXID_DECL struct zx_root_s* zxid_soap_call_raw(zxid_conf* cf, struct zx_str* url, struct zx_e_Envelope_s* env, char** ret_enve);
 ZXID_DECL struct zx_root_s* zxid_soap_call_hdr_body(zxid_conf* cf, struct zx_str* url, struct zx_e_Header_s* hdr, struct zx_e_Body_s* body);
 ZXID_DECL int zxid_soap_cgi_resp_body(zxid_conf* cf, zxid_ses* ses, struct zx_e_Body_s* body);
@@ -1005,7 +1013,13 @@ ZXID_DECL char* zxid_mk_jwks(zxid_conf* cf);
 ZXID_DECL char* zxid_mk_oauth2_dyn_cli_reg_req(zxid_conf* cf);
 ZXID_DECL char* zxid_mk_oauth2_dyn_cli_reg_res(zxid_conf* cf, zxid_cgi* cgi);
 ZXID_DECL char* zxid_mk_oauth2_rsrc_reg_req(zxid_conf* cf, const char* rsrc_name, const char* rsrc_icon_uri, const char* rsrc_scope_url, const char* rsrc_type);
-  ZXID_DECL char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev);
+ZXID_DECL char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev);
+ZXID_DECL char* zxid_oauth_get_well_known_item(zxid_conf* cf, const char* base_uri, const char* key);
+ZXID_DECL struct zx_str* zxid_oauth_dynclireg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* as_uri);
+ZXID_DECL void zxid_oauth_rsrcreg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* as_uri, const char* rsrc_name, const char* rsrc_icon_uri, const char* rsrc_scope_url, const char* rsrc_type);
+ZXID_DECL char* zxid_oauth_call_rpt_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri);
+ZXID_DECL char* zxid_oauth_call_az_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri, const char* ticket);
+ZXID_DECL int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const char* _uma_authn);
 
 /* zxidmkwsf */
 

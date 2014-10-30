@@ -13,6 +13,8 @@
  * 8.10.2007, added XML signing support --Sampo
  * 4.10.2008, improved documentation --Sampo
  * 1.12.2010, improved logging of canonicalizations --Sampo
+ *
+ * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  */
 
 #include "platform.h"
@@ -576,23 +578,31 @@ struct zx_str* zxenc_symkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* e
   ss = &ed->EncryptionMethod->Algorithm->g;
   if (sizeof(ENC_ALGO_TRIPLEDES_CBC)-1 == ss->len
       && !memcmp(ENC_ALGO_TRIPLEDES_CBC, ss->s, sizeof(ENC_ALGO_TRIPLEDES_CBC)-1)) {
+    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
     if (symkey->len != (192 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "DES-EDE3-CBC", 0, symkey, raw.len-8, raw.s+8, 8, raw.s);
 
   } else if (sizeof(ENC_ALGO_AES128_CBC)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES128_CBC, ss->s, sizeof(ENC_ALGO_AES128_CBC)-1)) {
+    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
     if (symkey->len != (128 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
 
   } else if (sizeof(ENC_ALGO_AES192_CBC)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES192_CBC, ss->s, sizeof(ENC_ALGO_AES192_CBC)-1)) {
+    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
     if (symkey->len != (192 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "AES-192-CBC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);    
 
   } else if (sizeof(ENC_ALGO_AES256_CBC)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES256_CBC, ss->s, sizeof(ENC_ALGO_AES256_CBC)-1)) {
+    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
     if (symkey->len != (256 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "AES-256-CBC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
+  } else if (sizeof(ENC_ALGO_AES256_GFC)-1 == ss->len
+	     && !memcmp(ENC_ALGO_AES256_GFC, ss->s, sizeof(ENC_ALGO_AES256_GFC)-1)) {
+    if (symkey->len != (256 >> 3)) goto wrong_key_len;
+    ss = zx_raw_cipher(cf->ctx, "AES-256-GFC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
   } else {
     ERR("Unsupported key transformation method(%.*s)", ss->len, ss->s);
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "ECRYPT", 0, "unsupported key transformation method");
@@ -612,6 +622,11 @@ struct zx_str* zxenc_symkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* e
   ZX_FREE(cf->ctx, raw.s);
   ERR("Wrong key length %d for algo(%.*s)", symkey->len, ss->len, ss->s);
   zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "ECRYPT", 0, "wrong key length");
+  return 0;
+
+ backwards_compat_disa:
+  ERR("Backwards compatibility not enabled, old key transformation method(%.*s) blocked", ss->len, ss->s);
+  zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "EBC", 0, "backwards compatible method not enabled");
   return 0;
 }
 
@@ -666,6 +681,11 @@ struct zx_str* zxenc_privkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* 
   
   if (sizeof(ENC_KEYTRAN_RSA_1_5)-1 == ss->len
       && !memcmp(ENC_KEYTRAN_RSA_1_5, ss->s, sizeof(ENC_KEYTRAN_RSA_1_5)-1)) {
+    if (!cf->backwards_compat_ena) {
+      ERR("PKCS#1 v1.5 disabled to prevent Backwards Compatibility Attacks (see http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/) %d",0);
+      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "EBC", 0, "Ciphersuite rejected to prevent backwards compatibility attacks");
+      return 0;
+    }
     rsa = EVP_PKEY_get1_RSA(enc_pkey);
     symkey = zx_rsa_priv_dec(cf->ctx, &raw, rsa, RSA_PKCS1_PADDING);
   } else if (sizeof(ENC_KEYTRAN_RSA_OAEP)-1 == ss->len
@@ -703,7 +723,7 @@ struct zx_str* zxenc_privkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* 
  *         xmlns:e="http://www.w3.org/2001/04/xmlenc#"
  *         Id="ED38"
  *         Type="http://www.w3.org/2001/04/xmlenc#Element">
- *       <e:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+ *       <e:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-gfc"/>
  *       <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
  *         <ds:RetrievalMethod
  *             Type="http://www.w3.org/2001/04/xmlenc#EncryptedKey"
@@ -750,7 +770,12 @@ struct zx_xenc_EncryptedData_s* zxenc_symkey_enc(zxid_conf* cf, struct zx_str* d
   }
   DD("Plaintext(%.*s)", data->len, data->s);
   D_XML_BLOB(cf, "PLAINTEXT", data->len, data->s);
+#if 0
+  /* CBC is no longer considered sae so do not use it. */
   ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 1, symkey, data->len, data->s, 16, 0);
+#else
+  ss = zx_raw_cipher(cf->ctx, "AES-256-GFC", 1, symkey, data->len, data->s, 16, 0);
+#endif
   if (!ss) {
     ERR("Symmetric encryption failed %d",0);
     return 0;
@@ -805,7 +830,8 @@ struct zx_xenc_EncryptedData_s* zxenc_pubkey_enc(zxid_conf* cf, struct zx_str* d
   if (!rsa_pkey)
     return 0;
   /* The padding setting MUST agree with ENC_KEYTRAN_ALGO setting (see near top of this file). */
-#if 1
+#if 0
+  /* PKCS#1 v1.5 padding is vulnearable to known attacks so do not use it. OAEP is better. */
   ss = zx_rsa_pub_enc(cf->ctx, &symkey_ss, rsa_pkey, RSA_PKCS1_PADDING);
 #else
   /* *** IBM did not interop with OAEP padding as of 20071025 */

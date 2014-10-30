@@ -243,6 +243,22 @@ set_eid:
 	cgi->sig = v;
 	break;
       }
+      goto unknown;
+    case '_':
+      if (!strcmp(n, "_uma_authn")) {
+	/* Decode in place: it should always fit */
+	p = unbase64_raw(v, v+strlen(v), v, zx_std_index_64);
+	*p = 0;
+	cgi->uid = v;
+	p = strchr(v, ':');
+	if (p) {
+	  *p = 0;
+	  cgi->pw = p+1;
+	} else {
+	  ERR("Malformed _uma_authn token(%s): no colon found", v);
+	}
+	break;
+      }      
       /* fall thru */
     unknown:
     default:  D("Unknown CGI field(%s) val(%s) cgi=%p", n, v, cgi);

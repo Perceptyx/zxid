@@ -11,6 +11,8 @@
  * 7.10.2008, added documentation --Sampo
  * 29.8.2009, added zxid_mk_self_signed_cert() --Sampo
  * 12.12.2011, added HMAC SHA-256 as needed by JWT/JWS --Sampo
+ *
+ * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  */
 
 #include "platform.h"  /* needed on Win32 for snprintf() et al. */
@@ -286,7 +288,8 @@ struct zx_str* zx_rsa_pub_enc(struct zx_ctx* c, struct zx_str* plain, RSA* rsa_p
   case RSA_SSLV23_PADDING:
     if (plain->len > (siz-11))
       ERR("Too much data for RSA key: can=%d, you have %d bytes.\n", siz-11, plain->len);
-    D("RSA_PKCS1_PADDING %d", pad);
+    WARN("RSA_PKCS1_PADDING %d v1.5: WARNING: This padding is vulnearable to attacks. Use OAEP instead.", pad);
+    /* See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf */
     break;
   case RSA_NO_PADDING:
     if (plain->len > siz)

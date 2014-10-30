@@ -68,6 +68,7 @@ Usage: zxpasswd [options] user [udir] <passwd      # Set user's password\n\
   -a               Authenticate as user. exit(2) value 0 means success\n\
   -l               List user info. If no user is specified, lists all users.\n\
   -t N             Choose password hash type: 0=plain, 1=MD5 (default), y=yubikey\n\
+  -basic uid:pw    Print HTTP Basic Authenication blob, i.e. URI encoded base64 over uid:pw\n\
   -v               Verbose messages.\n\
   -q               Be extra quiet.\n\
   -d               Turn on debugging.\n\
@@ -170,6 +171,20 @@ static void opt(int* argc, char*** argv, char*** env)
       }
       break;
 
+    case 'b':
+      switch ((*argv)[0][2]) {
+      case 'a':
+	++(*argv); --(*argc);
+	if ((*argc) < 1) break;
+	user = (*argv)[0];
+	at = strchr(user, ':');
+	*at = 0;
+	++at;
+	printf("%s", zx_mk_basic_auth_b64(&ctx, user, at));
+	exit(0);
+      }
+      break;
+      
     case 'd':
       switch ((*argv)[0][2]) {
       case '\0':

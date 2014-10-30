@@ -45,7 +45,7 @@
 
 /* ============== CURL callbacks ============== */
 
-/*() Call back used by Curl to move received data to application buffer.
+/*() Call back used by Curl to move received response data to application buffer.
  * Internal. Do not use directly. */
 
 /* Called by: */
@@ -80,8 +80,8 @@ size_t zxid_curl_write_data(void *buffer, size_t size, size_t nmemb, void *userp
   return len;
 }
 
-/*() Call back used by Curl to move data from application buffer to Curl
- * internal send buffer. Internal. Do not use directly. */
+/*() Call back used by Curl to move request data from application buffer to Curl
+ * internal send buffer, from which it will be sent to server. Internal. Do not use directly. */
 
 /* Called by: */
 size_t zxid_curl_read_data(void *buffer, size_t size, size_t nmemb, void *userp)
@@ -99,112 +99,72 @@ size_t zxid_curl_read_data(void *buffer, size_t size, size_t nmemb, void *userp)
   return len;
 }
 
-/* ============== HTTP(S) GET and POST Clients ============== */
+/* ============== HTTP(S) GET and POST Client ============== */
 
-/*() Send HTTP GET request and wait for response.
- * Send the message to the server using Curl. Return raw data.
- * This call will block while the HTTP request-response is happening.
- *
- * cf::      ZXID configuration object, also used for memory allocation
- * url::     Where the request will be sent
- * lim::     Result parameter, allowing return of pointer to one-past-last of return string. Maybe NULL.
- * return::  GET body as a string, or 0 upon failure
- *
- * The underlying HTTP client is libcurl. While libcurl is documented to
- * be "entirely thread safe", one limitation is that curl handle can not
- * be shared between threads. Since we keep the curl handle as a part
- * of the configuration object, which may be shared between threads,
- * we need to take a lock for duration of the curl operation. Thus any
- * given configuration object can have only one HTTP request active
- * at a time. If you need more parallelism, you need more configuration
- * objects.
- *
- * N.B. To use proxy, set environment variable all_proxy=proxyhost:port
- */
-
-/* Called by:  zxid_get_meta, zxid_sp_dig_oauth_sso_a7n */
-char* zxid_http_get(zxid_conf* cf, const char* url, char** lim)
-{
-#ifdef USE_CURL
-  CURLcode res;
-  struct zxid_curl_ctx rc;
-
-  rc.buf = rc.p = ZX_ALLOC(cf->ctx, ZXID_INIT_MD_BUF+1);
-  rc.lim = rc.buf + ZXID_INIT_MD_BUF;
-  LOCK(cf->curl_mx, "curl-http_get");
-  curl_easy_reset(cf->curl);
-  curl_easy_setopt(cf->curl, CURLOPT_WRITEDATA, &rc);
-  curl_easy_setopt(cf->curl, CURLOPT_WRITEFUNCTION, zxid_curl_write_data);
-  curl_easy_setopt(cf->curl, CURLOPT_NOPROGRESS, 1);
-  curl_easy_setopt(cf->curl, CURLOPT_FOLLOWLOCATION, 1);
-  curl_easy_setopt(cf->curl, CURLOPT_MAXREDIRS, 110);
-  curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYPEER, 0);
-  curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYHOST, 0);
-  curl_easy_setopt(cf->curl, CURLOPT_URL, url);
-
-  D("http get: url(%s)", url);
-  if (cf->log_level>1)
-    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "GETMD", url, 0);
-  res = curl_easy_perform(cf->curl);
-  UNLOCK(cf->curl_mx, "curl-http_get");
-  rc.lim = rc.p;
-  rc.p[1] = 0;
-  rc.p = rc.buf;
-  if (rc.lim - rc.p < 100) {
-    ERR("Response too short (%d chars, min 100 required). url(%s) CURLcode(%d) CURLerr(%s) buf(%.*s)",	((int)(rc.lim-rc.buf)), url, res, CURL_EASY_STRERR(res), ((int)(rc.lim-rc.buf)), rc.buf);
-    ZX_FREE(cf->ctx, rc.buf);
-    return 0;
-  }
-  if (lim)
-    *lim = rc.lim;
-  return rc.p;
-#else
-  ERR("This copy of zxid was compiled to NOT use libcurl. As such http client operations, like OAUTH2, metadata fetching, and web service calling are not supported. Add -DUSE_CURL and recompile. %d", 0);
-  return 0;
-#endif
-}
-
-/*() HTTP client for POST method.
+/*() HTTP client for GET or POST method.
  * This method is just a wrapper around underlying libcurl HTTP client.
  *
  * cf:: ZXID configuration object
  * url_len:: Length of the URL. If -1 is passed, strlen(url) is used
  * url:: URL for POST
  * len:: Length of the data. If -1 is passed, strlen(data) is used
- * data:: HTTP body for the POST
- * SOAPaction:: A way to pass in additional header, typically SOAPaction or Authorization
- * returns:: HTTP body of the response */
+ * data:: HTTP body for the POST. If NULL is passed, the method will be GET
+ * content_type:: Content-Type header for POST data. NULL means application/x-www-form-encoded
+ * headers:: A way to pass in additional header(s), typically SOAPaction or Authorization
+ * flags:: Bitmask of flags to control behaviour: 0x01 == return will have both headers and body
+ * return:: HTTP body of the response or HTTP headers and body
+ *
+ * N.B. To use proxy, set environment variable all_proxy=proxyhost:port, see libcurl documentation.
+ */
 
 /* Called by:  zxid_soap_call_raw */
-struct zx_str* zxid_http_post_raw(zxid_conf* cf, int url_len, const char* url, int len, const char* data, const char* SOAPaction)
+struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int len, const char* data, const char* content_type, const char* headers, int flags)
 {
 #ifdef USE_CURL
   struct zx_str* ret;
   CURLcode res;
   struct zxid_curl_ctx rc;
   struct zxid_curl_ctx wc;
-  struct curl_slist content_type;
-  struct curl_slist SOAPaction_curl;
+  struct curl_slist content_type_curl;
+  struct curl_slist headers_curl;
   char* urli;
   rc.buf = rc.p = ZX_ALLOC(cf->ctx, ZXID_INIT_SOAP_BUF+1);
   rc.lim = rc.buf + ZXID_INIT_SOAP_BUF;
+
+  /* The underlying HTTP client is libcurl. While libcurl is documented to
+   * be "entirely thread safe", one limitation is that curl handle can not
+   * be shared between threads. Since we keep the curl handle as a part
+   * of the configuration object, which may be shared between threads,
+   * we need to take a lock for duration of the curl operation. Thus any
+   * given configuration object can have only one HTTP request active
+   * at a time. If you need more parallelism, you need more configuration
+   * objects.
+   */
+
 #if 0
   cf->curl = curl_easy_init();
   curl_easy_reset(cf->curl);
   LOCK_INIT(cf->curl_mx);
-  LOCK(cf->curl_mx, "curl-soap");
+  LOCK(cf->curl_mx, "curl-cli");
 #else
-  LOCK(cf->curl_mx, "curl-soap");
+  LOCK(cf->curl_mx, "curl-cli");
   curl_easy_reset(cf->curl);
 #endif
+
   curl_easy_setopt(cf->curl, CURLOPT_WRITEDATA, &rc);
   curl_easy_setopt(cf->curl, CURLOPT_WRITEFUNCTION, zxid_curl_write_data);
   curl_easy_setopt(cf->curl, CURLOPT_NOPROGRESS, 1);
-  curl_easy_setopt(cf->curl, CURLOPT_FOLLOWLOCATION, 1);
-  curl_easy_setopt(cf->curl, CURLOPT_MAXREDIRS, 110);
   curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYPEER, 0);  /* *** arrange verification */
   curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYHOST, 0);  /* *** arrange verification */
   //curl_easy_setopt(cf->curl, CURLOPT_CERTINFO, 1);
+
+  if (!(flags & 0x02)) {
+    curl_easy_setopt(cf->curl, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(cf->curl, CURLOPT_MAXREDIRS, 110);
+  }
+  
+  if (flags & 0x01)
+    curl_easy_setopt(cf->curl, CURLOPT_HEADER, 1); /* response shall have Heacers CRLF CRLF Body */
 
   if (url_len == -1)
     url_len = strlen(url);
@@ -214,30 +174,38 @@ struct zx_str* zxid_http_post_raw(zxid_conf* cf, int url_len, const char* url, i
   DD("urli(%s) len=%d", urli, len);
   curl_easy_setopt(cf->curl, CURLOPT_URL, urli);
   
-  if (len == -1)
-    len = strlen(data);
-  wc.buf = wc.p = (char*)data;
-  wc.lim = (char*)data + len;
+  if (data) {
+    if (len == -1)
+      len = strlen(data);
+    wc.buf = wc.p = (char*)data;
+    wc.lim = (char*)data + len;
   
-  curl_easy_setopt(cf->curl, CURLOPT_POST, 1);
-  curl_easy_setopt(cf->curl, CURLOPT_POSTFIELDSIZE, len);
-  curl_easy_setopt(cf->curl, CURLOPT_READDATA, &wc);
-  curl_easy_setopt(cf->curl, CURLOPT_READFUNCTION, zxid_curl_read_data);
-
-  ZERO(&content_type, sizeof(content_type));
-  content_type.data = cf->wsc_soap_content_type; /* SOAP11: "Content-Type: text/xml" */
-  if (SOAPaction) {
-    ZERO(&SOAPaction_curl, sizeof(SOAPaction_curl));
-    SOAPaction_curl.data = (char*)SOAPaction;
-    SOAPaction_curl.next = &content_type;    //curl_slist_append(3)
-    curl_easy_setopt(cf->curl, CURLOPT_HTTPHEADER, &SOAPaction_curl);
+    curl_easy_setopt(cf->curl, CURLOPT_POST, 1);
+    curl_easy_setopt(cf->curl, CURLOPT_POSTFIELDSIZE, len);
+    curl_easy_setopt(cf->curl, CURLOPT_READDATA, &wc);
+    curl_easy_setopt(cf->curl, CURLOPT_READFUNCTION, zxid_curl_read_data);
+  
+    ZERO(&content_type_curl, sizeof(content_type_curl));
+    content_type_curl.data = (char*)content_type;
+    if (headers) {
+      ZERO(&headers_curl, sizeof(headers_curl));
+      headers_curl.data = (char*)headers;
+      headers_curl.next = &content_type_curl;    //curl_slist_append(3)
+      curl_easy_setopt(cf->curl, CURLOPT_HTTPHEADER, &headers_curl);
+    } else {
+      curl_easy_setopt(cf->curl, CURLOPT_HTTPHEADER, &content_type_curl);
+    }
   } else {
-    curl_easy_setopt(cf->curl, CURLOPT_HTTPHEADER, &content_type);
+    if (headers) {
+      ZERO(&headers_curl, sizeof(headers_curl));
+      headers_curl.data = (char*)headers;
+      curl_easy_setopt(cf->curl, CURLOPT_HTTPHEADER, &headers_curl);
+    }
   }
   
   INFO("----------- call(%s) -----------", urli);
-  DD("SOAP_CALL post(%.*s) len=%d\n", len, data, len);
-  D_XML_BLOB(cf, "SOAPCALL POST", len, data);
+  DD("HTTP_CLI post(%.*s) len=%d\n", len, STRNULLCHK(data), len);
+  D_XML_BLOB(cf, "HTTP_CLI POST", len, STRNULLCHK(data));
   res = curl_easy_perform(cf->curl);  /* <========= Actual call, blocks. */
   switch (res) {
   case 0: break;
@@ -264,13 +232,13 @@ struct zx_str* zxid_http_post_raw(zxid_conf* cf, int url_len, const char* url, i
 
   /*curl_easy_getinfo(cf->curl, CURLINFO_CONTENT_TYPE, char*);*/
 
-  UNLOCK(cf->curl_mx, "curl-soap");
+  UNLOCK(cf->curl_mx, "curl-cli");
   ZX_FREE(cf->ctx, urli);
   rc.lim = rc.p;
   rc.p[0] = 0;
 
-  DD("SOAP_CALL got(%s)", rc.buf);
-  D_XML_BLOB(cf, "SOAPCALL GOT", rc.lim - rc.buf, rc.buf);
+  DD("HTTP_CLI got(%s)", rc.buf);
+  DD_XML_BLOB(cf, "HTTP_CLI GOT", rc.lim - rc.buf, rc.buf);
   
   ret = zx_ref_len_str(cf->ctx, rc.lim - rc.buf, rc.buf);
   return ret;
@@ -308,11 +276,17 @@ zxid_entity* zxid_get_meta(zxid_conf* cf, const char* url)
   char* md;
   char* lim;
   zxid_entity* ent;
-  buf = md = zxid_http_get(cf, url, &lim);
-  if (!md) {
+  struct zx_str* res;
+
+  if (cf->log_level>1)
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "GETMD", url, 0);
+  res = zxid_http_cli(cf, -1, url, 0, 0, 0, 0, 0);
+  if (!res) {
     ERR("Failed to get metadata response url(%s)", url);
     return 0;
   }
+  buf = md = res->s;
+  lim = res->s + res->len;
   ent = zxid_parse_meta(cf, &md, lim);
   if (!ent) {
     ERR("Failed to parse metadata response url(%s) buf(%.*s)",	url, ((int)(lim-buf)), buf);
@@ -433,7 +407,7 @@ struct zx_root_s* zxid_soap_call_raw(zxid_conf* cf, struct zx_str* url, struct z
   } else
     soap_act = 0;
   
-  ret = zxid_http_post_raw(cf, url->len, url->s, ss->len, ss->s, soap_act);
+  ret = zxid_http_cli(cf, url->len, url->s, ss->len, ss->s, cf->wsc_soap_content_type, soap_act, 0);
   zx_str_free(cf->ctx, ss);
   if (ret_enve)
     *ret_enve = ret?ret->s:0;

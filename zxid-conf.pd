@@ -337,8 +337,10 @@ sign-nopw-cert.pem:: The signing certificate AND private key (concatenated
 enc-nopw-cert.pem:: The encryption certificate AND private key (concatenated
     in one file). The private key MUST NOT be encrypted (there will not be
     any opportunity to supply decryption password). The signing certificate
-    can be used as the encryption certificate. If encryption certificate
-    is not specified it will default to signing certificate.
+    MUST NOT be used as the encryption certificate to avoid key compromise
+    through encryption from compromising the signatures. Attacks that
+    do just this (Backwards Compatibility attacks) are described in
+    http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/
 
 In addition to the above certificates and private keys, you will need
 to configure your web server to use TLS or SSL certificates for the

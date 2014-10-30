@@ -970,6 +970,7 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->redirect_hack_zxid_url = ZXID_REDIRECT_HACK_ZXID_URL;
   cf->defaultqs     = ZXID_DEFAULTQS;
   cf->wsp_pat       = ZXID_WSP_PAT;
+  cf->uma_pat       = ZXID_UMA_PAT;
   cf->sso_pat       = ZXID_SSO_PAT;
   cf->cdc_choice    = ZXID_CDC_CHOICE;
   cf->authn_req_sign = ZXID_AUTHN_REQ_SIGN;
@@ -1028,6 +1029,7 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->imps_ena          = ZXID_IMPS_ENA;
   cf->as_ena            = ZXID_AS_ENA;
   cf->md_authority_ena  = ZXID_MD_AUTHORITY_ENA;
+  cf->backwards_compat_ena  = ZXID_BACKWARDS_COMPAT_ENA;
   cf->pdp_ena           = ZXID_PDP_ENA;
   cf->cpn_ena           = ZXID_CPN_ENA;
   cf->az_opt            = ZXID_AZ_OPT;
@@ -1597,6 +1599,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
       }
       if (!strcmp(n, "BUS_URL"))         { cf->bus_url = zxid_load_bus_url(cf, cf->bus_url, v);   break; }
       if (!strcmp(n, "BUS_PW"))          { cf->bus_pw = v; break; }
+      if (!strcmp(n, "BACKWARDS_COMPAT_ENA")) { SCAN_INT(v, cf->backwards_compat_ena); break; }
       goto badcf;
     case 'C':  /* CDC_URL, CDC_CHOICE */
       if (!strcmp(n, "CPATH"))           goto path;
@@ -1801,6 +1804,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
     case 'U':  /* URL, USER_LOCAL */
       if (!strcmp(n, "URL"))            { cf->burl = v; cf->fedusername_suffix = zxid_grab_domain_name(cf, cf->burl); break; }
       if (!strcmp(n, "USER_LOCAL"))     { SCAN_INT(v, cf->user_local); break; }
+      if (!strcmp(n, "UMA_PAT"))        { cf->uma_pat = v; break; }
       goto badcf;
     case 'V':  /* VALID_OPT */
       if (!strcmp(n, "VALID_OPT"))      { SCAN_INT(v, cf->valid_opt); break; }
@@ -2044,6 +2048,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 "REDIRECT_HACK_ZXID_QS=%s\n"
 "DEFAULTQS=%s\n"
 "WSP_PAT=%s\n"
+"UMA_PAT=%s\n"
 "SSO_PAT=%s\n"
 "WSC_SOAP_CONTENT_TYPE=%s\n"
 "WSC_TO_HDR=%s\n"
@@ -2096,6 +2101,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 "IMPS_ENA=%d\n"
 "AS_ENA=%d\n"
 "MD_AUTHORITY_ENA=%d\n"
+"BACKWARDS_COMPAT_ENA=%d\n"
 "PDP_ENA=%d\n"
 "CPN_ENA=%d\n"
 "AZ_OPT=%d\n"
@@ -2246,6 +2252,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 STRNULLCHK(cf->redirect_hack_zxid_qs),
 		 STRNULLCHK(cf->defaultqs),
 		 STRNULLCHK(cf->wsp_pat),
+		 STRNULLCHK(cf->uma_pat),
 		 STRNULLCHK(cf->sso_pat),
 		 STRNULLCHK(cf->cdc_url),
 		 STRNULLCHK(cf->wsc_soap_content_type),
@@ -2298,6 +2305,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 cf->imps_ena,
 		 cf->as_ena,
 		 cf->md_authority_ena,
+		 cf->backwards_compat_ena,
 		 cf->pdp_ena,
 		 cf->cpn_ena,
 		 cf->az_opt,

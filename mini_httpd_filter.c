@@ -221,6 +221,37 @@ void zxid_mini_httpd_wsp_response(zxid_conf* cf, zxid_ses* ses, int rfd, char** 
   D_DEDENT("wsp_resp");
 }
 
+/* Called by:  zxid_mini_httpd_filter */
+zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, const char* method, const char* uri_path, const char* qs)
+{  
+  char* res;
+  zxid_ses* ses = zxid_alloc_ses(cf);
+
+  if (!authorization || memcmp(authorization, "Bearer ", sizeof("Bearer ")-1)) {
+      INFO("UMA(%s) Missing Authorization header", uri_path);
+      send_error_and_exit(401, "Unauthorized", "WWW-Authenticate: UMA realm=\"uma testing\" host_id=\"https://zxidp.org/rs.uma\" as_uri=\"https://zxidp.org/idpuma\"", "Authorization header with UMA Bearer token required");
+  }
+
+  // *** POST to token interospection endpoint on AS
+  // *** add UMA Resource Server stuff here
+  
+  if (*method == 'P') {
+    res = zxid_mini_httpd_read_post(cf);
+    if (zxid_wsp_validate(cf, ses, 0, res)) {
+      D("WSP(%s) request valid", uri_path);
+      /* Essentially we fall through and let CGI processing happen.
+       * zxid_wsp_decorate() will be called in cgi_interpose_output() */
+    } else {
+      INFO("WSP(%s) call not authorized", uri_path);
+      send_error_and_exit(403, "Forbidden", "", "Authorization denied.");
+    }
+  } else {
+    ERR("WSP(%s) must be called with POST method (%s)", uri_path, method);
+    send_error_and_exit(405, "Method Not Allowed", "", "WSP only accepts POST method.");
+  }
+  return ses;
+}
+
 /* 0x6000 outf QS + JSON = no output on successful sso, the attrubutes are in session
  * 0x1000 debug
  * 0x0e00 11 + 10 = Generate all HTML + Mgmt w/headers as string
@@ -451,11 +482,15 @@ zxid_ses* zxid_mini_httpd_filter(zxid_conf* cf, const char* method, const char* 
     zxid_is_wsp = 1;
     ses = zxid_mini_httpd_wsp(cf, method, uri_path, qs);
     return ses;
+  } else if (zx_match(cf->uma_pat, uri_path)) {
+    zxid_is_wsp = 1;
+    ses = zxid_mini_httpd_wsp(cf, method, uri_path, qs);
+    return ses;
   } else if (zx_match(cf->sso_pat, uri_path)) {
     ses = zxid_mini_httpd_sso(cf, method, uri_path, qs, cookie_hdr);
     return ses;
   } else {
-    D("No SSO or WSP match(%s) wsp_pat(%s) sso_pat(%s)", uri_path, STRNULLCHK(cf->wsp_pat), STRNULLCHK(cf->sso_pat));
+    D("No SSO or WSP match(%s) wsp_pat(%s) uma_pat(%s) sso_pat(%s)", uri_path, STRNULLCHK(cf->wsp_pat), STRNULLCHK(cf->uma_pat), STRNULLCHK(cf->sso_pat));
     return 0;
   }
 }

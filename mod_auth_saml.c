@@ -486,6 +486,31 @@ static int chkuid(request_rec* r)
       D_DEDENT("chkuid: ");
       return HTTP_METHOD_NOT_ALLOWED;
     }
+  } else if (zx_match(cf->uma_pat, r->uri)) {
+    /* UMA case */
+    if (r->method_number == M_POST) {
+      res = read_post(cf, r);   /* Will print some debug output */
+#if 0
+      // *** add UMA Resource Server stuff here
+      if (zxid_wsp_validate(cf, &ses, 0, res)) {
+	D("WSP(%s) request valid", r->uri);
+	D("WSP CALL uri(%s) filename(%s) path_info(%s)", r->uri, r->filename, r->path_info);
+	ret = pool2apache(cf, r, ses.at);
+	D_DEDENT("chkuid: ");
+	return ret;
+	/* Essentially we fall through and let CGI processing happen.
+	 * *** how to decorate the CGI return value?!? New hook needed? --Sampo */
+      } else {
+	ERR("WSP(%s) request validation failed", r->uri);
+	D_DEDENT("chkuid: ");
+	return HTTP_FORBIDDEN;
+      }
+#endif
+    } else {
+      ERR("WSP(%s) must be called with POST method %d", r->uri, r->method_number);
+      D_DEDENT("chkuid: ");
+      return HTTP_METHOD_NOT_ALLOWED;
+    }
   } else {
     /* Some other page. Just check for session. */
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("other page uri(%s) qs(%s) cf->burl(%s) uri_len=%d url_len=%d", r->uri, STRNULLCHKNULL(r->args), cf->burl, uri_len, url_len);

@@ -688,7 +688,7 @@ struct zx_str* zxid_callf_epr(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, const
  *     configuration option. This implementes generalized (application
  *     independent) Requestor Out and Requestor In PEPs. To implement
  *     application dependent PEP features you should call zxid_az() directly.
- * enve:: XML payload as string
+ * enve:: Request XML payload as string
  * return:: SOAP Envelope of the response, as a string. You can parse this
  *     string to obtain all returned SOAP headers as well as the Body and its
  *     content. NULL on failure. ses->curflt and/or ses->curstatus contain

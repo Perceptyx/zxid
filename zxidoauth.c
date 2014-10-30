@@ -14,6 +14,8 @@
  * http://openid.net/specs/openid-connect-messages-1_0.html
  * http://tools.ietf.org/html/draft-ietf-oauth-v2-22
  * http://tools.ietf.org/html/draft-jones-json-web-encryption-01
+ * RFC6749 OAuth2 Core
+ * RFC6750 OAuth2 Bearer Token Usage
  *
  * 11.12.2011, created --Sampo
  * 9.10.2014, UMA related addtionas, JWK, dynamic client registration, etc. --Sampo
@@ -172,7 +174,7 @@ char* zxid_mk_oauth2_dyn_cli_reg_res(zxid_conf* cf, zxid_cgi* cgi)
   struct zx_str* client_secret;
   int secs = time(0);
 
-  /* *** check for IAT */
+  /* *** check for valid IAT */
 
   if (!cgi->post) {
     ERR("Missing POST content %d",0);
@@ -275,7 +277,8 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
 
 #endif
 
-/*() Interpret ZXID standard form fields to construct a XML structure for AuthnRequest */
+/*() Interpret ZXID standard form fields to construct an OAuth2 Authorization request,
+ * Which is a redirection URL */
 
 /* Called by:  zxid_start_sso_url */
 struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str* loc, char* relay_state)
@@ -316,10 +319,9 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str*
 	       "&nonce=%.*s"
 	       "%s%s"           /* &state= */
 	       "%s%s"           /* &display= */
-	       "%s%s"           /* &prompt= */
-	       CRLF2,
+	       "%s%s",          /* &prompt= */
 	       loc->len, loc->s, (memchr(loc->s, '?', loc->len)?'&':'?'),
-	       cgi->pr_ix == ZXID_OIDC1_CODE ? "code" : "id_token token",
+	       cgi->pr_ix == ZXID_OIDC1_CODE ? "code" : "id_token+token",
 	       eid_url_enc,
 	       redir_url_enc,
 	       nonce->len, nonce->s,
@@ -547,7 +549,7 @@ int zxid_sso_issue_azc(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, zxid_nid* na
   struct zx_str* logpath;
   struct zx_str sp;
   struct zx_str ss;
-  struct zx_str id;
+  //struct zx_str id;
 
   /* Authorization code points to a file that contains paths to tokens, query string format */
   
@@ -593,7 +595,7 @@ int zxid_sso_issue_azc(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, zxid_nid* na
   }
 #endif
 
-  id.s = azc_id; id.len = strlen(azc_id);
+  //id.s = azc_id; id.len = strlen(azc_id);
   if (cf->loguser)
     zxlogusr(cf, ses->uid, 0, 0, 0, 0, 0, 0, 0, "N", "K", "azc", 0, 0);
   
@@ -725,6 +727,238 @@ struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
   return zx_dup_str(cf->ctx, "* ERR");
 }
 
+#define UMA_WELL_KNOWN "/.well-known/uma-configuration"
+
+/*() Extract a metadata item from well known location.
+ *
+ * cf:: ZXID configuration object, for memory allocation
+ * base_uri:: scheme, domain name and port of server whose metadata we are looking for.
+ *     For example, the value of as_uri returned in WWW-Authenticate HTTP response header.
+ * key:: Name of the metadata item, must include double quoted, e.g. "\"rpt_endpoint\""
+ * return:: c string, zx allocated. Caller must free.
+ *
+ * N.B. This function is very simplistic as it does not cache the metadata in any way.
+ */
+
+char* zxid_oauth_get_well_known_item(zxid_conf* cf, const char* base_uri, const char* key)
+{
+  int len;
+  char* p;
+  char endpoint[4096];
+  struct zx_str* res;
+
+  len = strlen(base_uri);
+  if (len + sizeof(UMA_WELL_KNOWN) > sizeof(endpoint)-1) {
+    ERR("base_uri too long %d", len);
+    return 0;
+  }
+  memcpy(endpoint, base_uri, len);
+  p = endpoint + len -1;
+  if (*p != '/')
+    ++p;
+  strcpy(p, UMA_WELL_KNOWN);
+  res = zxid_http_cli(cf, -1, endpoint, -1, 0, 0, 0, 0);
+  D("base_uri(%s) endpoint(%s) res(%.*s) key(%s)", base_uri, endpoint, res?res->len:0, res?res->s:"", key);
+  
+  return zx_json_extract_dup(cf->ctx, res->s, key);
+}
+
+char* iat = 0;
+char* _uma_authn = 0;
+
+struct zx_str* zxid_oauth_dynclireg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* as_uri)
+{
+  struct zx_str* res;
+  char* azhdr;
+  char* req = zxid_mk_oauth2_dyn_cli_reg_req(cf);
+  char* url = zxid_oauth_get_well_known_item(cf, as_uri, "\"dynamic_client_endpoint\"");
+  char* p;
+  if (iat) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
+  } else
+    azhdr = 0;
+  DD("url(%s) req(%s) iat(%s)", url, req, STRNULLCHKD(azhdr));
+  if (_uma_authn) {
+    p = url;
+    url = zx_alloc_sprintf(cf->ctx, 0, "%s%c_uma_authn=%s", url, strchr(url,'?')?'&':'?', _uma_authn);
+    ZX_FREE(cf->ctx, p);
+  }
+  D("url(%s) req(%s) iat(%s)", url, req, STRNULLCHKD(azhdr));
+  res = zxid_http_cli(cf, -1, url, -1, req, ZXID_JSON_CONTENT_TYPE, azhdr, 0);
+  ZX_FREE(cf->ctx, url);
+  if (azhdr) ZX_FREE(cf->ctx, azhdr);
+  ZX_FREE(cf->ctx, req);
+  D("%.*s", res->len, res->s);
+  ses->client_id = zx_json_extract_dup(cf->ctx, res->s, "\"client_id\"");
+  ses->client_secret = zx_json_extract_dup(cf->ctx, res->s, "\"client_secret\"");
+  return res;
+}
+
+void zxid_oauth_rsrcreg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* as_uri, const char* rsrc_name, const char* rsrc_icon_uri, const char* rsrc_scope_url, const char* rsrc_type)
+{
+  struct zx_str* res;
+  char* restful_url;
+  char* azhdr;
+  char* b64;
+  char* req = zxid_mk_oauth2_rsrc_reg_req(cf, rsrc_name, rsrc_icon_uri, rsrc_scope_url, rsrc_type);
+  char* url = zxid_oauth_get_well_known_item(cf, as_uri, "\"resource_set_registration_endpoint\"");
+  if (ses->access_token) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->access_token);
+  } else if (iat) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
+  } else if (ses->client_id && ses->client_secret) {
+    b64 = zx_mk_basic_auth_b64(cf->ctx, ses->client_id, ses->client_secret);
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Basic %s", b64);
+    ZX_FREE(cf->ctx, b64);
+  } else
+    azhdr = 0;
+  D("req(%s) azhdr(%s)", req, STRNULLCHKD(azhdr));
+  
+  restful_url = zx_alloc_sprintf(cf->ctx, 0, "%s/resource_set/%s", url, rsrc_name);
+  ZX_FREE(cf->ctx, url);
+  res = zxid_http_cli(cf, -1, restful_url, -1, req, ZXID_JSON_CONTENT_TYPE, azhdr, 0);
+  ZX_FREE(cf->ctx, restful_url);
+  if (azhdr) ZX_FREE(cf->ctx, azhdr);
+  ZX_FREE(cf->ctx, req);
+  D("%.*s", res->len, res->s);
+}
+
+/*() Call OAUTH2 / UMA1 Resource Protection Token Endpoint and return a token
+ * *** still needs a lot of work to turn more generic */
+
+char* zxid_oauth_call_rpt_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri)
+{
+  struct zx_str* res;
+  char* azhdr;
+  char* b64;
+  char* rpt_endpoint = zxid_oauth_get_well_known_item(cf, as_uri, "\"rpt_endpoint\"");
+
+  if (ses->access_token) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->access_token);
+  } else if (iat) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
+  } else if (ses->client_id && ses->client_secret) {
+    b64 = zx_mk_basic_auth_b64(cf->ctx, ses->client_id, ses->client_secret);
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Basic %s", b64);
+    ZX_FREE(cf->ctx, b64);
+  } else
+    azhdr = 0;
+
+  //if (!ses->client_id || !ses->client_secret)
+  //  zxid_oauth_dynclireg_client(cf, cgi, ses, as_uri);
+  // *** Client acquires AAT
+
+#if 0
+  snprintf(req, sizeof(buf),
+	   "client_id=%s&client_secret=%s",
+	   ses->client_id, ses->client_secret);
+#endif
+  D("azhdr(%s)", STRNULLCHKD(azhdr));
+
+  res = zxid_http_cli(cf, -1, rpt_endpoint, -1, "", 0, azhdr, 0);
+  D("%.*s", res->len, res->s);
+  
+  /* Extract the fields as if it had been implicit mode SSO */
+  ses->rpt = zx_json_extract_dup(cf->ctx, res->s, "\"rpt\"");
+  // *** check validity
+  return "OK";
+}
+
+/*() Call OAUTH2 / UMA1 Resource Protection Token Endpoint and return a token
+ * *** still needs a lot of work to turn more generic */
+
+char* zxid_oauth_call_az_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri, const char* ticket)
+{
+  char* req;
+  struct zx_str* res;
+  char* azhdr;
+  char* b64;
+  char* az_endpoint = zxid_oauth_get_well_known_item(cf, as_uri, "\"authorization_request_endpoint\"");
+
+  if (ses->access_token) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->access_token);
+  } else if (iat) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
+  } else if (ses->client_id && ses->client_secret) {
+    b64 = zx_mk_basic_auth_b64(cf->ctx, ses->client_id, ses->client_secret);
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Basic %s", b64);
+    ZX_FREE(cf->ctx, b64);
+  } else
+    azhdr = 0;
+
+  //if (!ses->client_id || !ses->client_secret)
+  //  zxid_oauth_dynclireg_client(cf, cgi, ses, as_uri);
+  // *** Client acquires AAT
+
+#if 0
+  snprintf(req, sizeof(buf),
+	   "client_id=%s&client_secret=%s",
+	   ses->client_id, ses->client_secret);
+#endif
+  req = zx_alloc_sprintf(cf->ctx, 0, "{\"rpt\":\"%s\",\"ticket\":\"%s\"}", ses->rpt, ticket);
+  D("req(%s) azhdr(%s)", req, STRNULLCHKD(azhdr));
+
+  res = zxid_http_cli(cf, -1, az_endpoint, -1, req, 0, azhdr, 0);
+  ZX_FREE(cf->ctx, req);
+  D("%.*s", res->len, res->s);
+  
+  /* Extract the fields as if it had been implicit mode SSO */
+  ses->rpt = zx_json_extract_dup(cf->ctx, res->s, "\"rpt\"");
+  // *** check validity
+  return "OK";
+}
+
+int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const char* _uma_authn)
+{
+  struct zx_md_SingleSignOnService_s* sso_svc;
+  struct zx_str* ss;
+  struct zx_str* req;
+  struct zx_str* res; 
+  struct zxid_cgi* cgi;
+  struct zxid_cgi scgi;
+  ZERO(&scgi, sizeof(scgi));
+  cgi = &scgi;
+
+  if (!idp_meta->ed->IDPSSODescriptor) {
+    ERR("Entity(%s) does not have IdP SSO Descriptor (OAUTH2) (metadata problem)", cgi->eid);
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor (OAUTH2)");
+    cgi->err = "Bad IdP metadata (OAUTH). Try different IdP.";
+    D_DEDENT("start_sso: ");
+    return 0;
+  }
+  for (sso_svc = idp_meta->ed->IDPSSODescriptor->SingleSignOnService;
+       sso_svc;
+       sso_svc = (struct zx_md_SingleSignOnService_s*)sso_svc->gg.g.n) {
+    if (sso_svc->gg.g.tok != zx_md_SingleSignOnService_ELEM)
+      continue;
+    if (sso_svc->Binding && !memcmp(OAUTH2_REDIR,sso_svc->Binding->g.s,sso_svc->Binding->g.len))
+      break;
+  }
+  if (!sso_svc) {
+    ERR("IdP Entity(%s) does not have any IdP SSO Service with " OAUTH2_REDIR " binding (metadata problem)", cgi->eid);
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No OAUTH2 redir binding");
+    cgi->err = "Bad IdP metadata. Try different IdP.";
+    D_DEDENT("start_sso: ");
+    return 0;
+  }
+  ss = &sso_svc->Location->g;
+  if (_uma_authn)
+    ss = zx_strf(cf->ctx, "%.*s%c_uma_authn=%s", ss->len, ss->s, (memchr(ss->s, '?', ss->len)?'&':'?'), _uma_authn);
+  cgi->pr_ix = ZXID_OIDC1_ID_TOK_TOK; //"id_token token";
+  D("loc(%.*s)", ss->len, ss->s);
+  req = zxid_mk_oauth_az_req(cf, cgi, ss, 0);
+  D("req(%.*s)", req->len, req->s);
+  res = zxid_http_cli(cf, req->len, req->s, 0,0, 0, 0, 0x03);  /* do not follow redir */
+  zx_str_free(cf->ctx, req);
+  D("res(%.*s)", res->len, res->s);
+  // *** extract token and AAT from the response
+  ses->access_token = zx_qs_extract_dup(cf->ctx, res->s, "access_token=");
+  ses->id_token = zx_qs_extract_dup(cf->ctx, res->s, "id_token=");
+  ses->token_type = zx_qs_extract_dup(cf->ctx, res->s, "token_type=");
+  //ses->expires = zx_qs_extract_dup(cf->ctx, res->s, "access_token=");
+  return 1;
+}
+
 /*() Call OAUTH2 / UMA1 / OIDC1 Token Endpoint and return a token
  * *** still needs a lot of work to turn more generic */
 
@@ -740,20 +974,19 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
   } else
 #endif
     azhdr = 0;
-  cf->wsc_soap_content_type = "application/x-www-form-encoded";
 
   snprintf(buf, sizeof(buf),
 	   "grant_type=authorization_code&code=%s&redirect_uri=%s",
 	   cgi->code, cgi->redirect_uri);
-  res = zxid_http_post_raw(cf, -1, endpoint, -1, buf, azhdr);
+  res = zxid_http_cli(cf, -1, endpoint, -1, buf, 0, azhdr, 0);
   D("%.*s", res->len, res->s);
   
   /* Extract the fields as if it had been implicit mode SSO */
-  cgi->access_token = zx_json_extract_dup(cf->ctx, res->s, "\"access_token\"");
-  cgi->refresh_token = zx_json_extract_dup(cf->ctx, res->s, "\"refresh_token\"");
-  cgi->token_type = zx_json_extract_dup(cf->ctx, res->s, "\"token_type\"");
-  cgi->expires_in = zx_json_extract_int(res->s, "\"expires_in\"");
-  cgi->id_token = zx_json_extract_dup(cf->ctx, res->s, "\"id_token\"");
+  ses->access_token = zx_json_extract_dup(cf->ctx, res->s, "\"access_token\"");
+  ses->refresh_token = zx_json_extract_dup(cf->ctx, res->s, "\"refresh_token\"");
+  ses->token_type = zx_json_extract_dup(cf->ctx, res->s, "\"token_type\"");
+  ses->expires_in = zx_json_extract_int(res->s, "\"expires_in\"");
+  ses->id_token = zx_json_extract_dup(cf->ctx, res->s, "\"id_token\"");
   // *** check validity
   return 1;
 }
@@ -867,7 +1100,7 @@ erro:
   return 0;
 }
 
-/*() Extract an assertion from OAUTH Az response, and perform SSO */
+/*() Extract an assertion from OAUTH2 Az response, and perform SSO */
 
 /* Called by:  zxid_sp_oauth2_dispatch */
 static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, char* jwt)
@@ -881,7 +1114,7 @@ static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
   return 0;
 }
 
-/*() Dispatch, on RP/SP side, OAUTH redir or artifact binding requests.
+/*() Dispatch, on RP/SP side, OAUTH2 redir or artifact binding requests.
  *
  * return:: a string (such as Location: header) and let the caller output it.
  *     Sometimes a dummy string is just output to indicate status, e.g.

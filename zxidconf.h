@@ -892,9 +892,16 @@
 /*(c) WSP Pattern
  * Any URL matching this pattern is treated as web service call rather
  * than SSO attempt. Understood by mod_auth_saml, zxid_httpd and mini_httpd_zxid.
- * WSP_PAT is matched before SSO_PAT. */
+ * WSP_PAT is matched before UMA_PAT and SSO_PAT. */
 
 #define ZXID_WSP_PAT "*.wsp"
+
+/*(c) UMA Pattern
+ * Any URL matching this pattern is treated as web service call protected by UMA rather
+ * than SSO attempt. Understood by mod_auth_saml, zxid_httpd and mini_httpd_zxid.
+ * UMA_PAT is matched after WSP_PAT but before SSO_PAT. */
+
+#define ZXID_UMA_PAT "*/uma/*"
 
 /*(c) mini_httpd_zxid SSO Pattern
  * Any URL matching this pattern requires SSO. However
@@ -1093,6 +1100,13 @@
 #define ZXID_WSP_LOCALPDP_OBL_REQ     0  /* String: WSP required obligations in SOL notation */
 #define ZXID_WSP_LOCALPDP_OBL_EMIT    0  /* String: WSP obligations emitted on resp */
 #define ZXID_WSC_LOCALPDP_OBL_ACCEPT  0  /* String: WSC acceptable obligations in SOL notation */
+
+/*(c) Enable CBC (instead of GCM) and PKCS#1 v1.5 padding, both of which
+ * are vulnearable and can compromise modern crypto through Backwards
+ * Compatibility Attacks.
+ * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
+ */
+#define ZXID_BACKWARDS_COMPAT_ENA 0 /* safe default */
 
 /* ----------------------------------------------------------------------------- */
 /*(c) Apache httpd sometimes changes working directory unpredictably

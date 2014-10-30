@@ -81,6 +81,7 @@ ZXID_DECL char* zxid_unbase64_inflate(struct zx_ctx* c, int in_len, const char* 
 ZXID_DECL int   zx_url_encode_len(int in_len, const char* in);
 ZXID_DECL char* zx_url_encode_raw(int in_len, const char* in, char* out);
 ZXID_DECL char* zx_url_encode(struct zx_ctx* c, int in_len, const char* in, int* out_len);
+ZXID_DECL char* zx_mk_basic_auth_b64(struct zx_ctx* c, const char* uid, const char* pw);
 ZXID_DECL char* zxid_qs_nv_scan(char* qs, char** name, char** val, int url_decode_val_flag);
 ZXID_DECL char* zx_hexdec(char* dst, char* src, int src_len, const unsigned char* trans);
 
@@ -104,6 +105,8 @@ ZXID_DECL char* zx_zap_inplace_raw(char* s, const char* zap);
 ZXID_DECL const char* zx_json_extract_raw(const char* hay, const char* key, int* len);
 ZXID_DECL char* zx_json_extract_dup(struct zx_ctx* c, const char* hay, const char* key);
 ZXID_DECL int zx_json_extract_int(const char* hay, const char* key);
+ZXID_DECL const char* zx_qs_extract_raw(const char* hay, const char* key, int* len);
+ZXID_DECL char* zx_qs_extract_dup(struct zx_ctx* c, const char* hay, const char* key);
 
 struct zxid_curl_ctx {
   char* p;

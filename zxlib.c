@@ -230,7 +230,7 @@ char* zx_dup_len_cstr(struct zx_ctx* c, int len, const char* str) {
   return s;
 }
 
-/*() ZX verion of strdup(). */
+/*() ZX version of strdup(). */
 
 /* Called by: */
 char* zx_dup_cstr(struct zx_ctx* c, const char* str) {

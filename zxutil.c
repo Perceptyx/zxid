@@ -1192,6 +1192,23 @@ char* zx_url_encode(struct zx_ctx* c, int in_len, const char* in, int* out_len)
   return out;
 }
 
+/*() Base64 encode and URL encode concatenation "uid:password" as in HTTP basic authentication */
+
+char* zx_mk_basic_auth_b64(struct zx_ctx* c, const char* uid, const char* pw)
+{
+  char* p;
+  char* q;
+  char* b64;
+  int len;
+
+  p = zx_alloc_sprintf(c, &len, "%s:%s", uid, pw);
+  b64 = ZX_ALLOC(c, SIMPLE_BASE64_LEN(len));
+  q = base64_fancy_raw(p, len, b64, std_basis_64, 10000000, 0, 0, '=');
+  ZX_FREE(c, p);
+  p = zx_url_encode(c, q-b64, b64, 0);
+  ZX_FREE(c, b64);
+  return p;
+}
 
 /*() Parse one fragment of a query string (QUERY_STRING querystring).
  *
@@ -1454,6 +1471,44 @@ int zx_json_extract_int(const char* hay, const char* key)
   p += strspn(p, " \t\r\n");
   sscanf(p, "%i", &i);
   return i;
+}
+
+/*() Extract query string parameter without really parsing the query string.
+ * return: pointer to the value, but this is in the original hay buffer and is
+ *     not nul terminated. You need to look at len for the length of the string.
+ * N.B. The key specification MUST include the equals sign, e.g. "yourkey="
+ */
+
+const char* zx_qs_extract_raw(const char* hay, const char* key, int* len)
+{
+  const char* s;
+  const char* p = strstr(hay, key);
+  if (!p) {
+    D("key(%s) not found in qs(%s)", key, hay);
+    return 0;
+  }
+  p += strlen(key);
+  if (len) {
+    s = strchr(p, '&');
+    if (!s)
+      *len = strlen(p);
+    else
+      *len = s-p;
+  }
+  return p;
+}
+
+/*() Extract simple scalar string from query string. Return newly allocated memory.
+ * N.B. The key specification MUST include the quotes, e.g. "\"yourkey\""
+ */
+
+char* zx_qs_extract_dup(struct zx_ctx* c, const char* hay, const char* key)
+{
+  int len;
+  const char* p = zx_qs_extract_raw(hay, key, &len);
+  if (!p)
+    return 0;
+  return zx_dup_len_cstr(c, len, p);
 }
 
 /* EOF  --  zxutil.c */

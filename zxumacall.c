@@ -27,6 +27,7 @@
 #include "c/zx-const.h"
 #include "c/zx-ns.h"
 #include "c/zx-data.h"
+#include "saml2.h"
 
 char* help =
 "zxumacall  - UMA Client and Debugging tool R" ZXID_REL "\n\
@@ -37,8 +38,9 @@ NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0\n\
 See http://www.apache.org/licenses/LICENSE-2.0\n\
 Send well researched bug reports to the author. Home: zxid.org\n\
 \n\
-Usage: zxumacall [options] -s SESID -t SVCTYPE <soap_req_body.xml >soap_resp.xml\n\
-       zxumacall [options] -a IDP USER:PW -t SVCTYPE <soap_req_body.xml >soap_resp.xml\n\
+Usage: zxumacall [options] -s SESID -t SVCTYPE <req >resp\n\
+       zxumacall [options] -a IDP USER:PW -t SVCTYPE <req >resp\n\
+       zxumacall [options] -ua IDP UAT    -t SVCTYPE <req >resp\n\
        zxumacall [options] -a IDP USER:PW -t SVCTYPE -nd # Discovery only\n\
        zxumacall [options] -a IDP USER:PW   # Authentication only\n\
        zxumacall [options] -dynclireg az_entity # Dynamic Client Registration\n\
@@ -55,6 +57,7 @@ Usage: zxumacall [options] -s SESID -t SVCTYPE <soap_req_body.xml >soap_resp.xml
   -dynclireg       Invoke Dynamic Client Registration client to call Az Server's client registration endpoint\n\
   -swstmt file     (Optional) File containing signed Software Statement for dynreg\n\
   -iat IAT         (Optional) Initial Access Token for dynamic client registration\n\
+  -ua IDP UAT      (Optional) Token for _uma_authn query string passed to OpenID-Connect server\n\
   -client_id ID    client_id (same as returned by dynamic client registration)\n\
   -client_secret SS  client_secret (same as returned by dynamic client registration)\n\
   -rr NAME ICON_URI SCOPE TYPE Perform OAUTH2 Resource Set Registration\n\
@@ -65,8 +68,8 @@ Usage: zxumacall [options] -s SESID -t SVCTYPE <soap_req_body.xml >soap_resp.xml
                    N.B. For authorization to work PDP_URL configuration option is needed.\n\
   -im DSTEID       Map session's login identity to identity at some other SP using ID-WSF\n\
   -nidmap DSTEID   Map session's login identity to identity at some other SP using SAML\n\
-  -e SOAPBODY      Pass SOAP body as argument (default is to read from STDIN)\n\
-  -b               In response, only return content of SOAP body, omitting Envelope and Body.\n\
+  -e ODY           Pass request body as argument (default is to read from STDIN)\n\
+  -b               In response, only return content of response body, omitting headers.\n\
   -nd              Discovery only (you need to specify -t SVCTYPE as well)\n\
   -n               Dryrun. Do not actually make call. Instead print it to stdout.\n\
   -l               List EPR cache (you need to specify -s SEDID or -a as well)\n\
@@ -88,7 +91,8 @@ int di_only = 0;
 /* int ssos = 0;    -nssos           SSOS only (you need to specify -a IDP USER:PW as well)\n\ */
 int listses = 0;
 int dynclireg = 0;
-char* iat = 0;
+extern char* iat;          /* see zxidoauth.c */
+extern char* _uma_authn;   /* see zxidoauth.c */
 char* swstmt = 0;
 char* client_id;
 char* client_secret;
@@ -304,6 +308,9 @@ static void opt(int* argc, char*** argv, char*** env)
 	rsrc_icon_uri = (*argv)[1];
 	rsrc_scope_url = (*argv)[2];
 	rsrc_type = (*argv)[3];
+	++(*argv); --(*argc);
+	++(*argv); --(*argc);
+	++(*argv); --(*argc);
 	continue;
       }
       break;
@@ -334,6 +341,13 @@ static void opt(int* argc, char*** argv, char*** env)
 	++(*argv); --(*argc);
 	if ((*argc) < 1) break;
 	url = (*argv)[0];
+	continue;
+      case 'a':
+	++(*argv); --(*argc);
+	if ((*argc) < 2) break;
+	idp = (*argv)[0];
+	_uma_authn = (*argv)[1];
+	++(*argv); --(*argc);
 	continue;
       }
       break;
@@ -446,40 +460,212 @@ int zxid_print_session(zxid_conf* cf, zxid_ses* ses)
   return 0;
 }
 
-void zxumacall_dynclireg_client(zxid_conf* cf)
+#if 0
+char* zxid_scan_quoted(zxid_conf* cf, char* p, char** val, const char* res, comma_expected)
 {
+  char quote;
+  char* p;
+  if (ONE_OF_2(*val, '"', '\'')) {
+    quote = *val;
+    ++val;
+    p = strchr(val, quote);
+    if (!p) {
+      ERR("Mismatched quote res(%s)", res);
+      return 0;
+    }
+    val = zx_dup_len_cstr(cf->ctx, val, p-val);
+    ++p;
+    if (comma_expected) {
+      if (*p != ',') {
+	ERR("Comma expected res(%s)", res);
+	return 0;	  
+      }
+    }
+    ++p;
+  } else {
+    p = strchr(val, ',');
+    if (comma_expected) {
+      if (!p) {
+	ERR("Comma expected res(%s)", res);
+	return 0;	  
+      }
+    } else {
+
+    }
+    val = zx_dup_len_cstr(cf->ctx, val, p-val);
+    ++p;
+  }
+  return val;
+
+  // *** buggy
+}
+#endif
+
+/*(i) Make a HTTP POST call given payload string.
+ * The call is protected by UMA.
+ *
+ * cf:: ZXID configuration object, see zxid_new_conf()
+ * ses:: Session object that contains the EPR cache
+ * svctype:: URI (often the namespace URI) specifying the kind of service we
+ *     wish to call. Used for EPR lookup or discovery.
+ * url:: (Optional) If provided, this argument has to match either
+ *     the ProviderID, EntityID, or actual service endpoint URL.
+ * di_opt:: (Optional) Additional discovery options for selecting the
+ *     service, query string format
+ * az_cred:: (Optional) Additional authorization credentials or
+ *     attributes, query string format. These credentials will be populated
+ *     to the attribute pool in addition to the ones obtained from SSO and
+ *     other sources. Then a PDP is called to get an authorization decision
+ *     (as well as obligations we pledge to support). See also PEPMAP
+ *     configuration option. This implementes generalized (application
+ *     independent) Requestor Out and Requestor In PEPs. To implement
+ *     application dependent PEP features you should call zxid_az() directly.
+ * req:: request payload as string
+ * return:: SOAP Envelope of the response, as a string. You can parse this
+ *     string to obtain all returned SOAP headers as well as the Body and its
+ *     content. NULL on failure. ses->curflt and/or ses->curstatus contain
+ *     more detailed error information. */
+
+/* Called by:  zxcall_main, zxid_callf */
+struct zx_str* zxid_uma_call(zxid_conf* cf, zxid_ses* ses, const char* svctype, const char* url, const char* di_opt, const char* az_cred, const char* req)
+{
+  long rc;
   struct zx_str* res;
-  char* azhdr;
-  char* req = zxid_mk_oauth2_dyn_cli_reg_req(cf);
-  if (iat) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
-  } else
-    azhdr = 0;
-  D("req(%s) iat(%s)", req, STRNULLCHKD(azhdr));
-  cf->wsc_soap_content_type = ZXID_JSON_CONTENT_TYPE;
-  res = zxid_http_post_raw(cf, -1, url, -1, req, azhdr);
-  printf("%.*s", res->len, res->s);
-  /* *** extract client_id and client_secret */
-  client_id = zx_json_extract_dup(cf->ctx, res->s, "\"client_id\"");
-  client_secret = zx_json_extract_dup(cf->ctx, res->s, "\"client_secret\"");
+  char* p;
+  char* realm;
+  char* host_id;
+  char* as_uri;
+  char* error;
+  char* ticket = 0;
+  char* azhdr = 0;
+  /* *** try
+GET /umaprotected/resource HTTP/1.1
+
+HTTP/1.1 401 Unauthorized
+   WWW-Authenticate: UMA realm="example",
+    host_id="photoz.example.com",
+    as_uri="https://as.example.com"
+  
+*** obtain RPT by calling AS with AAT
+
+GET /umaprotected/resource HTTP/1.1
+Authorization: Bearer RPT
+
+(see ResourceServer registers the desired permissions)
+
+HTTP/1.1 403 Forbidden
+   WWW-Authenticate: UMA realm="example",
+    host_id="photoz.example.com",
+    as_uri="https://as.example.com",
+    error="insufficient_scope"
+
+{
+"ticket": "016f84e8-f9b9-11e0-bd6f-0021cc6004de"
 }
 
-void zxumacall_rsrcreg_client(zxid_conf* cf)
+OR
+
+HTTP/1.1 200 OK
+
+*** ResourceServer registers the desired permissions
+
+POST /host/scope_reg_uri/photoz.example.com HTTP/1.1
+Content-Type: application/json
+Host: as.example.com
+
 {
-  char restful_url[4096];
-  struct zx_str* res;
-  char* azhdr;
-  char* req = zxid_mk_oauth2_rsrc_reg_req(cf, rsrc_name, rsrc_icon_uri, rsrc_scope_url, rsrc_type);
-  if (iat) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", client_secret);
-  } else
-    azhdr = 0;
-  D("req(%s) iat(%s)", req, STRNULLCHKD(azhdr));
-  cf->wsc_soap_content_type = ZXID_JSON_CONTENT_TYPE;
-  
-  snprintf(restful_url, sizeof(restful_url), "%s/resource_set/%s", url, rsrc_name);
-  res = zxid_http_post_raw(cf, -1, restful_url, -1, req, azhdr);
-  printf("%.*s", res->len, res->s);
+  "resource_set_id": "112210f47de98100",
+  "scopes": [
+      "http://photoz.example.com/dev/actions/view",
+      "http://photoz.example.com/dev/actions/all"
+  ]
+}
+
+HTTP/1.1 201 Created
+Content-Type: application/json
+Location: https://as.example.com/permreg/host/photoz.example.com/5454345rdsaa4543
+...
+
+{
+"ticket": "016f84e8-f9b9-11e0-bd6f-0021cc6004de"
+}
+
+*** With ticket, enhance the RPT
+
+  */
+
+  while (1) {
+    curl_easy_setopt(cf->curl, CURLOPT_HEADER, 1);
+    res = zxid_http_cli(cf, -1, url, -1, req, "application/json", azhdr, 0x01);
+    if (!res) {
+      ERR("Call to url(%s) failed", url);
+      return 0;
+    }
+    curl_easy_getinfo(cf->curl, CURLINFO_RESPONSE_CODE, &rc);
+    switch (rc) {
+    case 200:
+      p = strstr(res->s, CRLF CRLF);  /* find where headers end */
+      if (!p) {
+	ERR("Failed to find empty line separating headers from the body(%s)", res->s);
+	return res;
+      }
+      p = zx_dup_cstr(cf->ctx, p + sizeof(CRLF CRLF)-1);
+      ZX_FREE(cf->ctx, res->s);
+      res->s = p;
+      return res;
+    case 401:
+#if 0
+      p = strstr(res->s, "WWW-Authenticate: UMA realm=");
+      if (!p) {
+	ERR("Failed to find WWW-Authenticate header or it is not of uma type res(%s)", res->s);
+	return res;
+      }
+      p = p + sizeof("WWW-Authenticate: UMA realm=")+1;
+      p = zxid_scan_quoted(cf, p, &realm);
+
+      p = strstr(p, "host_id=");
+      p = p + sizeof("host_id=")+1;
+      p = zxid_scan_quoted(cf, p, &host_id);
+#else
+      if (sscanf(res->s, "WWW-Authenticate: UMA realm=\"%m[^\"]\" , host_id=\"%m[^\"]\", as_uri=\"%m[^\"]\"",
+		  &realm, &host_id, &as_uri) != 3) {
+	ERR("Failed to find WWW-Authenticate header or it is not correctly formatted for UMA. res(%s)", res->s);
+	return res;
+      }
+#endif 
+
+      // Call AS to get RPT
+      zxid_oauth_call_rpt_endpoint(cf, ses, host_id, as_uri);
+      azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->rpt);
+      break;
+
+    case 403:
+      if (sscanf(res->s, "WWW-Authenticate: UMA realm=\"%m[^\"]\" , host_id=\"%m[^\"]\", as_uri=\"%m[^\"]\", error=\"%m[^\"]\"",
+		  &realm, &host_id, &as_uri, &error) != 4) {
+	ERR("Failed to find WWW-Authenticate header or it is not correctly formatted for UMA. res(%s)", res->s);
+	return res;
+      }
+      if (strcmp(error, "insufficient_scope")) {
+	ERR("Expected error insufficient_scope, got(%s)", error);
+	return res;
+      }
+      p = strstr(res->s, CRLF CRLF);  /* find where headers end */
+      if (!p) {
+	ERR("Failed to find empty line separating headers from the body(%s)", res->s);
+	return res;
+      }
+      ticket = zx_json_extract_dup(cf->ctx, res->s, "\"ticket\"");
+      
+      // Call AS to get more perms
+      zxid_oauth_call_az_endpoint(cf, ses, host_id, as_uri, ticket);
+      azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->rpt);
+      break;
+
+    default:
+      ERR("Unexpected HTTP response %ld", rc);
+      return 0;
+    }
+  }
 }
 
 #ifndef zxumacall_main
@@ -494,7 +680,7 @@ int zxumacall_main(int argc, char** argv, char** env)
   int siz, got, n;
   char* p;
   struct zx_str* ss;
-  zxid_ses* ses;
+  zxid_ses* ses = 0;
   zxid_entity* idp_meta;
   zxid_epr* epr;
 
@@ -503,14 +689,9 @@ int zxumacall_main(int argc, char** argv, char** env)
   opt(&argc, &argv, &env);
 
   if (dynclireg) {
-    zxumacall_dynclireg_client(cf);
-    return 0;
-  }
-
-  if (rsrc_name) {
-    if (!client_secret)
-      zxumacall_dynclireg_client(cf);
-    zxumacall_rsrcreg_client(cf);
+    ses = zxid_alloc_ses(cf);
+    ss = zxid_oauth_dynclireg_client(cf, 0, ses, url);
+    printf("%*s", ss->len, ss->s);
     return 0;
   }
     
@@ -528,15 +709,34 @@ int zxumacall_main(int argc, char** argv, char** env)
       ERR("IdP metadata not found and could not be fetched. idp(%s)", idp);
       return 1;
     }
-    for (p = user; !ONE_OF_2(*p, ':', 0); ++p) ;
-    if (*p)
-      *p++ = 0;
-    ses = zxid_as_call(cf, idp_meta, user, p);
+    if (user) {
+      for (p = user; !ONE_OF_2(*p, ':', 0); ++p) ;
+      if (*p)
+	*p++ = 0;
+      ses = zxid_as_call(cf, idp_meta, user, p);
+    } else if (_uma_authn) {
+      ses = zxid_alloc_ses(cf);
+      zxid_oidc_as_call(cf, ses, idp_meta, _uma_authn);
+    }
     if (!ses) {
       ERR("Login using Authentication Service failed idp(%s)", idp);
       return 1;
     }
     INFO("Logged in. NameID(%s) Session in %s" ZXID_SES_DIR "%s", ses->nid, cf->cpath, ses->sid);
+  }
+
+  if (rsrc_name) {
+    if (!ses->client_secret) {
+      if (!ses)
+	ses = zxid_alloc_ses(cf);
+      if (client_id) {
+	ses->client_id = client_id;
+	ses->client_secret = client_secret;
+      } else
+	zxid_oauth_dynclireg_client(cf, 0, ses, url);
+    }
+    zxid_oauth_rsrcreg_client(cf, 0, ses, url, rsrc_name, rsrc_icon_uri, rsrc_scope_url, rsrc_type);
+    return 0;
   }
 
   if (listses)
@@ -582,7 +782,7 @@ int zxumacall_main(int argc, char** argv, char** env)
     D("Call service svctype(%s)", svc);
     if (!bdy) {
       if (verbose)
-	fprintf(stderr, "Reading SOAP request body from stdin...\n");
+	fprintf(stderr, "Reading request body from stdin...\n");
       siz = 4096;
       p = bdy = ZX_ALLOC(cf->ctx, siz);
       while (1) {
@@ -605,7 +805,11 @@ int zxumacall_main(int argc, char** argv, char** env)
     }
     if (verbose)
       fprintf(stderr, "Calling...\n");
-    
+
+#if 1
+    ss = zxid_uma_call(cf, ses, svc, url, di, az, bdy);
+    printf("%.*s", ss->len, ss->s);
+#else
     ss = zxid_call(cf, ses, svc, url, di, az, bdy);
     if (!ss || !ss->s) {
       ERR("Call failed %p", ss);
@@ -618,6 +822,7 @@ int zxumacall_main(int argc, char** argv, char** env)
       printf("%s", p);
     } else
       printf("%.*s", ss->len, ss->s);
+#endif
   } else if (az) {
     D("Call Az(%s)", az);
     if (dryrun) {
