@@ -87,17 +87,17 @@ public class world extends HttpServlet {
 	out.print("<h1>World</h1>\n");
 
  	out.print("<pre>RemoteUser("+req.getRemoteUser()+")\n");
+ 	out.print("RemoteUserHeader("+req.getHeader("REMOTE_USER")+")\n");
  	out.print("QueryString("+req.getQueryString()+")\n");
  	out.print("SAML_sesid("+req.getAttribute("SAML_sesid")+")\n");
+ 	out.print("SAML_affid("+req.getAttribute("SAML_affid")+")\n");
+ 	out.print("SAML_idpnid("+req.getAttribute("SAML_idpnid")+")\n");
+ 	out.print("SAML_fedusername("+req.getAttribute("SAML_fedusername")+")\n");
+ 	out.print("SAML_cn("+req.getAttribute("SAML_cn")+")\n");
  	out.print("SAML_lang("+req.getAttribute("SAML_lang")+")\n");
- 	print_maybe(out, "SAML_sesid", req.getAttribute("SAML_sesid"));
- 	print_maybe(out, "SAML_affid", req.getAttribute("SAML_affid"));
- 	print_maybe(out, "SAML_cn",    req.getAttribute("SAML_cn"));
- 	print_maybe(out, "SAML_lang",  req.getAttribute("SAML_lang"));
- 	print_maybe(out, "SAML_role",  req.getAttribute("SAML_role"));
- 	print_maybe(out, "SAML_o",     req.getAttribute("SAML_o"));
- 	print_maybe(out, "SAML_ou",    req.getAttribute("SAML_ou"));
- 	print_maybe(out, "SAML_vers",  req.getAttribute("SAML_vers"));
+ 	out.print("SAML_role("+req.getAttribute("SAML_role")+")\n");
+ 	out.print("SAML_o("+req.getAttribute("SAML_o")+")\n");
+ 	out.print("SAML_ou("+req.getAttribute("SAML_ou")+")\n");
 
 	for (Enumeration iter=req.getHeaderNames(); iter.hasMoreElements();) {
 	    String n = (String)iter.nextElement();
