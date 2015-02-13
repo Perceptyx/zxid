@@ -46,12 +46,6 @@ ZXID Home - Open Source IdM for the Masses - TAS3 Reference Implementation - Int
 <i>20141009 - Multivalued attribute matching, valgrind cleanups, changed URL config to BURL</i><br>
 <a href="zxid-1.18.tgz">zxid-1.18.tgz</a>
 <i>20131126 - Windows and dietlibc support fixes, zxid_httpd</i><br>
-<a href="zxid-1.11.tgz">zxid-1.11.tgz</a>
-<i>20121114 - major new developments, wrt audit bus, multiple bug fixes</i><br>
-<a href="zxid-1.05.tgz">zxid-1.05.tgz</a>
-<i>20111209 - timestamp, VPATH, DEBUG conf options, minor fixes</i><br>
-<a href="zxid-1.02.tgz">zxid-1.02.tgz</a>
-<i>20110725 - Fixed file naming in discovery</i><br>
 <a href="old-releases.html">Old releases</a><br>
 <span id=git class=small>
 &nbsp;<a href="git://zxid.org/zxid">git clone git://zxid.org/zxid</a> <i>(Anon GIT)</i><br>
@@ -64,11 +58,6 @@ ZXID Home - Open Source IdM for the Masses - TAS3 Reference Implementation - Int
 <i>Windows, some Linux distros</i>
 
 <!--a href="/zxid-0.41-win32-bin.zip">zxid-0.41-win32-bin.zip</a-->
-
-<p><b>TAS3 & IoS Reference Implementation</b><br>
-
-<a href="http://www.tas3.eu/">TAS3 Official</a>, <a href="tas3/">ZXID-TAS3 (local)</a><br>
-<i>TAS3 Architecture Docs</i>
 
 <p><b>Support</b><br>
 <a href="http://listproc.unh.edu/archives/zxid.user/">ZXID mailing list</a><br>
@@ -113,6 +102,11 @@ ZXID Home - Open Source IdM for the Masses - TAS3 Reference Implementation - Int
 <p class=dense><a href="lcovhtml-0.73/zxid/index.html">LCOV Report on 0.73</a> (20101219)<br>Line-by-line test coverage now at 63.0%
 
 <p class=dense><a href="tas3tests/index.html"></a> (20110310)<br>TAS3 Tests
+
+<p><b>TAS3 & IoS Reference Implementation</b><br>
+
+<a href="http://www.tas3.eu/">TAS3 Official</a>, <a href="tas3/">ZXID-TAS3 (local)</a><br>
+<i>TAS3 Architecture Docs</i>
 
 <p class=dense><b>Contact</b><br>
 <span class=small>Write to Sampo Kellomäki (sampo % zxidp.org)
@@ -188,6 +182,8 @@ in <<link:README.zxid.html: documentation>> (<<link:README.zxid.pdf: PDF>>).-->
 <h3>Status</h3>
 
 <ul>
+<li>1.22 (20141009) is most stable release prior to OAUTH2 work
+<li>1.02 (20110725) stable "1.0" release.
 <li>0.82 (20110310) is 1.0 Release Candidate. As of 0.41 (20091120) the package has been mature for
 doing SSO and other SP related tasks. It also supports perl and
 mod_perl by way of Net::SAML module, PHP5 (and php4) using
@@ -200,9 +196,9 @@ SSO to Apach httpd just by configuring (no programming needed).
 
 <li>zxididp, including ID-WSF Discovery, is beta grade.
 
-<li>ID-WSF 2.0 WSC and WSP roles are release candidate grade.
+<li>ID-WSF 2.0 WSC and WSP roles are release grade.
 
-<li>XACML PEP role is release candidate grade.
+<li>XACML PEP role is release grade.
 
 <li><a href="#" onClick="vis('detail',1);">Details</a>
 
@@ -289,7 +285,7 @@ ZXID uses <a href="http://swig.org/">SWIG</a> to generate its language bindings.
 </tr></table>
 
 <div id=botlegal>
-Copyright © 2006-2014 Sampo Kellomäki. All Rights Reserved. Updated 20141009.
+Copyright © 2006-2014 Sampo Kellomäki. All Rights Reserved. Updated 20141105.
 </div>
 <script type="text/javascript"><!--
 function vis(el, state) { document.getElementById(el).style.display=state?"block":"none"; }

@@ -70,8 +70,8 @@ Configuration Option Reference", and file zxidconf.h for full
 explanation):
 
   # Demo /var/zxid/zxid.conf file
-  PATH=/var/zxid/
-  URL=https://sp.mydomain.com:8443/zxid
+  CPATH=/var/zxid/
+  BURL=https://sp.mydomain.com:8443/zxid
   NICE_NAME=My SP's human%0areadable name.
   ORG_NAME=My Company, Inc.
   ORG_URL=http://www.mycompany.be/
@@ -115,7 +115,7 @@ Usually configuring a system involves the following tasks
 3. Configure ZXID, including signing certificate and CoT with peer metadata
 
    a. Edit the configuration options (e.g. in /var/zxid/zxid.conf, but see below).
-      You must set at least URL and NICE_NAME.
+      You must set at least BURL and NICE_NAME.
 
    b. Generate or acquire certificate
 
@@ -129,7 +129,7 @@ Usually configuring a system involves the following tasks
    need to have a web server and ZXID up and running. Other route
    is to use zxcot(1) command line tool, e.g.
 
-     zxcot -c URL=https://example.com/sso -c NICE_NAME='Your SP Brand' >your-md.xml
+     zxcot -c BURL=https://example.com/sso -c NICE_NAME='Your SP Brand' -m >your-md.xml
 
    to generate metadata and then manually transfer it to CoT peers.
 
@@ -144,7 +144,7 @@ The configuration options of ZXID can be set using various methods,
 with later occurrance of an option overriding the previous value.
 Thus default configuration can (and should) provide most options,
 while you can override the ones that interest your particular
-deployment (you should override at least URL and NICE_NAME).
+deployment (you should override at least BURL and NICE_NAME).
 The order, from earliest application to last application,
 of the sources of configuration options is as follows:
 
@@ -173,41 +173,41 @@ of the sources of configuration options is as follows:
 8.  In case of command line utilities, like zxcot(1),
     commandline flags like -c OPT=VAL or -ci (for default IdP config)
 
-9.  If PATH configuration option is changed by any of the above methods (2)-(8),
-    a new configuration file PATH $ "zxid.conf" (where $ (dollar) denotes
+9.  If CPATH configuration option is changed by any of the above methods (2)-(8),
+    a new configuration file CPATH $ "zxid.conf" (where $ (dollar) denotes
     string concatenation) is read and evaluated at the spot where
-    the PATH changed (i.e. such configurations are evaluated in the middle
+    the CPATH changed (i.e. such configurations are evaluated in the middle
     of the other methods).
 
 10. If VPATH configuration option is changed by any of the above methods,
-    a new configuration file PATH $ fold(HTTP_HOST) $ "zxid.conf",
+    a new configuration file CPATH $ fold(HTTP_HOST) $ "zxid.conf",
     where $ (dollar) denotes string concatenation and fold() denotes function squashing
     all suspicious characters to underscores, is read and evaluated at the spot where
     the VPATH is changed (i.e. such configurations are evaluated in the middle
     of the other methods).
 
     The VPATH option is meant to implement a virtual hosting feature where
-    the PATH is automatically determined from apparent host name and port
+    the CPATH is automatically determined from apparent host name and port
     number, and consequently different zxid.conf is read for each virtual
     host. The feature is on by default, but if no corresponding file
     is found, no configuration change happens. If the file is found, then
-    PATH is also changed. Thus unlike in many other cases, for virtual
+    CPATH is also changed. Thus unlike in many other cases, for virtual
     hosting the virtual host specific zxid.conf files are mandatory.
     This makes sense as NICE_NAME, et al. should be specified anyway.
 
-Interplay of the respecification of PATH (you can specify even the same path)
+Interplay of the respecification of CPATH (you can specify even the same path)
 and other configuration methods allow all sorts of *default scenarios*
 to be implemented. For example, specification like
 
-  URL=http://sp1.zxidsp.org:8080/sso&PATH=/var/zxid/&PEP_ENA=0
+  BURL=http://sp1.zxidsp.org:8080/sso&CPATH=/var/zxid/&PEP_ENA=0
 
-sets the URL configuration option, then rereads the /var/zxid/zxid.conf
-configuration file which allows URL to be overridden in the configuration
+sets the BURL configuration option, then rereads the /var/zxid/zxid.conf
+configuration file which allows BURL to be overridden in the configuration
 file, but finally disables the PEP functionality such that it overrides
 the configuration file (unless some later configuration
 source causes the configuration file to be reread anyway).
 
-> N.B. Avoid recursive speficications of PATH and/or VPATH. They will be
+> N.B. Avoid recursive speficications of CPATH and/or VPATH. They will be
 > expanded to depth of 5, but are almost always errors.
 
 2.3 Virtual Hosting
@@ -252,7 +252,7 @@ explicitly include such blocks to your config file).
 > N.B. Another way to implement virtual hosting, that only works
 > with mod_auth_saml, is to use Apache2 httpd.conf
 > file where each <VirtualHost> section specifies different
-> PATH using ZXIDConf directive.
+> CPATH using ZXIDConf directive.
 
 For virtual hosting in Tomcat, there are two cases: if Apache2 httpd
 is a frontend, as it often is to implement https (recommended), then
@@ -284,27 +284,27 @@ appear in metadata as Organization/OrganizationDisplayName
 
 NICE_NAME::  (default: "ZXID configuration NICE_NAME: Set this to describe your site to humans")
 
-2.4.2 URL: Web Site URL - root of EntityID
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2.4.2 BURL: Web Site URL - root of EntityID
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 MUST: Failure to config this option usually blocks zxid from operating.
 
-URL for most zxid operations. It must end in whatever
+The URL for most zxid operations. It must end in whatever
 triggers the ZXID functionality in the web server (which depends on
 how you have configured the web server, see httpd.conf). The hostname
 and port number should match the server under which zxid CGI is
 accessible.  N.B. There is no explicit way to configure Entity ID
 (Provider ID) for the zxid SP. The Entity ID is always of form
-ZXID_URL?o=B .<<footnote: Actually there is: BARE_URL_ENTITYID option,
+BURL?o=B .<<footnote: Actually there is: BARE_URL_ENTITYID option,
 but that is an advanced topic and will not be discussed here.>> For
 example
 
   https://sp1.zxidsp.org:8443/zxid?o=B 
 
-URL::  (default: "https://sp1.zxidconf-you-should-set-URL-conf-variable-to-some-useful-and-site-dependent-value.org:8443/zxid")
+BURL::  (default: "https://sp1.zxidconf-you-should-set-URL-conf-variable-to-some-useful-and-site-dependent-value.org:8443/zxid")
 
-2.4.3 zxidroot (PATH configuration parameter)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2.4.3 zxidroot (CPATH configuration parameter)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The root directory of ZXID configuration files and directories. By default this
 is /var/zxid and has following directories and files in it
@@ -392,13 +392,13 @@ instead of newline (and needs to be encoded if not intended as
 separator).
 
 When option is not specified, the default from zxidconf.h
-prevails. Thus in the following the PATH specification is redundant.
+prevails. Thus in the following the CPATH specification is redundant.
 
 To give some idea consider following /var/zxid/zxid.conf example:
 
   # Demo /var/zxid/zxid.conf file
-  PATH=/var/zxid/
-  URL=https://sp.mydomain.com:8443/zxid
+  CPATH=/var/zxid/
+  BURL=https://sp.mydomain.com:8443/zxid
   NICE_NAME=My SP's human%0areadable name.
   #EOF
 
@@ -413,7 +413,7 @@ last instance of an option prevailing:
    overrides values from compiled in defaults as well
    as from zxid.conf in the compiled in default path.
 
-   While processing options, if PATH is found, the
+   While processing options, if CPATH is found, the
    (new) config file is read, effectively overriding any
    options thus far.
 
@@ -421,7 +421,7 @@ last instance of an option prevailing:
    description.
 
 Essentially this allows you to provide early in configuration string options that
-can then be overridden by the config file ready by virtue of PATH apprearing
+can then be overridden by the config file ready by virtue of CPATH apprearing
 in the config string. The options in the string that come later in the string
 can then override values in config file.
 
@@ -450,9 +450,9 @@ See section "Configuring and Running" for complete list of
 configuration options, but generally it is
 sufficient to specify only a handful:
 
-PATH:: Where files are kept and configuration file is found.
+CPATH:: Where files are kept and configuration file is found.
 NICE_NAME:: Human readable namme of the SP
-URL:: The URL of the SP
+BURL:: The URL of the SP
 CDC_URL:: The Common Domain URL (optional, if omitted
     the Common Domain Cookie processing is disabled)
 
@@ -1006,9 +1006,9 @@ is not hashed: you should use a file system that scales easily to oodles
 of small files in one directory. Say `make dir' to create the directory
 with proper layout. If you change it here, also edit Makefile. 
 
-PATH::  (default: "c:/var/zxid/")
+CPATH::  (default: "c:/var/zxid/")
 
-PATH::  (default: "/var/zxid/")
+CPATH::  (default: "/var/zxid/")
 
 
 4.1.3 SP Nickname for IdP User Interface
@@ -1022,18 +1022,18 @@ appear in metadata as Organization/OrganizationDisplayName
 NICE_NAME::  (default: "ZXID configuration NICE_NAME: Set this to describe your site to humans")
 
 
-4.1.4 Web Site URL - root of EntityID
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+4.1.4 Web Site BURL - root of EntityID
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IMPORTANT: Failure to config this option may block zxid from operating.
-URL for most zxid operations. It must end in whatever triggers
+The URL for most zxid operations. It must end in whatever triggers
 the ZXID functionality in the web server. The hostname
 and port number should match the server under which zxid CGI is accessible.
 N.B. There is no explicit way to configure Entity ID (Provider ID) for
-the zxid SP. The Entity ID is always of form ZXID_URL?o=B, for example
+the zxid SP. The Entity ID is always of form URL?o=B, for example
   https://sp1.zxidsp.org:8443/zxid?o=B 
 
-URL::  (default: "https://sp1.zxidconf-you-should-set-URL-conf-variable-to-some-useful-and-site-dependent-value.org:8443/zxid")
+BURL::  (default: "https://sp1.zxidconf-you-should-set-URL-conf-variable-to-some-useful-and-site-dependent-value.org:8443/zxid")
 
 
 4.1.5 Override standard EntityID Construction
@@ -2162,7 +2162,7 @@ limitations under the License.
    A: httpd.conf can contain ZXIDConf directives. Those directives are
    processed as if they came from /var/zxid/zxid.conf file (which is
    processed first, before and ZXIDConf directives), except that if you
-   specify ZXIDConf "PATH=/your/path", this triggers reporcessing of
+   specify ZXIDConf "CPATH=/your/path", this triggers reporcessing of
    the zxid.conf (from the new path).
 
 2. Q: In mod_auth_saml, what is the relation between the +port+ in ZXIDConf
@@ -2305,10 +2305,10 @@ limitations under the License.
 
     It is supposed to be /var/zxid/cot
 
-    When configuring PATH, did you forget trailing slash? E.g.
+    When configuring CPATH, did you forget trailing slash? E.g.
 
-      "PATH=/var/zxid&URL=..."    # WRONG!
-      "PATH=/var/zxid/&URL=..."   # Right
+      "CPATH=/var/zxid&BURL=..."    # WRONG!
+      "CPATH=/var/zxid/&BURL=..."   # Right
 
 9.  If configuration appears to be prematurely truncated, then
     see if you need to adjust ZXID_MAX_CONF (default 4KB) in

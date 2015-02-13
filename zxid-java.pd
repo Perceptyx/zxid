@@ -345,7 +345,8 @@ apache-tomcat-5.5.20/conf/context.xml (the ~reloadable~
 flag avoids having to restart Tomcat if you recompile
 the .class file):
 
-  <Context allowLinking="true" reloadable="true">...
+  <Context allowLinking="true" 
+reloadable="true">...
 
 In Tomcat6 the file might be /etc/tomcat6/context.xml
 

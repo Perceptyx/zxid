@@ -262,7 +262,6 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "S", "RSR", rs_id->s, "writing resource reg fail, permissions?");
   } else
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "K", "RSR", rs_id->s, "ip(%s)", cf->ipport);
-  ZX_FREE(cf->ctx, rs_id);
   
   buf = zx_alloc_sprintf(cf->ctx, 0,
 			 "{\"status\":\"created\""
@@ -272,6 +271,7 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
 			 rs_id->len, rs_id->s,
 			 rev,
 			 cf->burl, strchr(cf->burl, '?')?'&':'?');
+  ZX_FREE(cf->ctx, rs_id);
   return buf;
 }
 

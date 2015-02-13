@@ -158,7 +158,7 @@
  * The BURL config option may be set dynamically by VURL, see below, or from
  * program code.
  * N.B. There is no explicit way to configure EntityID (ProviderID) for
- * the zxid SP. The EntityID is always of form ZXID_BURL?o=B, for example
+ * the zxid SP. The EntityID is always of form BURL?o=B, for example
  *   https://sp1.zxidsp.org:8443/zxid?o=B */
 #define ZXID_BURL "https://sp1.please-set-BURL-conf-variable-to-some-useful-site-dep-value.org:8443/zxidhlo"
 

@@ -24,6 +24,8 @@
 #include "c/zx-ns.h"
 #include "c/zxidvers.h"
 
+//#include <stdbool.h>  *** how to solve problems with bool on perl 5.20?
+
 %}
 
 %typemap (in) (int len, char* s) {

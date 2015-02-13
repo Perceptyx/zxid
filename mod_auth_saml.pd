@@ -379,7 +379,7 @@ to the above configuration.
     Apache-Windows and Apache-Solaris? I wonder not directly, but
     could be compiled, right?
 
-    It should not be OS dependant. For Unixes I am pretty sure this is a
+    It should be OS independant. For Unixes I am pretty sure this is a
     fact. For Windows we need more testing (as of May 2008). It does not
     yet (May 2008) work in IIS.
 

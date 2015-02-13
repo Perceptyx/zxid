@@ -217,7 +217,7 @@ void zx_is12_Help_PUT_moreLink(struct zx_is12_Help_s* x, struct zx_attr_s* y);
 
 #endif
 /* -------------------------- is12_Inquiry -------------------------- */
-/* refby( zx_is12_InteractionStatement_s zx_is12_InteractionRequest_s ) */
+/* refby( zx_is12_InteractionRequest_s zx_is12_InteractionStatement_s ) */
 #ifndef zx_is12_Inquiry_EXT
 #define zx_is12_Inquiry_EXT
 #endif
