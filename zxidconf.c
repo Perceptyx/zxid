@@ -1494,7 +1494,7 @@ static int zxid_parse_vpath(zxid_conf* cf, char* vpath)
   
   if (*vpath != '/') {
     if (cf->cpath_len > lim-np) {
-      ERR("TOO LONG: PATH(%.*s) len=%d does not fit in vpath buffer size=%ld", cf->cpath_len, cf->cpath, cf->cpath_len, (long)(lim-np));
+      ERR("TOO LONG: CPATH(%.*s) len=%d does not fit in vpath buffer size=%ld", cf->cpath_len, cf->cpath, cf->cpath_len, (long)(lim-np));
       return 0;
     }
     memcpy(np, cf->cpath, cf->cpath_len);
@@ -1503,7 +1503,7 @@ static int zxid_parse_vpath(zxid_conf* cf, char* vpath)
   
   zxid_expand_percent(vpath, np, lim, 0);
   if (--zxid_suppress_vpath_warning > 0) {
-    INFO("VPATH(%s) alters PATH(%s) to new PATH(%s)", vpath, cf->cpath, newpath);
+    INFO("VPATH(%s) alters CPATH(%s) to new CPATH(%s)", vpath, cf->cpath, newpath);
   }
   zxid_parse_conf_path_raw(cf, zx_dup_cstr(cf->ctx, newpath), 1);
   return 1;
@@ -1517,7 +1517,7 @@ static int zxid_parse_vurl(zxid_conf* cf, char* vurl)
   char newurl[PATH_MAX];
   zxid_expand_percent(vurl, newurl, newurl + sizeof(newurl), 1);
   if (--zxid_suppress_vpath_warning > 0) {
-    INFO("VURL(%s) alters URL(%s) to new URL(%s)", vurl, cf->burl, newurl);
+    INFO("VURL(%s) alters BURL(%s) to new BURL(%s)", vurl, cf->burl, newurl);
   }
   cf->burl = zx_dup_cstr(cf->ctx, newurl);
   return 1;

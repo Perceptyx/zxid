@@ -111,7 +111,7 @@ RUBY_CONFIG?=true
 
 JAR?=jar
 JAVAC?=javac
-JAVAC_FLAGS?=-J-Xmx128m -g
+JAVAC_FLAGS?=-J-Xmx128m -classpath . -g
 ZXIDJNI_SO?=zxidjava/libzxidjni.so
 # JNI library name is very platform dependent (see macosx and mingw)
 # find / -name jni.h; find / -name jni_md.h
@@ -122,7 +122,7 @@ JNI_INC?=-I/usr/lib/jvm/java-6-openjdk-amd64/include -I/usr/lib/jvm/java-6-openj
 #JNI_INC?=-I/usr/lib/jvm/java-6-openjdk-i386/include -I/usr/lib/jvm/java-6-openjdk-i386/include/linux
 #JNI_INC?=-I/usr/lib/jvm/java-6-openjdk-amd64/include -I/usr/lib/jvm/java-6-openjdk-amd64/include/linux
 # Path where HttpServlet supplied by your application server resides
-# find / -name servlet-api.jar
+# find / -name 'servlet*api*.jar'
 # sudo apt-get install tomcat6
 SERVLET_PATH=../apache-tomcat-5.5.20/common/lib/servlet-api.jar
 #SERVLET_PATH=../apache-tomcat-6.0.18/lib/servlet-api.jar

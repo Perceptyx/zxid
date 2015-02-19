@@ -1,5 +1,5 @@
 /* zxidwsp.c  -  Handwritten nitty-gritty functions for Liberty ID-WSF Web Services Provider
- * Copyright (c) 2013-2014 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2013-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -15,6 +15,7 @@
  * 25.1.2011,  tweaked RelatesTo header --Sampo
  * 26.10.2013, improved error reporting on credential expired case --Sampo
  * 12.3.2014,  added partial mime multipart support --Sampo
+ * 19.2.2015,  fixed Action header detection in the non-XML body case --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -49,7 +50,7 @@ static void zxid_add_action_hdr(zxid_conf* cf, zxid_ses* ses, struct zx_e_Envelo
     return;
   } else if (!strcmp(cf->wsc_action_hdr, "#body1st")) {
     if (env->Body && (first = env->Body->gg.kids)) {
-      if (first->g.s) {
+      if (first->g.s && first->g.tok != ZX_TOK_DATA) {
 	if (!(p = memchr(first->g.s, ':', first->g.len))) {
 	  ss = &first->g;
 	} else {
@@ -65,12 +66,12 @@ static void zxid_add_action_hdr(zxid_conf* cf, zxid_ses* ses, struct zx_e_Envelo
 	}
       }
     } else {
-      ERR("Tried to set <a:Action> SOAP header from first child of <e:Body>, but the body does not exist or does not have child element %p", env->Body);
+      ERR("Tried to set <a:Action> SOAP header from first child of <e:Body>, but the body does not exist or does not have child element (e.g. JSON or other non-XML body) %p", env->Body);
       return;
     }
   } else if (!strcmp(cf->wsc_action_hdr, "#body1stns")) {
     if (env->Body && (first = env->Body->gg.kids)) {
-      if (first->g.s) {
+      if (first->g.s && first->g.tok != ZX_TOK_DATA) {
 	if (!(p = memchr(first->g.s, ':', first->g.len))) {
 	  ss = zx_strf(cf->ctx, "%s:%.*s", first->ns&&first->ns->url?first->ns->url:"", first->g.len, first->g.s);
 	} else {

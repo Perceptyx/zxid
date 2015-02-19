@@ -237,7 +237,7 @@ void zx_free_ctx(struct zx_ctx* ctx);	/* Wrapper for free(3C). */
 #endif
 
 /* Special token values. */
-#define ZX_TOK_NO_ATTR   (-7)
+#define ZX_TOK_NO_ATTR   (-7)  /* 0xfff9 65529 */
 #define ZX_TOK_ATTR_ERR  (-6)
 #define ZX_TOK_XMLNS     (-4)
 #define ZX_TOK_DATA             0x0000fffd  /* Decimal 65533: string data between elements */
