@@ -101,6 +101,38 @@ public class world extends HttpServlet {
  	out.print("SAML_o("+req.getAttribute("SAML_o")+")\n");
  	out.print("SAML_ou("+req.getAttribute("SAML_ou")+")\n");
 	out.print("</pre><p>Done.\n");
+
+	String ret;
+	e2eta_ses ses = e2etajni.fetch_ses(cf, req.getAttribute("SAML_sesid"));
+	
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/admin:<br>\n<textarea cols=80 rows=20>");
+	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
+			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/admin\"}");
+        ret = e2etajni.extract_body(cf, ret);
+        out.print(ret);
+        out.print("</textarea>");
+
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/diseases:<br>\n<textarea cols=80 rows=20>");
+	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
+			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/diseases\"}");
+        ret = e2etajni.extract_body(cf, ret);
+        out.print(ret);
+        out.print("</textarea>");
+
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/treatments:<br>\n<textarea cols=80 rows=20>");
+	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
+			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/treatments\"}");
+        ret = e2etajni.extract_body(cf, ret);
+        out.print(ret);
+        out.print("</textarea>");
+
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/cardio/history:<br>\n<textarea cols=80 rows=20>");
+	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
+			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/cardio/history\"}");
+        ret = e2etajni.extract_body(cf, ret);
+        out.print(ret);
+        out.print("</textarea>");
+
 	System.err.print("^^^^^^^^^ DONE world GET("+fullURL+").\n");
     }
 }
