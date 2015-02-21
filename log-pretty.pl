@@ -100,6 +100,13 @@ sub decode_fn {
     }
 }
 
+if ($ARGV[0] eq '-d') {
+    shift;
+    ++$debug;
+    warn "funcs: ".Dumper(\%funcs);
+    warn "func_files: ".Dumper(\%func_files);
+}
+
 if ($ARGV[0] eq '-t') {
     shift;
     $file = shift;
