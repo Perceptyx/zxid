@@ -63,7 +63,7 @@ eval $akbox_fn;
 
 $x = readall("file.list");
 #warn "HERE($x) ARGV0($ARGV[0])";
-while ($x =~ /ZXFILE_DEF\("([A-Za-z_0-9.-]+)"\)/g) {
+while ($x =~ /FILE_DEF\("([A-Za-z_0-9.-]+)"\)/g) {
     $fn = $1;
     $k = sprintf("%04x",akbox_fn($fn));
     #warn "HERE($1)=(".akbox_fn($fn).")";
@@ -75,7 +75,7 @@ while ($x =~ /ZXFILE_DEF\("([A-Za-z_0-9.-]+)"\)/g) {
 }
 $x = readall("function.list");
 #warn "HERE($x) ARGV0($ARGV[0])";
-while ($x =~ /ZXFUNC_DEF\("([A-Za-z_0-9:]+)","([A-Za-z_0-9.-]+)"\)/g) {
+while ($x =~ /FUNC_DEF\("([A-Za-z_0-9:]+)","([A-Za-z_0-9.-]+)"\)/g) {
     $fn = $1;
     $fl = $2;
     $k = sprintf("%04x",akbox_fn($fn));

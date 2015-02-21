@@ -16,6 +16,7 @@
  * cd syn-e2eta-connector-1.22-Linux-x86_64
  * javac -classpath /usr/share/tomcat6/lib/tomcat6-servlet-2.5-api-6.0.24.jar:. world.java
  * javac -classpath /usr/share/tomcat6/lib/servlet-api.jar:. world.java
+ * javac -classpath /usr/share/tomcat6/lib/servlet-api.jar:../syn-e2eta-connector-1.22-Linux-x86_64/e2eta.jar world.java
  */
 
 import e2eta.*;
@@ -103,7 +104,7 @@ public class world extends HttpServlet {
 	out.print("</pre><p>Done.\n");
 
 	String ret;
-	e2eta_ses ses = e2etajni.fetch_ses(cf, req.getAttribute("SAML_sesid"));
+	e2eta_ses ses = e2etajni.fetch_ses(cf, req.getAttribute("SAML_sesid").toString());
 	
 	out.print("<p>Output from PDS web service call rsrc=pds/flow/admin:<br>\n<textarea cols=80 rows=20>");
 	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
