@@ -78,6 +78,10 @@ int zxid_get_ses_sso_a7n(zxid_conf* cf, zxid_ses* ses)
     encid = ses->a7n->Subject->EncryptedID;
     if (!ses->nameid && encid) {
       ss = zxenc_privkey_dec(cf, encid->EncryptedData, encid->EncryptedKey);
+      if (!ss) {
+	ERR("Failed to decrypt EncryptedID. Most probably certificate-private key mismatch or metadata problem. Could also be corrupt message. %d", 0);
+	return 0;
+      }
       r = zx_dec_zx_root(cf->ctx, ss->len, ss->s, "ses nid");
       if (!r) {
 	ERR("Failed to parse EncryptedID buf(%.*s)", ss->len, ss->s);

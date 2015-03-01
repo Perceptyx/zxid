@@ -503,11 +503,12 @@ zxid_epr* zxid_discover_epr(zxid_conf* cf, zxid_ses* ses, const char* svc, const
   }
   env->Header = zx_NEW_e_Header(cf->ctx, &env->gg);
   env = zxid_wsc_call(cf, ses, epr, env, 0);
-  if (!env || !env->Body || !env->Body->QueryResponse) {
+  if (!env || env == ZXID_REDIR_OK || !env->Body || !env->Body->QueryResponse) {
     ERR("Discovery call failed: No di:QueryResponse seen env=%p body=%p", env, env->Body);
     D_DEDENT("di: ");
     return 0;
   }
+  D("HERE %p", env);
   for (epr = env->Body->QueryResponse->EndpointReference;
        epr;
        epr = (zxid_epr*)ZX_NEXT(epr)) {

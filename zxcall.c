@@ -426,6 +426,7 @@ int zxcall_main(int argc, char** argv, char** env)
       return 1;
     }
     INFO("Logged in. NameID(%s) Session in %s" ZXID_SES_DIR "%s", ses->nid, cf->cpath, ses->sid);
+    sid = ses->sid;
   }
 
   if (listses)
@@ -526,7 +527,8 @@ int zxcall_main(int argc, char** argv, char** env)
   } else {
     D("Neither service type (-t) nor -az supplied. Performed only authentication. %d",0);
     if (verbose)
-      fprintf(stderr, "Authentication only.\n");
+      fprintf(stderr, "Authentication only. Session created.\n");
+    printf("%s", sid);
   }
   return 0;
 }

@@ -389,6 +389,7 @@ extern int trace;   /* this gets manipulated by -v or similar flag */
  * See https://wiki.archlinux.org/index.php/Color_Bash_Prompt */
 
 #ifdef NOCOLOR
+#define CC_RED(x)     x
 #define CC_REDB(x)    x
 #define CC_YELB(x)    x 
 #define CC_GRNB(x)    x 
@@ -402,6 +403,7 @@ extern int trace;   /* this gets manipulated by -v or similar flag */
 #define CC_PURY(x)    x 
 #define CC_CYNY(x)    x 
 #else
+#define CC_RED(x)    "\e[0;31m" x "\e[0m" /* regular red */
 #define CC_REDB(x)   "\e[1;31m" x "\e[0m" /* bold red */
 #define CC_YELB(x)   "\e[1;33m" x "\e[0m"
 #define CC_GRNB(x)   "\e[1;32m" x "\e[0m"

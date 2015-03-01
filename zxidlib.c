@@ -623,6 +623,10 @@ struct zx_str* zxid_decrypt_newnym(zxid_conf* cf, struct zx_str* newnym, struct 
     return newnym;
   if (encid) {
     ss = zxenc_privkey_dec(cf, encid->EncryptedData, encid->EncryptedKey);
+    if (!ss) {
+      ERR("Failed to decrypt NewEncryptedID. Most probably certificate-private key mismatch or metadata problem. Could also be corrupt message. %d", 0);
+      return 0;
+    }
     r = zx_dec_zx_root(cf->ctx, ss->len, ss->s, "dec newnym");
     if (!r) {
       ERR("Failed to parse NewEncryptedID buf(%.*s)", ss->len, ss->s);

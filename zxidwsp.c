@@ -728,8 +728,8 @@ char* zxid_wsp_validate_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, s
 
 /*(i) Validate SOAP request (envelope), specified by the string.
  *
- * If the string starts by "<e:Envelope", then string
- * should be a complete SOAP envelope including <e:Header> (and <e:Body>)
+ * The string should start by "<e:Envelope" (namespace prefix may vary)
+ * and should be a complete SOAP envelope including <e:Header> (and <e:Body>)
  * parts.
  *
  * cf:: ZXID configuration object, see zxid_new_conf()

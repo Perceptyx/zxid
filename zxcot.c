@@ -95,7 +95,7 @@ char* dimddir;
 char* uiddir;
 zxid_conf* cf = 0;
 
-static void zxmkdirs();
+static void zx_mkdirs();
 
 /* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcall_main, zxcot_main, zxdecode_main */
 static void opt(int* argc, char*** argv, char*** env)
@@ -197,7 +197,7 @@ static void opt(int* argc, char*** argv, char*** env)
 	continue;
       }
       if (!strcmp((*argv)[0],"-dirs")) {
-	zxmkdirs();
+	zx_mkdirs();
 	exit(0);
       }
       break;
@@ -341,7 +341,7 @@ static const char* mkdirs_list[] = {
 };
 
 /* Called by:  opt */
-static void zxmkdirs()
+static void zx_mkdirs()
 {
   char path[ZXID_MAX_BUF];
   char* p;
@@ -383,6 +383,7 @@ static void zxmkdirs()
     write_all_path_fmt("-dirs", sizeof(path), path, "%s%s", cf->cpath, ZXID_CONF_FILE,
 "# This is example configuration file %s" ZXID_CONF_FILE "\n"
 "# You should edit the values to suit your situation.\n"
+"BURL=https://yourhost.example.com:8443/protected/saml\n"
 "NICE_NAME=Configuration NICE_NAME: Set this to describe your site to humans, see %s" ZXID_CONF_FILE "\n"
 "BUTTON_URL=https://example.com/YOUR_BRAND_saml2_icon_150x60.png\n"
 "ORG_NAME=Unspecified ORG_NAME conf variable\n"

@@ -13,7 +13,7 @@
  * https://sp.personaldata.eu:8443/e2eTA/app-demo
  *
  * sudo apt-get install openjdk-6-jdk
- * cd syn-e2eta-connector-1.22-Linux-x86_64
+ * cd syn-e2eta-connector-1.32-Linux-x86_64
  * javac -classpath /usr/share/tomcat6/lib/tomcat6-servlet-2.5-api-6.0.24.jar:. world.java
  * javac -classpath /usr/share/tomcat6/lib/servlet-api.jar:. world.java
  * javac -classpath /usr/share/tomcat6/lib/servlet-api.jar:../syn-e2eta-connector-1.22-Linux-x86_64/e2eta.jar world.java
@@ -76,16 +76,14 @@ public class world extends HttpServlet {
 	    System.err.print("Running conf\n");
 	    String conf = getServletConfig().getInitParameter("E2ETAConf"); 
 	    // CONFIG: You must have created /var/e2eta directory hierarchy with
-	    // CONFIG: `e2etacot -dirs' and edited /var/e2eta/e2eta.conf to set the URL
+	    // CONFIG: `e2etacot -dirs' and edited /var/e2eta/e2eta.conf to set the BURL
 	    cf = e2etajni.new_conf_to_cf(conf);
-	    e2etajni.set_opt(cf, 1, 1);  // Debug on
-	    e2etajni.set_opt(cf, 7, 3);  // Cause glibc malloc/free to dump core on error
+	    System.err.print("dumpconf("+e2etajni.show_conf(cf)+").\n"); // Optional
 	}
 	if (ptm != null) {
 	    out.print("<table align=right><tr><td>");
 	    out.print("<a href=\"http://synergetics.be/\"><img src=\"synlogo_s.jpg\" height=67 border=0></a><br>");
 	    out.print(ptm);
-	    out.print("<br><iframe id=idpnav class=nav width=300 height=300 src=\"https://idp.i-dent.eu/nav.html\"><a href=\"https://idp.i-dent.eu/nav.html\">Navigation iFrame from IdP</a></iframe><br>");
 	    out.print("</td></tr></table>");
 	}
 	
@@ -106,28 +104,28 @@ public class world extends HttpServlet {
 	String ret;
 	e2eta_ses ses = e2etajni.fetch_ses(cf, req.getAttribute("SAML_sesid").toString());
 	
-	out.print("<p>Output from PDS web service call rsrc=pds/flow/admin:<br>\n<textarea cols=80 rows=20>");
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/admin:<br>\n<textarea cols=80 rows=3>");
 	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
 			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/admin\"}");
         ret = e2etajni.extract_body(cf, ret);
         out.print(ret);
         out.print("</textarea>");
 
-	out.print("<p>Output from PDS web service call rsrc=pds/flow/diseases:<br>\n<textarea cols=80 rows=20>");
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/diseases:<br>\n<textarea cols=80 rows=3>");
 	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
 			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/diseases\"}");
         ret = e2etajni.extract_body(cf, ret);
         out.print(ret);
         out.print("</textarea>");
 
-	out.print("<p>Output from PDS web service call rsrc=pds/flow/treatments:<br>\n<textarea cols=80 rows=20>");
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/treatments:<br>\n<textarea cols=80 rows=3>");
 	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
 			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/treatments\"}");
         ret = e2etajni.extract_body(cf, ret);
         out.print(ret);
         out.print("</textarea>");
 
-	out.print("<p>Output from PDS web service call rsrc=pds/flow/cardio/history:<br>\n<textarea cols=80 rows=20>");
+	out.print("<p>Output from PDS web service call rsrc=pds/flow/cardio/history:<br>\n<textarea cols=80 rows=3>");
 	ret = e2etajni.call(cf, ses, "urn:syn:pds:2015", null, null, "appid=CardiacFlow",
 			    "{\"op\":\"read\",\"rsrc\":\"pds/flow/cardio/history\"}");
         ret = e2etajni.extract_body(cf, ret);

@@ -1197,7 +1197,7 @@ ZXID_DECL char* zxid_get_idpnid_at_eid(zxid_conf* cf, const char* uid, const cha
  * return value of functions (which can only fail or succeed) is directly
  * used in conditional test. You will see base 0's and 1's in code.
  * Usually 1 means event was fully handled and no fall thru behaviour
- * is desired. 0 usually means the fal thru default should happen. */
+ * is desired. 0 usually means the fall thru default should happen. */
 #define ZXID_FAIL     0  /* Fall thru to default behaviour. */
 #define ZXID_OK       1  /* Don't fall thru, event fully handled. */
 #define ZXID_REDIR_OK 2  /* Don't fall thru, event fully handled. */

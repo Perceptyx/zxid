@@ -2025,6 +2025,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 "<p>Version: R" ZXID_REL " (" ZXID_COMPILE_DATE ")\n"
 
 "<pre>"
+"DEBUG=0x%x\n"
 "CPATH=%s\n"
 "BURL=%s\n"
 "AFFILIATION=%s\n"
@@ -2229,6 +2230,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 cf->burl, eid,
 		 cf->cpath,
 
+		 errmac_debug,
 		 cf->cpath,
 		 cf->burl,
 		 STRNULLCHK(cf->affiliation),
