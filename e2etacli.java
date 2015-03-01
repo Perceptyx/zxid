@@ -17,7 +17,7 @@
  * javac -classpath . e2etacli.java
  * javac -classpath ../syn-e2eta-connector-1.32-Linux-x86_64/e2eta.jar e2etacli.java
  *
- * Usage: java e2etacli.class
+ * Usage: java -Djava.library.path=syn-e2eta-connector-1.32-Linux-x86_64 e2etacli
  */
 
 import e2eta.*;
@@ -39,6 +39,7 @@ public class e2etacli {
 	err.print(e2etajni.version_str());
 	err.print("\nTrying to conf...\n");
 	cf = e2etajni.new_conf_to_cf("CPATH=/var/e2eta/");
+	//cf = e2etajni.new_conf_to_cf("CPATH=/home/sampo/sidemo/zxid/sp.citizendata.eu_8445/");
 	err.print(e2etajni.show_conf(cf));
 
 	e2eta_ses ses;
