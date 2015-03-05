@@ -171,7 +171,7 @@ zxid_tok* zxid_map_identity_token(zxid_conf* cf, zxid_ses* ses, const char* at_e
   inp->TokenPolicy->NameIDPolicy->AllowCreate = zx_ref_attr(cf->ctx, &inp->TokenPolicy->NameIDPolicy->gg, zx_AllowCreate_ATTR, XML_TRUE); /* default false */
 
   env = zxid_wsc_call(cf, ses, epr, env, 0);
-  if (!env || !env->Body) {
+  if (!env || env == ZXID_REDIR_OK || !env->Body) {
     ERR("Identity Mapping call failed envelope=%p", env);
     return 0;
   }
@@ -400,7 +400,7 @@ zxid_tok* zxid_nidmap_identity_token(zxid_conf* cf, zxid_ses* ses, const char* a
   req->NameID = ses->nameid;  /* or tgtnameid? */
 
   env = zxid_wsc_call(cf, ses, epr, env, 0);
-  if (!env || !env->Body) {
+  if (!env || env == ZXID_REDIR_OK || !env->Body) {
     ERR("Identity Mapping call failed envelope=%p", env);
     return 0;
   }

@@ -116,6 +116,8 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
     - BUG: Passing qs args in RelayState
     - BANGBANG_PAT to enable bang bang expansion of outputs, even in mini_httpd_zxid
     - Expected namespaces feature for effective suppression of warnings about payload namespaces
+    - mod_auth_saml: Apache 2.4 does not recognize authentication as having happened
+    - l0 causes pr_ix == 0 error at zxidpsso.c:196, at least on Marcin's machine
 
 zxid-1.30:: 19.2.2015
     - UMA and OAUTH work

@@ -1,5 +1,5 @@
 /* mod_auth_saml.c  -  Handwritten functions for Apache mod_auth_saml module
- * Copyright (c) 2012-2014 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2008-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -19,6 +19,7 @@
  * 21.6.2013, added SOAP WSP capability --Sampo
  * 17.11.2013, move redir_to_content feature to zxid_simple() --Sampo
  * 8.2.2014,  added OPTIONAL_LOGIN_PAT feature --Sampo
+ * 5.3.2015,  improved Apache httpd-2.4 compatibility --Sampo
  *
  * To configure this module add to httpd.conf something like
  *
@@ -52,12 +53,12 @@
 #include "ap_config.h"
 #include "ap_compat.h"
 #include "apr_strings.h"
-#include "httpd.h"
+#include "httpd.h"         /* request_rec et al. */
 #include "http_config.h"
 #include "http_core.h"
 #include "http_log.h"
 #include "http_protocol.h"
-#include "http_request.h"
+#include "http_request.h"  /* accessor methods for request_rec */
 
 #define srv_cf(s) (struct zxid_srv_cf*)ap_get_module_config((s)->module_config, &auth_saml_module)
 #define dir_cf(r) (zxid_conf*)ap_get_module_config((r)->per_dir_config, &auth_saml_module)
@@ -207,6 +208,7 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
   if (idpnid && idpnid[0] != '-') {
     D("REMOTE_USER(%s)", idpnid);
     apr_table_set(r->subprocess_env, "REMOTE_USER", idpnid);
+    r->user = idpnid;  /* httpd-2.4 anz framework requires this, 2.2 does not care */
   }
   
   //apr_table_setn(r->subprocess_env,
@@ -249,7 +251,7 @@ static int send_res(zxid_conf* cf, request_rec* r, char* res)
   //register_timeout("send", r);
   ap_send_http_header(r);
   if (!r->header_only)
-    ap_rputs(res, r);  //send_fd(f, r);  rprintf(); ap_rwrite()
+    ap_rprintf(r, "%s", res);  //send_fd(f, r);  rprintf(); ap_rwrite()
   return DONE;   /* Prevent further hooks from processing the request. */
 }
 

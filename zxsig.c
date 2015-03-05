@@ -287,6 +287,11 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     if (       ZX_STR_ENDS_IN_CONST(algo, "#sha1")) {
       SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
       siz = 20;
+#if 0
+    } else if (ZX_STR_ENDS_IN_CONST(algo, "#sha512")) {
+      SHA512((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+      siz = 20;
+#endif
     } else if (ZX_STR_ENDS_IN_CONST(algo, "#md5")) {
       MD5((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
       siz = 16;

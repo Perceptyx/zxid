@@ -109,7 +109,7 @@ int main(int argc, char** argv)
     env->Body->Query = zxid_mk_di_query(cf, &env->Body->gg, svc, 0,0,0);
     epr = zxid_find_epr(cf, ses, XMLNS_DISCO_2_0, 0,0,0, 1);
     env = zxid_wsc_call(cf, ses, epr, env, 0);
-    if (env->Body->QueryResponse)
+    if (env || env != ZXID_REDIR_OK && env->Body && env->Body->QueryResponse)
       for (epr = env->Body->QueryResponse->EndpointReference;
 	   epr;
 	   epr = (void*)ZX_NEXT(epr)) {
@@ -224,7 +224,7 @@ int main(int argc, char** argv)
 			    );
 #endif
       env = zxid_wsc_call(cf, ses, epr, env, 0);
-      if (env)
+      if (env && env != ZXID_REDIR_OK && env->Body)
 	if (env->Body->dap_QueryResponse)
 	  D("Result is LDIF(%.*s)",
 	    ZX_GET_CONTENT_LEN(env->Body->dap_QueryResponse->Data->LDIF),
@@ -255,7 +255,7 @@ int main(int argc, char** argv)
 
       env = zxid_wsc_call(cf, ses, epr, env, 0);
 
-      if (env)
+      if (env && env != ZXID_REDIR_OK && env->Body)
 	if (env->Body->GetObjectListResponse) {
 	  if (!memcmp(env->Body->GetObjectListResponse->Status->code->g.s, "OK", 2)) {
 	    first_objinfo = env->Body->GetObjectListResponse->ObjectInfo;
@@ -291,7 +291,7 @@ int main(int argc, char** argv)
 
       env = zxid_wsc_call(cf, ses, epr, env, 0);
 
-      if (env)
+      if (env && env != ZXID_REDIR_OK && env->Body)
 	if (env->Body->GetObjectResponse) {
 	  if (!memcmp(env->Body->GetObjectResponse->Status->code->g.s, "OK", 2)) {
 	    first_objdata = env->Body->GetObjectResponse->ObjectData;

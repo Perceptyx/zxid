@@ -1,5 +1,5 @@
 # zxid/Makefile  -  How to build ZXID (try: make help)
-# Copyright (c) 2012-2014 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
+# Copyright (c) 2012-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
 # Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
 # Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
 # Author: Sampo Kellomaki (sampo@iki.fi)
@@ -44,8 +44,8 @@ vpath %.h ../zxid
 
 ### This is the authorative spot to set version number. Document in Changes file.
 ### c/zxidvers.h is generated from these, see `make updatevers'
-ZXIDVERSION=0x000130
-ZXIDREL=1.30
+ZXIDVERSION=0x000135
+ZXIDREL=1.35
 
 TOP=$(shell pwd)
 

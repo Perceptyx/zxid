@@ -415,7 +415,7 @@ static int zxid_wsc_prep_secmech(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, st
  * env (rather than Body) is taken as argument so that caller can prepare
  * additional SOAP headers at will before calling this function. */
 
-/* Called by:  main x9, zxid_call_epr, zxid_get_epr, zxid_map_identity_token, zxid_nidmap_identity_token */
+/* Called by:  main x9, zxid_call_epr, zxid_discover_epr, zxid_map_identity_token, zxid_nidmap_identity_token */
 struct zx_e_Envelope_s* zxid_wsc_call(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, struct zx_e_Envelope_s* env, char** ret_enve)
 {
   int i, res;
@@ -619,7 +619,7 @@ struct zx_str* zxid_call_epr(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, const 
   /* *** add usage directives */
 
   env = zxid_wsc_call(cf, ses, epr, env, &ret_enve);
-  if (!env) {
+  if (!env || env == ZXID_REDIR_OK || !env->Body) {
     ERR("Parsing return value failed %p", env);
     INFO("ret_enve(%s) len=%d", ret_enve, (int)strlen(ret_enve));
     D_DEDENT("call: ");

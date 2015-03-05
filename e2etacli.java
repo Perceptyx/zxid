@@ -5,19 +5,18 @@
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
  * Licensed under Apache License 2.0, see file COPYING.
- * $Id: zxidappdemo.java,v 1.4 2009-11-29 12:23:06 sampo Exp $
+ * $Id: e2etacli.java,v 1.4 2009-11-29 12:23:06 sampo Exp $
  * 20150223, created --Sampo
  *
- * See also: zxid-java.pd, zxidwspdemo.java for server side
+ * See also: e2eta-java.pd, e2etawspdemo.java for server side
  * https://sp.personaldata.eu:8443/e2eTA/app-demo
  *
  * sudo apt-get install openjdk-6-jdk
- * cd syn-e2eta-connector-1.32-Linux-x86_64
- * javac -classpath . e2etacli.java
- * javac -classpath . e2etacli.java
  * javac -classpath ../syn-e2eta-connector-1.32-Linux-x86_64/e2eta.jar e2etacli.java
  *
  * Usage: java -Djava.library.path=syn-e2eta-connector-1.32-Linux-x86_64 e2etacli
+ *
+ * See also: echo '{"op":"read","rsrc":"pds/flow/admin"}' | e2etacall -c 'DEBUG=0x7f&CPATH=/home/sampo/sidemo/zxid/sp.citizendata.eu_8445/' -a https://ssoid.com/idp benny:test123 -t urn:syn:pds:2015
  */
 
 import e2eta.*;
