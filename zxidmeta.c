@@ -910,7 +910,7 @@ static struct zx_md_AdditionalMetadataLocation_s* zxid_md_authority_loc(zxid_con
   return mda;
 }
 
-/*() Generate our SP metadata and return it as a string. */
+/*() Generate our SP metadata and return it as a string. cgi may be specified as null. */
 
 /* Called by:  zxid_genmd, zxid_send_sp_meta, zxid_simple_show_meta */
 struct zx_str* zxid_sp_meta(zxid_conf* cf, zxid_cgi* cgi)

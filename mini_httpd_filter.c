@@ -1,5 +1,5 @@
 /* mini_httpd_filter.c  -  Emulate mod_auth_saml for mini_httpd
- * Copyright (c) 2012-2013 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2015 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2008-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -158,6 +158,25 @@ static char* zxid_mini_httpd_read_post(zxid_conf* cf)
   return res;
 }
 
+static void zxid_mini_httpd_metadata_get_special_case(zxid_conf* cf, const char* uri_path)
+{
+  struct zx_str* ss;
+  char* eid;
+  eid = zxid_my_ent_id_cstr(cf);
+  D("metadata for eid(%s)?", eid);
+  if (!strcmp(uri_path, eid)) {
+    ss = zxid_sp_meta(cf, 0);
+    if (!ss)
+      send_error_and_exit(500, "Internal Server Error", "", "Generating SP metadata failed.");
+    
+    add_headers(200, "OK", "", "", "text/xml; charset=%s", ss->len, (time_t)-1);
+    add_to_response(ss->s, ss->len);
+    send_response();
+    exit(0);  /* This function is called in mini_httpd handle_request() subprocess. */
+  }
+  ZX_FREE(cf->ctx, eid);
+}
+
 /* Called by:  zxid_mini_httpd_filter */
 zxid_ses* zxid_mini_httpd_wsp(zxid_conf* cf, const char* method, const char* uri_path, const char* qs)
 {  
@@ -175,6 +194,7 @@ zxid_ses* zxid_mini_httpd_wsp(zxid_conf* cf, const char* method, const char* uri
       send_error_and_exit(403, "Forbidden", "", "Authorization denied.");
     }
   } else {
+    zxid_mini_httpd_metadata_get_special_case(cf, uri_path);
     ERR("WSP(%s) must be called with POST method (%s)", uri_path, method);
     send_error_and_exit(405, "Method Not Allowed", "", "WSP only accepts POST method.");
   }
@@ -248,6 +268,7 @@ zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, const char* method, const char* uri
       send_error_and_exit(403, "Forbidden", "", "Authorization denied.");
     }
   } else {
+    zxid_mini_httpd_metadata_get_special_case(cf, uri_path);
     ERR("WSP(%s) must be called with POST method (%s)", uri_path, method);
     send_error_and_exit(405, "Method Not Allowed", "", "WSP only accepts POST method.");
   }
@@ -440,7 +461,7 @@ process_zxid_simple_outcome:
     add_headers(200, "OK", "", "", mt?mt:"text/html; charset=%s", len, (time_t)-1);
     add_to_response(res, len);
     send_response();
-    exit(0);  /* This function is called in mini_httpd handle_request() subrprocess. */
+    exit(0);  /* This function is called in mini_httpd handle_request() subprocess. */
   case 'z':
     INFO("User not authorized %d", 0);
     send_error_and_exit(403, "Forbidden", "", "Authorization denied.");

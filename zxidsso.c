@@ -47,7 +47,7 @@
 
 /*() This function makes the policy decision about which profile to
  * use. It is only used if there was no explicit specification in the
- * CGI form (e.g. "Login (P)" button. Currently it is a stub that
+ * CGI form (e.g. "Login (P)" button). Currently it is a stub that
  * always picks the SAML artifact profile. Eventually configuration options
  * or cgi input can be used to determine the profile in a more
  * sophisticated way. Often zxid_mk_authn_req() will override the
@@ -193,8 +193,8 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
   D_INDENT("start_sso: ");
   D("cgi=%p cgi->eid=%p eid(%s) pr_ix=%d", cgi, cgi->eid, STRNULLCHKD(cgi->eid), cgi->pr_ix);
   zxid_sso_set_relay_state_to_return_to_this_url(cf, cgi);
-  if (!cgi->pr_ix || !cgi->eid || !cgi->eid[0]) {
-    D("Either protocol index or entity ID missing %d", cgi->pr_ix);
+  if (!cgi->eid || !cgi->eid[0]) {
+    D("Entity ID missing %p", cgi->eid);
     cgi->err = "IdP URL Missing or incorrect";
     D_DEDENT("start_sso: ");
     return 0;
