@@ -340,6 +340,7 @@ static int chkuid(request_rec* r)
   cgi.uri_path = r?r->uri:0;
   cgi.qs = r?r->args:0;
 
+  D("request_rec sizeof=%d offset(r->uri)=%d offset(r->user)=%d", sizeof(request_rec), (void*)(&(r->uri))-(void*)r, (void*)(&(r->user))-(void*)r);
   D("===== START %s req=%p uri(%s) args(%s) pid=%d cwd(%s)", ZXID_REL, r, r?STRNULLCHKNULL(r->uri):"(r null)", r?STRNULLCHKNULL(r->args):"(r null)", getpid(), getcwd(buf,sizeof(buf)));
   if (cf->wd && *cf->wd)
     chdir(cf->wd);  /* Ensure the working dir is not / (sometimes Apache httpd changes dir) */

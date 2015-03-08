@@ -42,8 +42,8 @@
 /*(c) ZXID configuration and working directory path
  * Where metadata cache and session files are created. Note that the directory
  * is not hashed: you should use a file system that scales easily to oodles
- * of small files in one directory. Say `make dir' to create the directory
- * with proper layout. If you change it here, also edit Makefile. */
+ * of small files in one directory. Say `zxcot -dirs' (or `make dir') to create
+ * the directory with proper layout. If you change it here, also edit Makefile. */
 #ifndef ZXID_PATH
 #ifdef MINGW
 #define ZXID_PATH  "c:/var/zxid/"
