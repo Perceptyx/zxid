@@ -78,7 +78,7 @@ static void chldinit(apr_pool_t* p, server_rec* s)
   D("server_rec=%p", m, s);
   res = curl_global_init(CURL_GLOBAL_ALL); /* vs. _SSL. Also OpenSSL vs. gnuTLS. */
   if(res != CURLE_OK) {
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "Failed to initialize curl library: %u", res);
+    ERR("Failed to initialize curl library: %u", res);
   }
 }
 #endif
@@ -292,7 +292,7 @@ static char* read_post(zxid_conf* cf, request_rec* r)
      * number of bytes otherwise.   */
     ret = ap_get_client_block(r, p, len);
     if (!ret) {
-      ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r, "Failed to read POST data from client.");
+      ERR("Failed to read POST data from client. len=%d",len);
       return 0;  /* HTTP_INTERNAL_SERVER_ERROR */
     }
     
