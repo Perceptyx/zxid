@@ -637,7 +637,9 @@ const command_rec zxid_apache_commands[] = {
 /*(-) Create default configuration in response for Apache <Location> or <Directory>
  * directives. This is then augmented by ZXIDConf directives.
  * This code may run twice: once for syntax check, and then again for
- * production use. Currently we just redo the work.
+ * production use. Currently we just redo the work. Apache stores the
+ * return value of this function and it can be read in chkuid() hook using
+ *    ap_get_module_config((r)->per_dir_config, &auth_saml_module)
  *
  * This is considered internal function to mod_auth_saml. Do not call directly. */
 
@@ -664,7 +666,7 @@ static void* dirconf(apr_pool_t* p, char* d)
  * This is considered internal function to mod_auth_saml. Do not call directly. */
 
 /* Called by: */
-static void reghk(apr_pool_t *p) {
+static void reghk(apr_pool_t* p) {
   D("pool=%p", p);
   //ap_hook_access_checker(authusr,  0, 0, APR_HOOK_MIDDLE);
   ap_hook_check_user_id( chkuid,   0, 0, APR_HOOK_MIDDLE);
