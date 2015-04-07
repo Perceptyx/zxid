@@ -51,6 +51,7 @@ extern char* path;
 extern char* request;
 extern size_t request_size, request_len, request_idx;
 extern size_t content_length;
+extern int zxid_is_proto;             /* Flag to indicate protocol URL like /protected/saml. */
 extern int zxid_is_wsp;               /* Flag to trigger WSP response decoration. */
 extern zxid_ses* zxid_session;
 
@@ -158,6 +159,7 @@ static char* zxid_mini_httpd_read_post(zxid_conf* cf)
   return res;
 }
 
+#if 0
 static void zxid_mini_httpd_metadata_get_special_case(zxid_conf* cf, const char* uri_path)
 {
   struct zx_str* ss;
@@ -176,13 +178,13 @@ static void zxid_mini_httpd_metadata_get_special_case(zxid_conf* cf, const char*
   }
   ZX_FREE(cf->ctx, eid);
 }
+#endif
 
 /* Called by:  zxid_mini_httpd_filter */
-zxid_ses* zxid_mini_httpd_wsp(zxid_conf* cf, const char* method, const char* uri_path, const char* qs)
+static zxid_ses* zxid_mini_httpd_wsp(zxid_conf* cf, zxid_ses* ses, const char* method, const char* uri_path, const char* qs)
 {  
   char* res;
-  zxid_ses* ses = zxid_alloc_ses(cf);
-  
+
   if (*method == 'P') {
     res = zxid_mini_httpd_read_post(cf);
     if (zxid_wsp_validate(cf, ses, 0, res)) {
@@ -194,7 +196,7 @@ zxid_ses* zxid_mini_httpd_wsp(zxid_conf* cf, const char* method, const char* uri
       send_error_and_exit(403, "Forbidden", "", "Authorization denied.");
     }
   } else {
-    zxid_mini_httpd_metadata_get_special_case(cf, uri_path);
+    //zxid_mini_httpd_metadata_get_special_case(cf, uri_path);
     ERR("WSP(%s) must be called with POST method (%s)", uri_path, method);
     send_error_and_exit(405, "Method Not Allowed", "", "WSP only accepts POST method.");
   }
@@ -244,10 +246,9 @@ void zxid_mini_httpd_wsp_response(zxid_conf* cf, zxid_ses* ses, int rfd, char** 
 extern char* authorization;
 
 /* Called by:  zxid_mini_httpd_filter */
-zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, const char* method, const char* uri_path, const char* qs)
+static zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, zxid_ses* ses, const char* method, const char* uri_path, const char* qs)
 {  
   char* res;
-  zxid_ses* ses = zxid_alloc_ses(cf);
 
   if (!authorization || memcmp(authorization, "Bearer ", sizeof("Bearer ")-1)) {
       INFO("UMA(%s) Missing Authorization header", uri_path);
@@ -268,7 +269,7 @@ zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, const char* method, const char* uri
       send_error_and_exit(403, "Forbidden", "", "Authorization denied.");
     }
   } else {
-    zxid_mini_httpd_metadata_get_special_case(cf, uri_path);
+    //zxid_mini_httpd_metadata_get_special_case(cf, uri_path);
     ERR("WSP(%s) must be called with POST method (%s)", uri_path, method);
     send_error_and_exit(405, "Method Not Allowed", "", "WSP only accepts POST method.");
   }
@@ -282,161 +283,12 @@ zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, const char* method, const char* uri
  * 0x0008 10 + 00 = SOAP w/headers as string + no auto redir, no exit(2) */
 #define AUTO_FLAGS 0x6ea8
 
-/* Called by:  zxid_mini_httpd_filter */
-zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, const char* method, const char* uri_path, const char* qs, const char* cookie_hdr)
-{  
-  int ret, len, uri_len, url_len, qs_len;
-  char* local_url;
+static zxid_ses* zxid_mini_httpd_process_zxid_simple_outcome(zxid_conf* cf, zxid_ses* ses, const char* uri_path, const char* cookie_hdr, char* res)
+{
+  int len;
   char* p;
-  char* res;
   char* mt;
-  //const char* set_cookie_hdr;
-  //const char* cur_auth;
-  zxid_ses* ses = zxid_alloc_ses(cf);
-  zxid_cgi cgi;
-  ZERO(&cgi, sizeof(zxid_cgi));
-  cgi.uri_path = (char*)uri_path;
-  cgi.qs = (char*)qs;
-
-  /* Probe for Session ID in cookie. */
-
-  if (cf->ses_cookie_name && *cf->ses_cookie_name) {
-    if (cookie_hdr) {
-      D("found cookie(%s) 3", STRNULLCHK(cookie_hdr));
-      zxid_get_sid_from_cookie(cf, &cgi, cookie_hdr);
-    }
-  }
   
-  /* Redirect hack: deal with externally imposed ACS url that does not follow zxid convention. */
-  
-  qs_len = qs?strlen(qs):0;
-  if (cf->redirect_hack_imposed_url && !strcmp(uri_path, cf->redirect_hack_imposed_url)) {
-    D("Redirect hack: mapping(%s) imposed to zxid(%s)", uri_path, cf->redirect_hack_zxid_url);
-    uri_path = cf->redirect_hack_zxid_url;
-    cgi.uri_path = (char*)uri_path;
-    if (cf->redirect_hack_zxid_qs && *cf->redirect_hack_zxid_qs) {
-      if (qs_len) {
-	/* concatenate redirect_hack_zxid_qs with existing qs */
-	len = strlen(cf->redirect_hack_zxid_qs);
-	p = ZX_ALLOC(cf->ctx, len+1+qs_len+1);
-	strcpy(p, cf->redirect_hack_zxid_qs);
-	p[len] = '&';
-	strcpy(p+len+1, qs);
-	qs = p;
-      } else {
-	qs = cf->redirect_hack_zxid_qs;
-      }
-      qs_len = strlen(qs);
-    }
-    D("After hack uri(%s) args(%s)", STRNULLCHK(uri_path), STRNULLCHK(qs));
-  }
-  
-  D("HERE1 qs_len=%d cgi=%p k(%s) qs(%s)", qs_len, &cgi, STRNULLCHKNULL(cgi.skin), STRNULLCHKNULL(qs));
-  if (qs_len) {
-    /* leak the dup str: the cgi structure will take references to this and change &s to nuls */
-    p = zx_dup_cstr(cf->ctx, qs);
-    zxid_parse_cgi(cf, &cgi, p);
-    D("HERE2 cgi=%p k(%s)", &cgi, STRNULLCHKNULL(cgi.skin));
-  }
-  /* Check if we are supposed to enter zxid due to URL suffix - to
-   * process protocol messages rather than ordinary pages. To do this
-   * correctly we need to ignore the query string part. We are looking
-   * here at an exact match, like /protected/saml, rather than any of
-   * the other documents under /protected/ (which are handled in the
-   * else clause). Both then and else -clause URLs are defined as requiring
-   * SSO by virtue of the web server configuration (SSO_PAT in mini_httpd_zxid). */
-
-  uri_len = strlen(uri_path);
-  for (local_url = cf->burl; *local_url && *local_url != ':' && *local_url != '/'; ++local_url);
-  if (local_url[0] == ':' && local_url[1] == '/' && local_url[2] == '/') {
-    for (local_url += 3; *local_url && *local_url != '/'; ++local_url);
-  }
-  
-  url_len = strlen(local_url);
-  for (p = local_url + url_len - 1; p > local_url; --p)
-    if (*p == '?')
-      break;
-  if (p == local_url)
-    p = local_url + url_len;
-  url_len = p-local_url;
-
-  D("match? uri(%s)=%p cf->burl(%s) qs(%s) rs(%s) op(%c)", uri_path, uri_path, cf->burl, STRNULLCHKNULL(qs), STRNULLCHKNULL(cgi.rs), cgi.op);
-  if (url_len == uri_len && !memcmp(local_url, uri_path, uri_len)) {  /* Exact match */
-    if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("matched uri(%s)=%p cf->burl(%s) qs(%s) rs(%s) op(%c)", uri_path, uri_path, cf->burl, STRNULLCHKNULL(qs), STRNULLCHKNULL(cgi.rs), cgi.op);
-    if (*method == 'P') {
-      res = zxid_mini_httpd_read_post(cf);   /* Will print some debug output */  // ***
-      if (res) {
-	DD("uri(%s)=%p", uri_path, uri_path);
-	if (cgi.op == 'S') {
-	  ret = zxid_sp_soap_parse(cf, &cgi, ses, strlen(res), res);
-	  D("POST soap parse returned %d", ret);
-#if 0
-	  /* *** TODO: SOAP response should not be sent internally unless there is auto */
-	  if (ret == ZXID_SSO_OK) {
-	    ret = zxid_simple_ab_pep(cf, ses, res_len, auto_flags);
-	    D_DEDENT("minizx: ");
-	    return ret;
-	  }
-	  if (auto_flags & ZXID_AUTO_SOAPC || auto_flags & ZXID_AUTO_SOAPH) {
-	    res = zx_dup_cstr(cf->ctx, "n");
-	    if (res_len)
-	      *res_len = 1;
-	    goto done;
-	  }
-	  res = zx_dup_cstr(cf->ctx, ret ? "n" : "*** SOAP error (enable debug to see why)"); 
-	  if (res_len)
-	    *res_len = strlen(res);
-	  goto done;
-#endif
-	} else {
-	  zxid_parse_cgi(cf, &cgi, res);
-	  D("POST CGI parsed. rs(%s)", STRNULLCHKQ(cgi.rs));
-	  DD("uri(%s)=%p", uri_path, uri_path);
-	}
-      }
-    }
-    D("HERE2.1 urls_len=%d local_url(%.*s) url(%s)", url_len, url_len, local_url, cf->burl);
-    if (ONE_OF_2(cgi.op, 'L', 'A')) /* SSO (Login, Artifact) activity overrides current session. */
-      goto step_up;
-    if (!cgi.sid || !zxid_get_ses(cf, ses, cgi.sid)) {
-      D("No session(%s) active op(%c) uri(%s)=%p", STRNULLCHK(cgi.sid), cgi.op, uri_path,uri_path);
-    } else {
-      D("HERE2.2 %d",0);
-      res = zxid_simple_ses_active_cf(cf, &cgi, ses, 0, AUTO_FLAGS);
-      if (res)
-	goto process_zxid_simple_outcome;
-    }
-    /* not logged in, fall thru to step_up */
-  } else {
-    /* Some other page. Just check for session. */
-    if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("other page uri(%s) qs(%s) cf->burl(%s) uri_len=%d url_len=%d", uri_path, STRNULLCHKNULL(qs), cf->burl, uri_len, url_len);
-    if (qs && qs[0] == 'l') {
-      D("Detect login(%s)", qs);
-    } else
-      cgi.op = 'E';   /* Trigger IdP selection screen */
-    p = ZX_ALLOC(cf->ctx, uri_len+1+qs_len+1);
-    strcpy(p, uri_path);
-    if (qs_len) {
-      p[uri_len] = '?';
-      strcpy(p+uri_len+1, qs);
-    }
-    D("HERE3 qs_len=%d cgi=%p k(%s) uri(%s) qs(%s) rs(%s)", qs_len, &cgi, STRNULLCHKNULL(cgi.skin), uri_path, STRNULLCHKNULL(qs), p);
-    // *** p never used. Should there be cgi.rs =p; ?
-    if (cgi.sid && cgi.sid[0] && zxid_get_ses(cf, ses, cgi.sid)) {
-      res = zxid_simple_ses_active_cf(cf, &cgi, ses, 0, AUTO_FLAGS);
-      if (res)
-	goto process_zxid_simple_outcome;
-    } else {
-      D("No session(%s) active op(%c)", STRNULLCHK(cgi.sid), cgi.op);
-    }
-    D("other page: no_ses uri(%s) templ(%s) tf(%s) k(%s) cgi=%p rs(%s)", uri_path, STRNULLCHKNULL(cgi.templ), STRNULLCHKNULL(cf->idp_sel_templ_file), cgi.skin, &cgi, cgi.rs);
-  }
-step_up:
-  DD("before uri(%s)=%p", uri_path, uri_path);
-  res = zxid_simple_no_ses_cf(cf, &cgi, ses, 0, AUTO_FLAGS);
-  DD("after uri(%s)", uri_path);
-
-process_zxid_simple_outcome:
   if (cookie_hdr && cookie_hdr[0]) {
     D("Passing previous cookie(%s) to environment", cookie_hdr);
     zxid_add_attr_to_ses(cf, ses, "cookie", zx_dup_str(cf->ctx, cookie_hdr));
@@ -485,6 +337,172 @@ process_zxid_simple_outcome:
   return ses;
 }
 
+static zxid_ses* zxid_mini_httpd_step_up(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* uri_path, const char* cookie_hdr, char* res)
+{
+  DD("before uri(%s)=%p", uri_path, uri_path);
+  res = zxid_simple_no_ses_cf(cf, cgi, ses, 0, AUTO_FLAGS);
+  DD("after uri(%s)", uri_path);
+  return zxid_mini_httpd_process_zxid_simple_outcome(cf, ses, uri_path, cookie_hdr, res);
+}
+
+/* Called by:  zxid_mini_httpd_filter */
+static zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* method, const char* uri_path, const char* qs, const char* cookie_hdr)
+{  
+  int uri_len;
+  char* res;
+  //const char* set_cookie_hdr;
+  //const char* cur_auth;
+  
+  uri_len = strlen(uri_path);
+  if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("other page uri(%s) qs(%s) cf->burl(%s) uri_len=%d", uri_path, STRNULLCHKNULL(qs), cf->burl, uri_len);
+  if (qs && qs[0] == 'l') {
+    D("Detect login(%s)", qs);
+  } else
+    cgi->op = 'E';   /* Trigger IdP selection screen */
+#if 0
+  p = ZX_ALLOC(cf->ctx, uri_len+1+qs_len+1);
+  strcpy(p, uri_path);
+  if (qs_len) {
+    p[uri_len] = '?';
+    strcpy(p+uri_len+1, qs);
+  }
+  D("HERE3 qs_len=%d cgi=%p k(%s) uri(%s) qs(%s) rs(%s)", qs_len, cgi, STRNULLCHKNULL(cgi->skin), uri_path, STRNULLCHKNULL(qs), p);
+  // *** p never used. Should there be cgi->rs =p; ?
+#endif
+  if (cgi->sid && cgi->sid[0] && zxid_get_ses(cf, ses, cgi->sid)) {
+    res = zxid_simple_ses_active_cf(cf, cgi, ses, 0, AUTO_FLAGS);
+    if (res)
+      return zxid_mini_httpd_process_zxid_simple_outcome(cf, ses, uri_path, cookie_hdr, res);
+  } else {
+    D("No session(%s) active op(%c)", STRNULLCHK(cgi->sid), cgi->op);
+  }
+  D("other page: no_ses uri(%s) templ(%s) tf(%s) k(%s) cgi=%p rs(%s)", uri_path, STRNULLCHKNULL(cgi->templ), STRNULLCHKNULL(cf->idp_sel_templ_file), cgi->skin, cgi, cgi->rs);
+  return zxid_mini_httpd_step_up(cf, cgi, ses, uri_path, cookie_hdr, res);
+}
+
+/*() Special case handling for protocol URLs like /protected/saml (configurable)
+ * This special case is checked before any other processing. Thus the protocol
+ * URL does not have to match SSO_PAT to be effective.
+ * Any exceptional outcome is handled internally and terminates in exit(2),
+ * hence the void return. */
+
+static void zxid_mini_httpd_check_protocol_url(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* method, const char* uri_path, const char* cookie_hdr)
+{
+  int ret, uri_len, url_len;
+  char* local_url;
+  char* p;
+  char* res;
+
+  uri_len = strlen(uri_path);
+  for (local_url = cf->burl; *local_url && *local_url != ':' && *local_url != '/'; ++local_url);
+  if (local_url[0] == ':' && local_url[1] == '/' && local_url[2] == '/') {
+    for (local_url += 3; *local_url && *local_url != '/'; ++local_url);
+  }
+  
+  url_len = strlen(local_url);
+  for (p = local_url + url_len - 1; p > local_url; --p)
+    if (*p == '?')
+      break;
+  if (p == local_url)
+    p = local_url + url_len;
+  url_len = p-local_url;
+
+  /* Check if we are supposed to enter zxid due to URL suffix - to
+   * process protocol messages rather than ordinary pages. To do this
+   * correctly we need to ignore the query string part. We are looking
+   * here at an exact match, like /protected/saml, rather than any of
+   * the other documents under /protected/ (which are handled in the
+   * else clause). Both then and else -clause URLs are defined as requiring
+   * SSO by virtue of the web server configuration (SSO_PAT in mini_httpd_zxid). */
+
+  D("match? uri(%s)=%p cf->burl(%s) qs(%s) rs(%s) op(%c)", uri_path, uri_path, cf->burl, STRNULLCHKNULL(cgi->qs), STRNULLCHKNULL(cgi->rs), cgi->op);
+
+  if (url_len != uri_len || memcmp(local_url, uri_path, uri_len))
+    return; /* Not an Exact match */
+
+  if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("matched uri(%s)=%p cf->burl(%s) qs(%s) rs(%s) op(%c)", uri_path, uri_path, cf->burl, STRNULLCHKNULL(cgi->qs), STRNULLCHKNULL(cgi->rs), cgi->op);
+  if (*method == 'P') {
+    res = zxid_mini_httpd_read_post(cf);   /* Will print some debug output */  // ***
+    if (res) {
+      DD("uri(%s)=%p", uri_path, uri_path);
+      if (cgi->op == 'S') {
+	ret = zxid_sp_soap_parse(cf, cgi, ses, strlen(res), res);
+	D("POST soap parse returned %d", ret);
+#if 0
+	/* *** TODO: SOAP response should not be sent internally unless there is auto */
+	if (ret == ZXID_SSO_OK) {
+	  ret = zxid_simple_ab_pep(cf, ses, res_len, auto_flags);
+	  D_DEDENT("minizx: ");
+	  return ret;
+	}
+	if (auto_flags & ZXID_AUTO_SOAPC || auto_flags & ZXID_AUTO_SOAPH) {
+	  res = zx_dup_cstr(cf->ctx, "n");
+	  if (res_len)
+	    *res_len = 1;
+	  goto done;
+	}
+	res = zx_dup_cstr(cf->ctx, ret ? "n" : "*** SOAP error (enable debug to see why)"); 
+	if (res_len)
+	  *res_len = strlen(res);
+	goto done;
+#endif
+      } else {
+	zxid_parse_cgi(cf, cgi, res);
+	D("POST CGI parsed. rs(%s)", STRNULLCHKQ(cgi->rs));
+	DD("uri(%s)=%p", uri_path, uri_path);
+      }
+    }
+  }
+  D("HERE2.1 urls_len=%d local_url(%.*s) url(%s)", url_len, url_len, local_url, cf->burl);
+  if (ONE_OF_2(cgi->op, 'L', 'A')) /* SSO (Login, Artifact) activity overrides current session. */
+    goto step_up;
+  if (!cgi->sid || !zxid_get_ses(cf, ses, cgi->sid)) {
+    D("No session(%s) active op(%c) uri(%s)=%p", STRNULLCHK(cgi->sid), cgi->op, uri_path,uri_path);
+  } else {
+    D("HERE2.2 %d",0);
+    res = zxid_simple_ses_active_cf(cf, cgi, ses, 0, AUTO_FLAGS);
+    if (res) {
+      zxid_mini_httpd_process_zxid_simple_outcome(cf, ses, uri_path, cookie_hdr, res);
+      exit(0);  /* This function is called in mini_httpd handle_request() subprocess. */
+    }
+  }
+  /* not logged in, fall thru to step_up */
+step_up:
+  zxid_mini_httpd_step_up(cf, cgi, ses, uri_path, cookie_hdr, res);
+  exit(0);  /* This function is called in mini_httpd handle_request() subprocess. */
+}
+
+/*(-)  Redirect hack: deal with externally imposed ACS url that does not follow zxid convention.
+ * If the hack is active, returns the new qs and via pointer the new uri_path. */
+
+static char* zxid_mini_httpd_check_redirect_hack(zxid_conf* cf, zxid_cgi* cgi, char** uri_path, const char* qs)
+{
+  int len, qs_len = qs?strlen(qs):0;
+  char* p;
+  cgi->uri_path = (char*)*uri_path;
+  cgi->qs = (char*)qs;
+
+  if (cf->redirect_hack_imposed_url && !strcmp(*uri_path, cf->redirect_hack_imposed_url)) {
+    D("mapping(%s) imposed to zxid(%s)", *uri_path, cf->redirect_hack_zxid_url);
+    *uri_path = cf->redirect_hack_zxid_url;
+    cgi->uri_path = *uri_path;
+    if (cf->redirect_hack_zxid_qs && *cf->redirect_hack_zxid_qs) {
+      if (qs_len) {
+	/* concatenate redirect_hack_zxid_qs with existing qs */
+	len = strlen(cf->redirect_hack_zxid_qs);
+	p = ZX_ALLOC(cf->ctx, len+1+qs_len+1);
+	strcpy(p, cf->redirect_hack_zxid_qs);
+	p[len] = '&';
+	strcpy(p+len+1, qs);
+	cgi->qs = p;
+      } else {
+	cgi->qs = cf->redirect_hack_zxid_qs;
+      }
+    }
+  }
+  return cgi->qs;
+}
+
 /*() Handle SSO or ID-WSF SSO
  * Called from mini_httpd handle_request() if zxid is configured.
  * In many cases entire situation is handled in this function
@@ -496,23 +514,45 @@ process_zxid_simple_outcome:
 /* Called by:  handle_request */
 zxid_ses* zxid_mini_httpd_filter(zxid_conf* cf, const char* method, const char* uri_path, const char* qs, const char* cookie_hdr)
 {
-  zxid_ses* ses;
+  zxid_ses* ses = zxid_alloc_ses(cf);
   char buf[256];
+  char* p;
+  zxid_cgi cgi;
+  ZERO(&cgi, sizeof(zxid_cgi));
+
   D(CC_GREENY("===== START %s uri(%s) qs(%s) uid=%d pid=%d gid=%d cwd(%s)"), ZXID_REL, uri_path, STRNULLCHKNULL(qs), getpid(), geteuid(), getegid(), getcwd(buf,sizeof(buf)));
   if (cf->wd && *cf->wd)
     chdir(cf->wd);
 
+  qs = zxid_mini_httpd_check_redirect_hack(cf, &cgi, (char**)&uri_path, qs);
+  if (qs && *qs) {
+    /* leak the dup str: the cgi structure will take references to this and change &s to nuls */
+    p = zx_dup_cstr(cf->ctx, qs);
+    zxid_parse_cgi(cf, &cgi, p);
+  }
+
+  /* Probe for Session ID in cookie. */
+
+  if (cf->ses_cookie_name && *cf->ses_cookie_name) {
+    if (cookie_hdr) {
+      D("found cookie(%s) 3", STRNULLCHK(cookie_hdr));
+      zxid_get_sid_from_cookie(cf, &cgi, cookie_hdr);
+    }
+  }
+  
+  zxid_mini_httpd_check_protocol_url(cf, &cgi, ses, method, uri_path, cookie_hdr);
+  
   zxid_is_wsp = 0;
   if (zx_match(cf->wsp_pat, uri_path)) {
     zxid_is_wsp = 1;
-    ses = zxid_mini_httpd_wsp(cf, method, uri_path, qs);
+    ses = zxid_mini_httpd_wsp(cf, ses, method, uri_path, qs);
     return ses;
   } else if (zx_match(cf->uma_pat, uri_path)) {
     zxid_is_wsp = 1;
-    ses = zxid_mini_httpd_wsp(cf, method, uri_path, qs);
+    ses = zxid_mini_httpd_uma(cf, ses, method, uri_path, qs);
     return ses;
   } else if (zx_match(cf->sso_pat, uri_path)) {
-    ses = zxid_mini_httpd_sso(cf, method, uri_path, qs, cookie_hdr);
+    ses = zxid_mini_httpd_sso(cf, &cgi, ses, method, uri_path, qs, cookie_hdr);
     return ses;
   } else {
     D("No SSO or WSP match(%s) wsp_pat(%s) uma_pat(%s) sso_pat(%s)", uri_path, STRNULLCHK(cf->wsp_pat), STRNULLCHK(cf->uma_pat), STRNULLCHK(cf->sso_pat));

@@ -288,6 +288,7 @@ zxid_cgi* zxid_new_cgi(zxid_conf* cf, char* qs)
  * will be deposited in cgi->sid. If no session ID is found, then cgi->sid
  * is not modified. The name of the cookie is determined by configuration
  * option ~SES_COOKIE_NAME~ (see zxidconf.h).
+ * N.B. The session itself is not loaded, just the cgi->sid is populated.
  *
  * return:: none, but cgi->sid is modified
  *
