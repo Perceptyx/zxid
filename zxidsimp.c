@@ -1,5 +1,5 @@
 /* zxidsimp.c  -  Handwritten zxid_simple() API
- * Copyright (c) 2012-2014 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -25,6 +25,7 @@
  * 17.11.2013, move redir_to_content feature to zxid_simple() --Sampo
  * 20.11.2013, move defaultqs feature feature to zxid_simple() --Sampo
  * 14.2.2014,  added redirafter feature for local IdP logins (e.g. zxidatsel.pl) --Sampo
+ * 1.4.2015,   fixed skin based template path in case it does not have directory --Sampo
  *
  * Login button abbreviations
  * A2 = SAML 2.0 Artifact Profile
@@ -380,10 +381,12 @@ struct zx_str* zxid_template_page_cf(zxid_conf* cf, zxid_cgi* cgi, const char* t
     for (p = templ_path + strlen(templ_path)-1;
 	 p >= templ_path && !ONE_OF_2(*p, '/', '\\');
 	 --p);
-
-    templ = read_all_alloc(cf->ctx, "templ", 1, 0, "%.*s/%s%s",
-			   p-templ_path, templ_path, cgi->skin, p);
-    D("Tried to read from skin(%s) %p", cgi->skin, templ);
+    if (p < templ_path)  /* there was no directory component */
+      templ = read_all_alloc(cf->ctx, "templ", 1, 0, "%s/%s", cgi->skin, templ_path);
+    else
+      templ = read_all_alloc(cf->ctx, "templ", 1, 0, "%.*s/%s%s",
+			     p-templ_path, templ_path, cgi->skin, p);
+    D("Tried to read from skin(%s) templ_path(%s) %p", cgi->skin, templ_path, templ);
   }
   
   if (!templ)

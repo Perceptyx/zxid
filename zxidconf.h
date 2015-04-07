@@ -907,7 +907,7 @@
  * Any URL matching this pattern requires SSO. However
  * WSP_PAT is matched first. Understood by zxid_httpd and mini_httpd_zxid. */
 
-#define ZXID_SSO_PAT "*"
+#define ZXID_SSO_PAT "**"
 
 /*(c) Anonymous can see protected content
  * If ANON_OK is set and matches the local URL - see zx_match(), SSO failure

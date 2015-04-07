@@ -360,6 +360,7 @@ zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, const char* method, const char* uri
     p = local_url + url_len;
   url_len = p-local_url;
 
+  D("match? uri(%s)=%p cf->burl(%s) qs(%s) rs(%s) op(%c)", uri_path, uri_path, cf->burl, STRNULLCHKNULL(qs), STRNULLCHKNULL(cgi.rs), cgi.op);
   if (url_len == uri_len && !memcmp(local_url, uri_path, uri_len)) {  /* Exact match */
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("matched uri(%s)=%p cf->burl(%s) qs(%s) rs(%s) op(%c)", uri_path, uri_path, cf->burl, STRNULLCHKNULL(qs), STRNULLCHKNULL(cgi.rs), cgi.op);
     if (*method == 'P') {
@@ -420,6 +421,7 @@ zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, const char* method, const char* uri
       strcpy(p+uri_len+1, qs);
     }
     D("HERE3 qs_len=%d cgi=%p k(%s) uri(%s) qs(%s) rs(%s)", qs_len, &cgi, STRNULLCHKNULL(cgi.skin), uri_path, STRNULLCHKNULL(qs), p);
+    // *** p never used. Should there be cgi.rs =p; ?
     if (cgi.sid && cgi.sid[0] && zxid_get_ses(cf, ses, cgi.sid)) {
       res = zxid_simple_ses_active_cf(cf, &cgi, ses, 0, AUTO_FLAGS);
       if (res)
