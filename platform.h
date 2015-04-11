@@ -45,6 +45,7 @@ HANDLE zx_CreateFile(LPCTSTR lpFileName,
 #define gid_t int
 #define geteuid() 0
 #define getegid() 0
+#define getgroups(s,l) 0
 #define stat(X,Y) zx_stat(X,Y)
 #define openlog(a,b,c)
 #define syslog(a,...)
@@ -90,6 +91,7 @@ typedef struct stack_st STACK;  /* MSVC seems to have some problem with openssl/
 #define getpid()  0
 #define geteuid() 0
 #define getegid() 0
+#define getgroups(s,l) 0
 #define chdir(path) SetCurrentDirectory(path)
 #define getcwd(b,n) "getcwd not supported on Win32"  /* *** consider GetCurrentDirectory() */
 unsigned int sleep(unsigned int secs);
@@ -167,6 +169,7 @@ int execve(const char* f, char *const argv[], char *const envp[]);
 char* getcwd(char* buf, size_t size);
 int geteuid(void);
 int getegid(void);
+int getgroups(int,gid_t*);
 int getpid(void);
 int link(const char* old, const char* new);
 int lockf(int fd, int cmd, int len);     /* Depends on current seek pos: problem in append */

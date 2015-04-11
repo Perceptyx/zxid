@@ -33,6 +33,7 @@
 #include <zx/errmac.h>
 #include <zx/zxid.h>
 #include <zx/zxidutil.h>
+#include <zx/zxidpriv.h>
 #include <zx/c/zxidvers.h>
 
 #ifdef MINGW
@@ -44,6 +45,7 @@
 zxid_ses* zxid_mini_httpd_filter(zxid_conf* cf, const char* method, const char* uri_path, const char* qs, const char* cookie_hdr);
 void zxid_mini_httpd_wsp_response(zxid_conf* cf, zxid_ses* ses, int rfd, char** response, size_t* response_size, size_t* response_len, int br_ix);
 int zxid_pool2env(zxid_conf* cf, zxid_ses* ses, char** envp, int envn, int max_envn, const char* uri_path, const char* qs);
+zxid_ses* zxid_mini_httpd_step_up(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* uri_path, const char* cookie_hdr);
 
 zxid_conf* zxid_cf;      /* ZXID enable flag and config string, zero initialized per POSIX */
 zxid_ses* zxid_session;  /* Non-null if SSO or session from cookie or WSP validate */
@@ -375,7 +377,7 @@ static char* file_details(const char* dir, const char* name) {
   (void) strftime(f_time, sizeof(f_time), "%d%b%Y %H:%M", localtime(&sb.st_mtime));
   str_copy_and_url_encode(encname, sizeof(encname), name);
   (void) snprintf(buf, sizeof(buf), "<A HREF=\"%s\">%-32.32s</A>    %15s %14lld\n",
-		  encname, name, f_time, (int64_t)sb.st_size);
+		  encname, name, f_time, (long long int)sb.st_size);
   return buf;
 }
 
@@ -1545,6 +1547,10 @@ static void de_dotdot(char* file)
   }
 }
 
+/*() Walk file name buffer backwards to extract the longest
+ * prefix that corresponds to stat'able file. Anything
+ * beyond this is considered PATH_INFO. */
+
 /* Called by:  handle_request */
 static int get_pathinfo(void) {
   int r;
@@ -1632,7 +1638,7 @@ static void do_file(void) {
       add_headers(200, "Ok", "", mime_encodings, fixed_mime_type, sb.st_size, sb.st_mtime);
     } else {
       D("206 Content-Range %d-%d/%d", rstart, rend, (int)sb.st_size);
-      sprintf(buf, "Content-Range: %d-%d/%d", rstart, rend, sb.st_size);
+      sprintf(buf, "Content-Range: %d-%d/%lld", rstart, rend, (long long int)sb.st_size);
       add_headers(206, "Partial Content", buf, mime_encodings, fixed_mime_type,
 		  rend-rstart+1, sb.st_mtime);
       lseek(fd, rstart, SEEK_SET);
@@ -2255,7 +2261,7 @@ void add_headers(int s, char* title, char* extra_header, char* me, char* mt, off
     add_to_response(buf, buflen);
   }
   if (bytes >= 0) {
-    buflen = snprintf(buf, sizeof(buf), "Content-Length: %lld\015\012", (int64_t) bytes);
+    buflen = snprintf(buf, sizeof(buf), "Content-Length: %lld\015\012", (long long int) bytes);
     add_to_response(buf, buflen);
   }
   if (p3p != 0 && p3p[0] != '\0') {
@@ -2391,6 +2397,13 @@ static void send_authenticate(char* realm) {
   send_error_and_exit(401, "Unauthorized", header, "Authorization required.");
 }
 
+/*() Check that file (or CGI or directory) access is permitted.
+ * First, if UNIX_GROUP_AZ_MAP has been configured, the current
+ * user's attributes, typically role or o (organization), are checked
+ * against the group. This is typically used with SSO.
+ * Second, the .htaccess file in the directory, if any, is checked (i.e. HTTP
+ * Basic Auth with usename and password).
+ */
 /* Called by:  do_dir, do_file */
 static void auth_check(char* dirname)
 {
@@ -2403,6 +2416,24 @@ static void auth_check(char* dirname)
   int len;
   FILE* fp;
   char* cryp;
+  zxid_cgi cgi;
+
+  if (zxid_cf && zxid_cf->unix_grp_az_map) {
+    /* The stat buffer has already been filled by caller */
+    if (sb.st_mode & S_IROTH)
+      return;    /* Ok. World readable file, directory, or executable. */
+    if (sb.st_mode & S_IRGRP) {
+      if (zxid_unix_grp_az_check(zxid_cf, zxid_session, sb.st_gid))
+	return;  /* Permit */
+      if (!zxid_session || !zxid_session->nid || !zxid_session->nid[0]) {
+	/* User had not logged in yet */
+	ZERO(&cgi, sizeof(zxid_cgi));
+	cgi.op = 'E';
+	zxid_mini_httpd_step_up(zxid_cf, &cgi, 0, path, 0);
+	exit(0);
+      }
+    }
+  }
 
   if (dirname[strlen(dirname) - 1] == '/')
     (void) snprintf(authpath, sizeof(authpath), "%s%s", dirname, AUTH_FILE);
@@ -2551,7 +2582,7 @@ static void make_log_entry(void)
   else
     (void) snprintf(url, sizeof(url), "%s", path?path:"");
   if (bytes >= 0)
-    (void) snprintf(bytes_str, sizeof(bytes_str), "%lld", (int64_t)bytes);
+    (void) snprintf(bytes_str, sizeof(bytes_str), "%lld", (long long int)bytes);
   else
     (void) strcpy(bytes_str, "-");
   now = time(0);

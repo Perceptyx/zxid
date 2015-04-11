@@ -87,32 +87,3 @@ function authn_sso_init() {
 //function authn_sso_user_logout($account) {}
 
 /* EOF - authn_sso.module */
-
-/*
-
-'field_name_first' => 
-  array (
-    'und' => 
-    array (
-      0 => 
-      array (
-        'value' => 'Sampo',
-        'format' => NULL,
-        'safe_value' => 'Sampo',
-      ),
-    ),
-  ),
-   'field_name_last' => 
-  array (
-    'und' => 
-    array (
-      0 => 
-      array (
-        'value' => 'Kellomaki',
-        'format' => NULL,
-        'safe_value' => 'Kellomaki',
-      ),
-    ),
-  ),
-
-*/

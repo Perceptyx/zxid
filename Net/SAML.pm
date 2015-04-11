@@ -1088,6 +1088,8 @@ use vars qw(@ISA %OWNER %ITERATORS %BLESSEDMEMBERS);
 *swig_wsp_localpdp_obl_emit_set = *Net::SAMLc::zxid_conf_wsp_localpdp_obl_emit_set;
 *swig_wsc_localpdp_obl_accept_get = *Net::SAMLc::zxid_conf_wsc_localpdp_obl_accept_get;
 *swig_wsc_localpdp_obl_accept_set = *Net::SAMLc::zxid_conf_wsc_localpdp_obl_accept_set;
+*swig_unix_grp_az_map_get = *Net::SAMLc::zxid_conf_unix_grp_az_map_get;
+*swig_unix_grp_az_map_set = *Net::SAMLc::zxid_conf_unix_grp_az_map_set;
 *swig_bootstrap_level_get = *Net::SAMLc::zxid_conf_bootstrap_level_get;
 *swig_bootstrap_level_set = *Net::SAMLc::zxid_conf_bootstrap_level_set;
 *swig_max_soap_retry_get = *Net::SAMLc::zxid_conf_max_soap_retry_get;

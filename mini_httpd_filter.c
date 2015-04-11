@@ -337,9 +337,12 @@ static zxid_ses* zxid_mini_httpd_process_zxid_simple_outcome(zxid_conf* cf, zxid
   return ses;
 }
 
-static zxid_ses* zxid_mini_httpd_step_up(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* uri_path, const char* cookie_hdr, char* res)
+zxid_ses* zxid_mini_httpd_step_up(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* uri_path, const char* cookie_hdr)
 {
+  char* res;
   DD("before uri(%s)=%p", uri_path, uri_path);
+  if (!ses)
+    ses = zxid_alloc_ses(cf);
   res = zxid_simple_no_ses_cf(cf, cgi, ses, 0, AUTO_FLAGS);
   DD("after uri(%s)", uri_path);
   return zxid_mini_httpd_process_zxid_simple_outcome(cf, ses, uri_path, cookie_hdr, res);
@@ -377,7 +380,7 @@ static zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
     D("No session(%s) active op(%c)", STRNULLCHK(cgi->sid), cgi->op);
   }
   D("other page: no_ses uri(%s) templ(%s) tf(%s) k(%s) cgi=%p rs(%s)", uri_path, STRNULLCHKNULL(cgi->templ), STRNULLCHKNULL(cf->idp_sel_templ_file), cgi->skin, cgi, cgi->rs);
-  return zxid_mini_httpd_step_up(cf, cgi, ses, uri_path, cookie_hdr, res);
+  return zxid_mini_httpd_step_up(cf, cgi, ses, uri_path, cookie_hdr);
 }
 
 /*() Special case handling for protocol URLs like /protected/saml (configurable)
@@ -468,7 +471,7 @@ static void zxid_mini_httpd_check_protocol_url(zxid_conf* cf, zxid_cgi* cgi, zxi
   }
   /* not logged in, fall thru to step_up */
 step_up:
-  zxid_mini_httpd_step_up(cf, cgi, ses, uri_path, cookie_hdr, res);
+  zxid_mini_httpd_step_up(cf, cgi, ses, uri_path, cookie_hdr);
   exit(0);  /* This function is called in mini_httpd handle_request() subprocess. */
 }
 

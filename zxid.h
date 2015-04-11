@@ -296,6 +296,8 @@ struct zxid_conf {
   struct zxid_obl_list* wsp_localpdp_obl_req;
   char* wsp_localpdp_obl_emit;
   struct zxid_obl_list* wsc_localpdp_obl_accept;
+
+  struct zxid_map*   unix_grp_az_map;
   
   int   bootstrap_level;     /* How many layers of bootstraps are generated. */
   int   max_soap_retry;      /* How many times a ID-WSF SOAP call can be retried (update EPR) */
@@ -342,7 +344,6 @@ struct zxid_conf {
   char  log_act;
   char  log_issue_a7n;
   char  log_issue_msg;
-
   char  log_rely_a7n;
   char  log_rely_msg;
   char  log_err_in_act;      /* Log errors to action log flag (may also log to error log) */
@@ -352,7 +353,6 @@ struct zxid_conf {
   char  log_level;           /* act log level: 0=audit, 1=audit+extio, 2=audit+extio+events */
   char  user_local;          /* Whether local user accounts should be maintained. */
   char  redir_to_content;    /* Should explicit redirect to content be used (vs. internal redir) */
-
   char  remote_user_ena;
   char  show_tech;
   char  bare_url_entityid;

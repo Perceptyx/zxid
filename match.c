@@ -32,7 +32,8 @@
 #include <string.h>
 
 /* Called by:  zx_match x2, zx_match_one */
-static int zx_match_one( const char* pat, int patlen, const char* str ) {
+static int zx_match_one(const char* pat, int patlen, const char* str)
+{
   const char* p;
   int i, pl;
   
@@ -70,7 +71,8 @@ static int zx_match_one( const char* pat, int patlen, const char* str ) {
  * also slash (/). */
 
 /* Called by:  chkuid, do_file, really_check_referer x3, send_error_and_exit, zxid_mini_httpd_filter x2 */
-int zx_match( const char* pat, const char* str ) {
+int zx_match(const char* pat, const char* str)
+{
   const char* or_clause;
   for (;;) {
     or_clause = strchr( pat, '|' );

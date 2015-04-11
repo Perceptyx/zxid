@@ -18268,6 +18268,71 @@ XS(_wrap_zxid_conf_wsc_localpdp_obl_accept_get) {
 }
 
 
+XS(_wrap_zxid_conf_unix_grp_az_map_set) {
+  {
+    struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
+    struct zxid_map *arg2 = (struct zxid_map *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    int argvi = 0;
+    dXSARGS;
+    
+    if ((items < 2) || (items > 2)) {
+      SWIG_croak("Usage: zxid_conf_unix_grp_az_map_set(self,unix_grp_az_map);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_conf_unix_grp_az_map_set" "', argument " "1"" of type '" "struct zxid_conf *""'"); 
+    }
+    arg1 = (struct zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_map, SWIG_POINTER_DISOWN |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_conf_unix_grp_az_map_set" "', argument " "2"" of type '" "struct zxid_map *""'"); 
+    }
+    arg2 = (struct zxid_map *)(argp2);
+    if (arg1) (arg1)->unix_grp_az_map = arg2;
+    ST(argvi) = sv_newmortal();
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_conf_unix_grp_az_map_get) {
+  {
+    struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    int argvi = 0;
+    struct zxid_map *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 1) || (items > 1)) {
+      SWIG_croak("Usage: zxid_conf_unix_grp_az_map_get(self);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_conf_unix_grp_az_map_get" "', argument " "1"" of type '" "struct zxid_conf *""'"); 
+    }
+    arg1 = (struct zxid_conf *)(argp1);
+    result = (struct zxid_map *) ((arg1)->unix_grp_az_map);
+    ST(argvi) = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_zxid_map, 0 | SWIG_SHADOW); argvi++ ;
+    
+    XSRETURN(argvi);
+  fail:
+    
+    SWIG_croak_null();
+  }
+}
+
+
 XS(_wrap_zxid_conf_bootstrap_level_set) {
   {
     struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
@@ -50057,6 +50122,8 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zxid_conf_wsp_localpdp_obl_emit_get", _wrap_zxid_conf_wsp_localpdp_obl_emit_get},
 {"Net::SAMLc::zxid_conf_wsc_localpdp_obl_accept_set", _wrap_zxid_conf_wsc_localpdp_obl_accept_set},
 {"Net::SAMLc::zxid_conf_wsc_localpdp_obl_accept_get", _wrap_zxid_conf_wsc_localpdp_obl_accept_get},
+{"Net::SAMLc::zxid_conf_unix_grp_az_map_set", _wrap_zxid_conf_unix_grp_az_map_set},
+{"Net::SAMLc::zxid_conf_unix_grp_az_map_get", _wrap_zxid_conf_unix_grp_az_map_get},
 {"Net::SAMLc::zxid_conf_bootstrap_level_set", _wrap_zxid_conf_bootstrap_level_set},
 {"Net::SAMLc::zxid_conf_bootstrap_level_get", _wrap_zxid_conf_bootstrap_level_get},
 {"Net::SAMLc::zxid_conf_max_soap_retry_set", _wrap_zxid_conf_max_soap_retry_set},

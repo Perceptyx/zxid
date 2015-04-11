@@ -957,7 +957,40 @@ Liberty ID-WSF UsageDirective has no way of separating between
 the two cases, we can make the distinction at the level of the
 XACML <xa:Oblication> tag's ~FullfillOn~ XML attribute. (*** specify values)
 
+5.5 Unix Group Authorization, UNIX_GRP_AZ_MAP
+---------------------------------------------
 
+Unix Group Authorization is a special authorization mode available
+only on zxid_httpd. The idea is to map SSO attribute, typically role
+or o (organization), to a Unix group and then check if the file,
+that is accessed, gives group read permission to the Unix group.
+World readable files will always be permitted.
+
+To use Unix Group Authorization, first you need to arrange the httpd to
+belong to all Unix groups that you want to use.
+Then you need to organize the IdP to
+send suitable attributes (or configure local attribute store
+to provide the attribute for the user) and finally specify, in
+SP zxid.conf, UNIX_GRP_AZ_MAP, which has the following syntax:
+
+  UNIX_GRP_AZ_MAP=affil$attr$val$group$ext
+
+where
+
+affil:: Specifies who is allowed to supply the attribute. Typically
+    the IdP EntityID. Specifying '**' accepts any IdP, but this
+    is problematic if different IdPs use same attribute name to
+    mean different things. Suffix and prefix matching can be
+    performed using "**" and "*".
+attr:: The name of the SSO attribute, e.g "role" or "o" (organization).
+    Can also be specified as "*", which is interpretted as any
+    user from the IdP specified in affil. No other wild carding
+    is supported.
+val:: The value of the attribute that needs to match. Prefix and
+    suffix matching using "*" is supported. Use | to
+    supply alternatives.
+group:: The Unix group name.
+ext:: Extension field.
 
 6 Full Configuration Option Reference
 =====================================

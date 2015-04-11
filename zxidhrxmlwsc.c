@@ -239,7 +239,7 @@ int main(int argc, char** argv)
     
     D("Here %p", epr);
     env = zxid_wsc_call(cf, ses, epr, env, 0);
-    if (!env || env == ZXID_REDIR_OK || !env->Body) {
+    if (!env || env == (void*)ZXID_REDIR_OK || !env->Body) {
       ERR("Web services call failed %p", env);
       break;
     }
@@ -273,7 +273,7 @@ int main(int argc, char** argv)
         
     env = zxid_wsc_call(cf, ses, epr, env, 0);
     D("HERE env=%p", env);
-    if (!env || env == ZXID_REDIR_OK || !env->Body) {
+    if (!env || env == (void*)ZXID_REDIR_OK || !env->Body) {
       ERR("Web services call failed %d", 0);
       break;
     }
@@ -316,7 +316,7 @@ int main(int argc, char** argv)
     //env = zxid_new_envf(cf, "<idhrxml:Delete><idhrxml:DeleteItem><idhrxml:Select>%s</idhrxml:Select></idhrxml:DeleteItem></idhrxml:Delete>", cgi.select);
     env = zxid_wsc_call(cf, ses, epr, env, 0);
     D("HERE env=%p", env);
-    if (!env || env == ZXID_REDIR_OK || !env->Body) {
+    if (!env || env == (void*)ZXID_REDIR_OK || !env->Body) {
       ERR("Web services call failed %p", env);
       break;
     }

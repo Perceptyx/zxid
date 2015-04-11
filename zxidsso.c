@@ -766,7 +766,7 @@ int zxid_sp_sso_finalize(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, zxid_a7n* 
   DD("Creating session... %d", 0);
   ses->ssores = 0;
   zxid_put_ses(cf, ses);
-  zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest attributes and bootstrap(s) */
+  zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest bootstrap(s) from attribute statements */
   cgi->msg = "SSO completed and session created.";
   cgi->op = '-';  /* Make sure management screen does not try to redispatch. */
   zxid_put_user(cf, &ses->nameid->Format->g, &ses->nameid->NameQualifier->g, &ses->nameid->SPNameQualifier->g, ZX_GET_CONTENT(ses->nameid), 0);

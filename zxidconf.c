@@ -1,5 +1,5 @@
 /* zxidconf.c  -  Handwritten functions for parsing ZXID configuration file
- * Copyright (c) 2012-2013 Synergetics (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2015 Synergetics (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -29,6 +29,7 @@
  * 20.11.2013, added %d expansion for VURL, added ECHO for debug prints --Sampo
  * 29.11.2013, added INCLUDE feature --Sampo
  * 4.12.2013,  changed URL to BURL --Sampo
+ * 11.4.2015,  added UNIX_GRP_AZ_MAP --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -36,11 +37,14 @@
 #include <malloc.h>
 #include <memory.h>
 #include <string.h>
+#include <sys/types.h>
+#include <grp.h>
 #ifdef USE_CURL
 #include <curl/curl.h>
 #endif
 
 #include "errmac.h"
+#include "zx.h"
 #include "zxid.h"
 #include "zxidutil.h"
 #include "zxidconf.h"
@@ -550,6 +554,100 @@ struct zxid_map* zxid_load_map(zxid_conf* cf, struct zxid_map* map, char* v)
   return map;
 }
 
+/*() Parse unix_grp_az_map specification and add it to linked list
+ * srcns$A$rule$b$ext;src$A$rule$b$ext;...
+ * The list ends up being built in reverse order, which at runtime
+ * causes last stanzas to be evaluated first and first match is used.
+ * Thus you should place most specific rules last and most generic rules first.
+ * See also: zxid_find_map() and zxid_map_val()
+ */
+
+/* Called by:  zxid_init_conf x7, zxid_mk_usr_a7n_to_sp, zxid_parse_conf_raw x7, zxid_read_map */
+struct zxid_map* zxid_load_unix_grp_az_map(zxid_conf* cf, struct zxid_map* map, char* v)
+{
+  char* ns;
+  char* A;
+  char* val;
+  char* group;
+  char* ext;
+  char* p = v;
+  int len, n_grps, i;
+  struct zxid_map* mm;
+  struct group* grp;
+  gid_t* gids;
+
+  DD("v(%s)", v);
+
+  n_grps = getgroups(0,0);
+  gids = ZX_ALLOC(cf->ctx, (n_grps+1)*sizeof(gid_t));
+  getgroups(n_grps, gids);
+  gids[n_grps] = getegid();  /* getgroups(2) is not guaranteed to return egid */
+
+  while (p && *p) {
+    ns = p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed UNIX_GRP_AZ_MAP directive: source namespace missing at pos %d", ((int)(p-v)));
+      return map;
+    }
+
+    A = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed UNIX_GRP_AZ_MAP directive: source attribute name missing at pos %d", ((int)(p-v)));
+      return map;
+    }
+
+    val = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed UNIX_GRP_AZ_MAP directive: value missing at pos %d", ((int)(p-v)));
+      return map;
+    }
+
+    group = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed UNIX_GRP_AZ_MAP directive: unix group name missing at pos %d", ((int)(p-v)));
+      return map;
+    }
+    
+    ext = ++p;
+    len = strcspn(p, ";\n");  /* Stanza ends in separator ; or end of string nul */
+    p = ext + len;
+    
+    mm = ZX_ZALLOC(cf->ctx, struct zxid_map);
+    mm->n = map;
+    map = mm;
+    
+    COPYVAL(mm->ns,  ns,  A-1);
+    COPYVAL(mm->src, A,   val-1);
+    COPYVAL(mm->dst, val, ext-1);
+    COPYVAL(mm->ext, ext, p);
+    
+    grp = getgrnam(group);
+    if (grp) {
+      for (i = 0; i <= n_grps; ++i)
+	if (grp->gr_gid == gids[i])
+	  goto have_group;
+      ERR("UNIX_GRP_AZ_MAP: The current process does not belong to unix group name %s at pos %d (Config Error: see /etc/group for listing of groups)", group, ((int)(p-v)));
+      return map;      
+    have_group:
+      mm->rule = grp->gr_gid;
+    } else {
+      ERR("UNIX_GRP_AZ_MAP: unix group name %s does not exist at pos %d (Config Error: see /etc/group for listing of groups)", group, ((int)(p-v)));
+      return map;      
+    }
+
+    DD("map ns(%s) A(%s) val(%s) gid=%d ext(%s)", mm->ns, mm->src, mm->dst, mm->rule, mm->ext);
+    if (!*p || *p == '\n') break;
+    ++p;
+  }
+
+  ZX_FREE(cf->ctx, gids);
+  return map;
+}
+
 /*() Reverse of zxid_load_map(). */
 
 /* Called by:  zxid_free_conf x7 */
@@ -896,6 +994,52 @@ struct zxid_attr* zxid_find_at(struct zxid_attr* pool, const char* name)
   return 0;
 }
 
+/*() Check that the user, who is logged into session, maps to group.
+ * This is used by UNIX_GRP_AZ_MAP to check that filesystem
+ * permissions allow user to access a file (existence of g+r and
+ * user mapping to the correct group).
+ *
+ * return:: 0=deny, 1=permit */
+
+int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid)
+{
+  struct zxid_map* grp_map;
+  struct zxid_attr* at;
+  
+  if (!cf || !ses) {
+    ERR("missing argument cf=%p", cf);
+    return 0;
+  }
+  if (!ses->nid || !ses->nid[0]) {
+    INFO("user not logged in ses->nid=%p", ses->nid);
+    return 0;
+  }
+  for (grp_map = cf->unix_grp_az_map; grp_map; grp_map = grp_map->n) {
+    if (grp_map->rule != gid)
+      continue;
+
+    /* If affiliation filter is specified, check it. */
+    if (grp_map->ns && strcmp(grp_map->ns, "") /* none of the wild card cases */
+	&& strcmp(grp_map->ns, "*") && strcmp(grp_map->ns, "**")) {
+      at = zxid_find_at(ses->at, "affid");
+      if (!at || !zx_match(grp_map->ns, at->val /*ses->nameid->NameQualifier*/))
+	continue;
+    }
+
+    /* If attribute filter is specified, check it. */
+    if (grp_map->src && strcmp(grp_map->src, "") /* none of the wild card cases */
+	&& strcmp(grp_map->src, "*") && strcmp(grp_map->src, "**")) {
+      at = zxid_find_at(ses->at, grp_map->src);
+      if (!at || !zx_match(grp_map->dst, at->val /*ses->nameid->NameQualifier*/))
+	continue;
+    }
+    D("user maps to gid=%d", gid);
+    return 1;
+  }
+  INFO("user does not map to gid=%d", gid);
+  return 0;
+}
+
 /*() Given URL, return a newly allocated string corresponding
  * to the domain name part of the URL. Used to grab fedusername_suffix
  * from the url config option. */
@@ -1097,6 +1241,8 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->wsp_localpdp_obl_emit   = ZXID_WSP_LOCALPDP_OBL_EMIT;
   cf->wsc_localpdp_obl_accept = ZXID_WSC_LOCALPDP_OBL_ACCEPT;
 
+  cf->unix_grp_az_map   = zxid_load_unix_grp_az_map(cf, 0, ZXID_UNIX_GRP_AZ_MAP);
+
   cf->redir_to_content  = ZXID_REDIR_TO_CONTENT;
   cf->remote_user_ena   = ZXID_REMOTE_USER_ENA;
   cf->max_soap_retry    = ZXID_MAX_SOAP_RETRY;
@@ -1181,6 +1327,7 @@ void zxid_free_conf(zxid_conf *cf)
   zxid_free_cstr_list(cf, cf->localpdp_role_deny);
   zxid_free_cstr_list(cf, cf->localpdp_idpnid_permit);
   zxid_free_cstr_list(cf, cf->localpdp_idpnid_deny);
+  zxid_free_map(cf, cf->unix_grp_az_map);
   if (cf->required_authnctx) {
     ZX_FREE(cf->ctx, cf->required_authnctx);
   }
@@ -1805,6 +1952,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
       if (!strcmp(n, "URL"))            { cf->burl = v; cf->fedusername_suffix = zxid_grab_domain_name(cf, cf->burl); break; }
       if (!strcmp(n, "USER_LOCAL"))     { SCAN_INT(v, cf->user_local); break; }
       if (!strcmp(n, "UMA_PAT"))        { cf->uma_pat = v; break; }
+      if (!strcmp(n, "UNIX_GRP_AZ_MAP")) { cf->unix_grp_az_map = zxid_load_unix_grp_az_map(cf, cf->unix_grp_az_map, v); break; }
       goto badcf;
     case 'V':  /* VALID_OPT */
       if (!strcmp(n, "VALID_OPT"))      { SCAN_INT(v, cf->valid_opt); break; }
@@ -1961,6 +2109,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
   struct zx_str* localpdp_role_deny;
   struct zx_str* localpdp_idpnid_permit;
   struct zx_str* localpdp_idpnid_deny;
+  struct zx_str* unix_grp_az_map;
   if (cf->log_level>0)
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "MYCONF", 0, 0);
 
@@ -2015,6 +2164,8 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
   localpdp_role_deny     = zxid_show_cstr_list(cf, cf->localpdp_role_deny);
   localpdp_idpnid_permit = zxid_show_cstr_list(cf, cf->localpdp_idpnid_permit);
   localpdp_idpnid_deny   = zxid_show_cstr_list(cf, cf->localpdp_idpnid_deny);
+
+  unix_grp_az_map = zxid_show_map(cf, cf->unix_grp_az_map);
 
   eid = zxid_my_ent_id_cstr(cf);
 
@@ -2226,6 +2377,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 //"WSP_LOCALPDP_OBL_REQ=%s\n"
 "WSP_LOCALPDP_OBL_EMIT=%s\n"
 //"WSC_LOCALPDP_OBL_ACCEPT=%s\n"
+"UNIX_GRP_AZ_MAP=\n%s\n"
 "</pre>",
 		 cf->burl, eid,
 		 cf->cpath,
@@ -2415,8 +2567,9 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 localpdp_idpnid_deny->s,
 		 STRNULLCHK(cf->wsc_localpdp_obl_pledge),
 		 //STRNULLCHK(cf->wsp_localpdp_obl_req),
-		 STRNULLCHK(cf->wsp_localpdp_obl_emit) //,
+		 STRNULLCHK(cf->wsp_localpdp_obl_emit),
 		 //STRNULLCHK(cf->wsc_localpdp_obl_accept)
+		 unix_grp_az_map->s //,
 	 );
 }
 

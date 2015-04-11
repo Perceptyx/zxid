@@ -241,7 +241,7 @@ void zxid_snarf_eprs(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr)
  * ses:: Session object in whose EPR cache will be populated
  *
  * N.B. This approach ignores the official attribute names totally. Anything
- * that looks like an EPR and that is strcturally in right place will work.
+ * that looks like an EPR and that is structurally in right place will work.
  * Typical name /var/zxid/ses/SESID/SVCTYPE,SHA1 */
 
 /* Called by:  zxid_sp_anon_finalize, zxid_sp_sso_finalize, zxid_wsc_valid_re_env, zxid_wsp_validate_env */
@@ -503,7 +503,7 @@ zxid_epr* zxid_discover_epr(zxid_conf* cf, zxid_ses* ses, const char* svc, const
   }
   env->Header = zx_NEW_e_Header(cf->ctx, &env->gg);
   env = zxid_wsc_call(cf, ses, epr, env, 0);
-  if (!env || env == ZXID_REDIR_OK || !env->Body || !env->Body->QueryResponse) {
+  if (!env || env == (void*)ZXID_REDIR_OK || !env->Body || !env->Body->QueryResponse) {
     ERR("Discovery call failed: No di:QueryResponse seen env=%p body=%p", env, env?env->Body:0);
     D_DEDENT("di: ");
     return 0;

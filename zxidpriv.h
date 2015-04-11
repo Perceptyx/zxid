@@ -139,8 +139,10 @@ ZXID_DECL struct zx_md_SPSSODescriptor_s* zxid_sp_sso_desc(zxid_conf* cf, struct
 
 ZXID_DECL struct zxid_map*   zxid_load_map(zxid_conf* cf, struct zxid_map* map, char* v);
 ZXID_DECL void zxid_free_map(struct zxid_conf *cf, struct zxid_map *map);
+ZXID_DECL struct zxid_map*   zxid_load_unix_grp_az_map(zxid_conf* cf, struct zxid_map* map, char* v);
 ZXID_DECL struct zxid_need*  zxid_is_needed(struct zxid_need* need, const char* name);
 ZXID_DECL struct zxid_map*   zxid_find_map(struct zxid_map* map, const char* name);
+ZXID_DECL int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid);
 ZXID_DECL struct zxid_cstr_list* zxid_load_cstr_list(zxid_conf* cf, struct zxid_cstr_list* l, char* p);
 ZXID_DECL void zxid_free_cstr_list(struct zxid_conf *cf, struct zxid_cstr_list *l);
 ZXID_DECL struct zxid_cstr_list* zxid_find_cstr_list(struct zxid_cstr_list* lst, const char* name);

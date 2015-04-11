@@ -8220,6 +8220,32 @@ SWIGEXPORT jlong JNICALL Java_zxidjava_zxidjniJNI_zxid_1conf_1wsc_1localpdp_1obl
 }
 
 
+SWIGEXPORT void JNICALL Java_zxidjava_zxidjniJNI_zxid_1conf_1unix_1grp_1az_1map_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jlong jarg2) {
+  struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
+  struct zxid_map *arg2 = (struct zxid_map *) 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg1 = *(struct zxid_conf **)&jarg1; 
+  arg2 = *(struct zxid_map **)&jarg2; 
+  if (arg1) (arg1)->unix_grp_az_map = arg2;
+}
+
+
+SWIGEXPORT jlong JNICALL Java_zxidjava_zxidjniJNI_zxid_1conf_1unix_1grp_1az_1map_1get(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+  jlong jresult = 0 ;
+  struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
+  struct zxid_map *result = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg1 = *(struct zxid_conf **)&jarg1; 
+  result = (struct zxid_map *) ((arg1)->unix_grp_az_map);
+  *(struct zxid_map **)&jresult = result; 
+  return jresult;
+}
+
+
 SWIGEXPORT void JNICALL Java_zxidjava_zxidjniJNI_zxid_1conf_1bootstrap_1level_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jint jarg2) {
   struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
   int arg2 ;
@@ -27493,7 +27519,7 @@ SWIGEXPORT jint JNICALL Java_zxidjava_zxidjniJNI_ZXID_1VERSION_1get(JNIEnv *jenv
   
   (void)jenv;
   (void)jcls;
-  result = (int)(0x000137);
+  result = (int)(0x000138);
   jresult = (jint)result; 
   return jresult;
 }
@@ -27505,7 +27531,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1REL_1get(JNIEnv *jenv,
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("1.37");
+  result = (char *)("1.38");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }
@@ -27517,7 +27543,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1COMPILE_1DATE_1get(JNI
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("1427848976");
+  result = (char *)("1428790413");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }
@@ -27529,7 +27555,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1REV_1get(JNIEnv *jenv,
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("$Id: 1.37 20150309-223023 sampo@ $");
+  result = (char *)("$Id: 1.36-2-g93dccd1 20150407-213309 sampo@ $");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }

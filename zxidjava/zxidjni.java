@@ -1888,6 +1888,15 @@ public class zxidjni implements zxidjniConstants {
     return (cPtr == 0) ? null : new SWIGTYPE_p_zxid_obl_list(cPtr, false);
   }
 
+  public static void conf_unix_grp_az_map_set(zxid_conf self, SWIGTYPE_p_zxid_map value) {
+    zxidjniJNI.zxid_conf_unix_grp_az_map_set(zxid_conf.getCPtr(self), SWIGTYPE_p_zxid_map.getCPtr(value));
+  }
+
+  public static SWIGTYPE_p_zxid_map conf_unix_grp_az_map_get(zxid_conf self) {
+    long cPtr = zxidjniJNI.zxid_conf_unix_grp_az_map_get(zxid_conf.getCPtr(self));
+    return (cPtr == 0) ? null : new SWIGTYPE_p_zxid_map(cPtr, false);
+  }
+
   public static void conf_bootstrap_level_set(zxid_conf self, int value) {
     zxidjniJNI.zxid_conf_bootstrap_level_set(zxid_conf.getCPtr(self), value);
   }

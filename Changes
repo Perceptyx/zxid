@@ -119,6 +119,12 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
     - mod_auth_saml: Apache 2.4 does not recognize authentication as having happened
     - l0 causes pr_ix == 0 error at zxidpsso.c:196, at least on Marcin's machine
 
+No authentication done but request not allowed without authentication for Authentication not configured?
+
+zxid-1.38:: 11.4.2015
+    - Added UNIX_GRP_AZ_MAP
+    - Added special case handling of protocol urls based on BURL
+
 zxid-1.30:: 19.2.2015
     - UMA and OAUTH work
     - Fixed Action header detection in the non-XML body case

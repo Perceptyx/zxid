@@ -15969,6 +15969,61 @@ fail:
 }
 
 
+ZEND_NAMED_FUNCTION(_wrap_zxid_conf_unix_grp_az_map_set) {
+  struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
+  struct zxid_map *arg2 = (struct zxid_map *) 0 ;
+  zval **args[2];
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 2 || zend_get_parameters_array_ex(2, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_conf, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_conf_unix_grp_az_map_set. Expected SWIGTYPE_p_zxid_conf");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  {
+    if(SWIG_ConvertPtr(*args[1], (void **) &arg2, SWIGTYPE_p_zxid_map, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 2 of zxid_conf_unix_grp_az_map_set. Expected SWIGTYPE_p_zxid_map");
+    }
+  }
+  if (arg1) (arg1)->unix_grp_az_map = arg2;
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_conf_unix_grp_az_map_get) {
+  struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
+  zval **args[1];
+  struct zxid_map *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_conf, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_conf_unix_grp_az_map_get. Expected SWIGTYPE_p_zxid_conf");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  result = (struct zxid_map *) ((arg1)->unix_grp_az_map);
+  
+  SWIG_SetPointerZval(return_value, (void *)result, SWIGTYPE_p_zxid_map, 0);
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
 ZEND_NAMED_FUNCTION(_wrap_zxid_conf_bootstrap_level_set) {
   struct zxid_conf *arg1 = (struct zxid_conf *) 0 ;
   int arg2 ;
@@ -44684,6 +44739,8 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zxid_conf_wsp_localpdp_obl_emit_get,_wrap_zxid_conf_wsp_localpdp_obl_emit_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_conf_wsc_localpdp_obl_accept_set,_wrap_zxid_conf_wsc_localpdp_obl_accept_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_conf_wsc_localpdp_obl_accept_get,_wrap_zxid_conf_wsc_localpdp_obl_accept_get,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_conf_unix_grp_az_map_set,_wrap_zxid_conf_unix_grp_az_map_set,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_conf_unix_grp_az_map_get,_wrap_zxid_conf_unix_grp_az_map_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_conf_bootstrap_level_set,_wrap_zxid_conf_bootstrap_level_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_conf_bootstrap_level_get,_wrap_zxid_conf_bootstrap_level_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_conf_max_soap_retry_set,_wrap_zxid_conf_max_soap_retry_set,NULL)

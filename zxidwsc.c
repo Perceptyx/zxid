@@ -619,7 +619,7 @@ struct zx_str* zxid_call_epr(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, const 
   /* *** add usage directives */
 
   env = zxid_wsc_call(cf, ses, epr, env, &ret_enve);
-  if (!env || env == ZXID_REDIR_OK || !env->Body) {
+  if (!env || env == (void*)ZXID_REDIR_OK || !env->Body) {
     ERR("Parsing return value failed %p", env);
     INFO("ret_enve(%s) len=%d", ret_enve, (int)strlen(ret_enve));
     D_DEDENT("call: ");

@@ -504,6 +504,8 @@ public class zxidjniJNI {
   public final static native String zxid_conf_wsp_localpdp_obl_emit_get(long jarg1);
   public final static native void zxid_conf_wsc_localpdp_obl_accept_set(long jarg1, long jarg2);
   public final static native long zxid_conf_wsc_localpdp_obl_accept_get(long jarg1);
+  public final static native void zxid_conf_unix_grp_az_map_set(long jarg1, long jarg2);
+  public final static native long zxid_conf_unix_grp_az_map_get(long jarg1);
   public final static native void zxid_conf_bootstrap_level_set(long jarg1, int jarg2);
   public final static native int zxid_conf_bootstrap_level_get(long jarg1);
   public final static native void zxid_conf_max_soap_retry_set(long jarg1, int jarg2);

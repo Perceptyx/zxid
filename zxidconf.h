@@ -1039,7 +1039,7 @@
  * each map has to be specified separately, sorry.
  * The order of processing rules has not been fixed yet, but
  * currently (Feb2011/R0.76) the first rule is processed last, e.g.
- * the "env$*$$$" stanza that appears as first below causes
+ * the "env$*$$$" stanza that appears as first, below, causes
  * all other attributes to be considered environment attributes.
  * See documentation for INMAP for syntax of the stanzas. */
 #define ZXID_COMMAP       "env$*$$$;subj$idpnid$rename$urn:oasis:names:tc:xacml:1.0:subject:subject-id$;subj$urn:oasis:names:tc:xacml:1.0:subject:subject-id$$$;subj$urn:oid:1.3.6.1.4.1.5923.1.1.1.1$$$;subj$urn:oid:1.3.6.1.4.1.5923.1.1.1.7$$$;subj$eduPersonAffiliation$$$;subj$eduPersonEntitlement$$$;subj$role$$$;rsrc$rs$unsb64-inf$urn:oasis:names:tc:xacml:1.0:resource:resource-id$;rsrc$urn:oasis:names:tc:xacml:1.0:resource:resource-id$$$;rsrc$Resource$rename$urn:oasis:names:tc:xacml:1.0:resource:resource-id$;act$Action$rename$urn:oasis:names:tc:xacml:1.0:action:action-id$;act$urn:oasis:names:tc:xacml:1.0:action:action-id$$$;env$ZXID_PEPvers$$$;$cookie$del$$;$setcookie$del$$;$setptmcookie$del$$"
@@ -1100,6 +1100,31 @@
 #define ZXID_WSP_LOCALPDP_OBL_REQ     0  /* String: WSP required obligations in SOL notation */
 #define ZXID_WSP_LOCALPDP_OBL_EMIT    0  /* String: WSP obligations emitted on resp */
 #define ZXID_WSC_LOCALPDP_OBL_ACCEPT  0  /* String: WSC acceptable obligations in SOL notation */
+
+/*(c) Unix Group Authorization.
+
+UNIX_GRP_AZ_MAP=affil$attr$val$group$ext
+
+where
+
+affil:: Specifies who is allowed to supply the attribute. Typically
+    the IdP EntityID. Specifying '**' accepts any IdP, but this
+    is problematic if different IdPs use same attribute name to
+    mean different things. Suffix and prefix matching can be
+    performed using "**" and "*".
+attr:: The name of the SSO attribute, e.g "role" or "o" (organization).
+    Can also be specified as "*", which is interpretted as any
+    user from the IdP specified in affil. No other wildcarding.
+val:: The value of the attribute that needs to match. Prefix and
+    suffix matching using "*" and "**" is supported. Use | to
+    supply alternatives.
+group:: The Unix group name.
+ext:: Extension field.
+
+Leave as empty (null) to disable the feature.
+ */
+
+#define ZXID_UNIX_GRP_AZ_MAP 0
 
 /*(c) Enable CBC (instead of GCM) and PKCS#1 v1.5 padding, both of which
  * are vulnearable and can compromise modern crypto through Backwards
