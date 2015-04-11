@@ -2419,20 +2419,25 @@ static void auth_check(char* dirname)
   zxid_cgi cgi;
 
   if (zxid_cf && zxid_cf->unix_grp_az_map) {
+    D("Checking unix_grp_az_map st_mode=%o", sb.st_mode);
     /* The stat buffer has already been filled by caller */
     if (sb.st_mode & S_IROTH)
       return;    /* Ok. World readable file, directory, or executable. */
     if (sb.st_mode & S_IRGRP) {
+      D("HERE2 st_mode=%o", sb.st_mode);
       if (zxid_unix_grp_az_check(zxid_cf, zxid_session, sb.st_gid))
 	return;  /* Permit */
       if (!zxid_session || !zxid_session->nid || !zxid_session->nid[0]) {
+	D("HERE3 st_mode=%o", sb.st_mode);
 	/* User had not logged in yet */
 	ZERO(&cgi, sizeof(zxid_cgi));
 	cgi.op = 'E';
 	zxid_mini_httpd_step_up(zxid_cf, &cgi, 0, path, 0);
 	exit(0);
       }
+      D("HERE8 st_mode=%o", sb.st_mode);
     }
+    D("HERE9 st_mode=%o", sb.st_mode);
   }
 
   if (dirname[strlen(dirname) - 1] == '/')
