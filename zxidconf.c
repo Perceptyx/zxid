@@ -622,10 +622,12 @@ struct zxid_map* zxid_load_unix_grp_az_map(zxid_conf* cf, struct zxid_map* map, 
     
     COPYVAL(mm->ns,  ns,  A-1);
     COPYVAL(mm->src, A,   val-1);
-    COPYVAL(mm->dst, val, ext-1);
+    COPYVAL(mm->dst, val, group-1);
     COPYVAL(mm->ext, ext, p);
     
+    *(ext-1) = 0;
     grp = getgrnam(group);
+    *(ext-1) = '$';
     if (grp) {
       for (i = 0; i <= n_grps; ++i)
 	if (grp->gr_gid == gids[i])

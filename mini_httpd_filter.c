@@ -380,6 +380,10 @@ static zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
     D("No session(%s) active op(%c)", STRNULLCHK(cgi->sid), cgi->op);
   }
   D("other page: no_ses uri(%s) templ(%s) tf(%s) k(%s) cgi=%p rs(%s)", uri_path, STRNULLCHKNULL(cgi->templ), STRNULLCHKNULL(cf->idp_sel_templ_file), cgi->skin, cgi, cgi->rs);
+  if (cf->optional_login_pat && zx_match(cf->optional_login_pat, uri_path)) {
+    D("optional_login_pat matches ok %s", cf->optional_login_pat);
+    return ses;
+  }
   return zxid_mini_httpd_step_up(cf, cgi, ses, uri_path, cookie_hdr);
 }
 
