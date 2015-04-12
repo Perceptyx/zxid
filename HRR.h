@@ -52,6 +52,10 @@
 #define HRR_set_uri(r,v)       HRR_set_field((r), HRRC_uri,  (v))
 #define HRR_set_user(r,v)      HRR_set_field((r), HRRC_user, (v))
 
+void* HRR_field(request_rec* r, int field);
+int   HRR_field_int(request_rec* r, int field);
+void  HRR_set_field(request_rec* r, int field, void* v);
+
 #else
 
 #define HRR_headers_in(r)      ((r)->headers_in)
