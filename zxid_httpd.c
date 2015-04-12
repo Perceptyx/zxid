@@ -2431,12 +2431,13 @@ static void auth_check(char* dirname)
 	/* User had not logged in yet */
 	ZERO(&cgi, sizeof(zxid_cgi));
 	cgi.op = 'E';
+	cgi.uri_path = path;
 	zxid_mini_httpd_step_up(zxid_cf, &cgi, 0, path, 0);
 	exit(0);
       }
       D("HERE8 st_mode=%o", sb.st_mode);
     }
-    D("HERE9 st_mode=%o", sb.st_mode);
+    send_error_and_exit(403, "Forbidden", "", "File is protected. 3");
   }
 
   if (dirname[strlen(dirname) - 1] == '/')
@@ -2464,7 +2465,7 @@ static void auth_check(char* dirname)
   fp = fopen(authpath, "r");    /* Open the password file. */
   if (fp == (FILE*) 0) {
     syslog(LOG_ERR, "%.80s auth file %.80s could not be opened - %m",ntoa(&client_addr),authpath);
-    send_error_and_exit(403, "Forbidden", "", "File is protected.");
+    send_error_and_exit(403, "Forbidden", "", "File is protected. 4");
   }
 
   while (fgets(line, sizeof(line), fp)) {
