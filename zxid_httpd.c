@@ -1463,6 +1463,7 @@ static void handle_request(void)
   }
 
   ret = stat(file, &sb);
+  D("stat(%s)=%d st_mode=%o", file, ret, sb.st_mode);
   if (ret < 0)
     ret = get_pathinfo();
   if (ret < 0)
