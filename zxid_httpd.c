@@ -206,7 +206,7 @@ static char* method;
 char* path;
 static char* file;
 static char* pathinfo;  /* the stuff after a file in filesystem */
-struct stat sb;
+struct stat sb;         /* single threaded so we can share stat buffer */
 static char* query;
 static char* protocol;
 static int status;
@@ -366,7 +366,6 @@ static void str_copy_and_url_encode(char* to, size_t tosize, const char* from) {
 
 /* Called by:  do_dir */
 static char* file_details(const char* dir, const char* name) {
-  struct stat sb;
   char f_time[20];
   static char encname[1000];
   static char buf[2000];
@@ -2408,7 +2407,6 @@ static void send_authenticate(char* realm) {
 static void auth_check(char* dirname)
 {
   char authpath[10000];
-  struct stat sb;
   char authinfo[500];
   char* authpass;
   char* colon;
