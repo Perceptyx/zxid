@@ -1005,8 +1005,8 @@ struct zxid_attr* zxid_find_at(struct zxid_attr* pool, const char* name)
 
 int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid)
 {
-  struct zxid_map* grp_map;
-  struct zxid_attr* at;
+  struct zxid_map* grp_map = 0;
+  struct zxid_attr* at = 0;
   
   if (!cf || !ses) {
     ERR("missing argument cf=%p", cf);
@@ -1035,7 +1035,7 @@ int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid)
       if (!at || !zx_match(grp_map->dst, at->val /*ses->nameid->NameQualifier*/))
 	continue;
     }
-    D("user maps to gid=%d", gid);
+    D("%s=%s maps to gid=%d", STRNULLCHKD(grp_map?grp_map->src:0), STRNULLCHKD(at?at->val:0), gid);
     return 1;
   }
   INFO("user does not map to gid=%d", gid);

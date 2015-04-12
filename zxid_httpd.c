@@ -369,14 +369,27 @@ static char* file_details(const char* dir, const char* name) {
   char f_time[20];
   static char encname[1000];
   static char buf[2000];
+  struct group* grp;
 
   (void) snprintf(buf, sizeof(buf), "%s/%s", dir, name);
   if (lstat(buf, &sb) < 0)
     return "???";
+#if 0
   (void) strftime(f_time, sizeof(f_time), "%d%b%Y %H:%M", localtime(&sb.st_mtime));
   str_copy_and_url_encode(encname, sizeof(encname), name);
   (void) snprintf(buf, sizeof(buf), "<A HREF=\"%s\">%-32.32s</A>    %15s %14lld\n",
 		  encname, name, f_time, (long long int)sb.st_size);
+#else
+  (void) strftime(f_time, sizeof(f_time), "%Y%m%d-%H:%Mz", gmtime(&sb.st_mtime));
+  str_copy_and_url_encode(encname, sizeof(encname), name);
+  grp = getgrgid(sb.st_gid);
+  (void) snprintf(buf, sizeof(buf), "%15s %c%c %-8.8s %14lld <A HREF=\"%s\">%s</A>\n",
+		  f_time,
+		  sb.st_mode & S_IRGRP ? 'g' : '-',
+		  sb.st_mode & S_IROTH ? 'o' : '-',
+		  grp?grp->gr_name:"?",
+		  (long long int)sb.st_size, encname, name);
+#endif
   return buf;
 }
 
