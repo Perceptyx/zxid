@@ -63,8 +63,8 @@
 
 #include "HRR.h"  /* httpd glue */
 
-#define srv_cf(s) (struct zxid_srv_cf*)ap_get_module_config((s)->module_config, &auth_saml_module)
-#define dir_cf(r) (zxid_conf*)ap_get_module_config((r)->per_dir_config, &auth_saml_module)
+/*#define srv_cf(s) (struct zxid_srv_cf*)ap_get_module_config((s)->module_config, &auth_saml_module)*/
+#define dir_cf(r) (zxid_conf*)ap_get_module_config(HRR_per_dir_config(r), &auth_saml_module)
 
 /* This extern variable is used as first argument to LoadModule in httpd.conf,
  * E.g: LoadModule auth_saml_module modules/mod_auth_saml.so */
@@ -684,7 +684,10 @@ static void reghk(apr_pool_t* p) {
 }
 
 /* This extern variable is used as first argument to LoadModule in httpd.conf,
- * E.g: LoadModule auth_saml_module modules/mod_auth_saml.so */
+ * E.g: LoadModule auth_saml_module modules/mod_auth_saml.so
+ * See httpd-2.2/include/http_config.h for module_struct.
+ * Lucky for 2.2 vs. 2.4 compat, m->module_index and other fields up to
+ * m->magic are on sample palaces on both. */
 
 module AP_MODULE_DECLARE_DATA auth_saml_module = {
   STANDARD20_MODULE_STUFF,

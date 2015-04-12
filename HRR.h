@@ -32,6 +32,7 @@
 #define HRRC_main           12
 #define HRRC_method_number  13
 #define HRRC_subprocess_env 14
+#define HRRC_per_dir_config 15
 
 #define HRR_headers_in(r)      HRR_field((r), HRRC_headers_in)
 #define HRR_headers_out(r)     HRR_field((r), HRRC_headers_out)
@@ -47,6 +48,7 @@
 #define HRR_remaining(r)       HRR_field_int((r), HRRC_remaining)
 #define HRR_main(r)            HRR_field((r), HRRC_main)
 #define HRR_method_number(r)   HRR_field_int((r), HRRC_method_number)
+#define HRR_per_dir_config(r)  HRR_field((r), HRRC_per_dir_config)
 
 #define HRR_set_args(r,v)      HRR_set_field((r), HRRC_args, (v))
 #define HRR_set_uri(r,v)       HRR_set_field((r), HRRC_uri,  (v))
@@ -72,6 +74,7 @@ void  HRR_set_field(request_rec* r, int field, void* v);
 #define HRR_remaining(r)       ((r)->remaining)
 #define HRR_main(r)            ((r)->main)
 #define HRR_method_number(r)   ((r)->method_number)
+#define HRR_per_dir_config(r)  ((r)->per_dir_config)
 
 #define HRR_set_args(r,v)      ((r)->args = (v))
 #define HRR_set_uri(r,v)       ((r)->uri  = (v))

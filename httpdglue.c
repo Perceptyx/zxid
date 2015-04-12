@@ -36,6 +36,7 @@ void* HRR_field(request_rec* r, int field)
   case HRRC_filename:  return r->filename;
   case HRRC_path_info: return r->path_info;
   case HRRC_main: return r->main;
+  case HRRC_per_dir_config:  return r->per_dir_config;
   default:
     fprintf(stderr, "HRR field %d not known", field);
   }
