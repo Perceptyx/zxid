@@ -218,7 +218,7 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
   
   //apr_table_setn(r->subprocess_env,
   //		 apr_psprintf(r->pool, "%sLDIF", cf->mod_saml_attr_prefix), ldif);
-  D("SSO OK ret(%d) uri(%s) filename(%s) path_info(%s)", ret, HRR_uri(r), HRR_filename(r), HRR_path_info(r));
+  D("SSO OK ret(%d) uri(%s) filename(%s) path_info(%s)", ret, (char*)HRR_uri(r), (char*)HRR_filename(r), (char*)HRR_path_info(r));
   return ret;
 }
 
@@ -482,7 +482,7 @@ static int chkuid(request_rec* r)
       res = read_post(cf, r);   /* Will print some debug output */
       if (zxid_wsp_validate(cf, &ses, 0, res)) {
 	D("WSP(%s) request valid", uri);
-	D("WSP CALL uri(%s) filename(%s) path_info(%s)", uri, HRR_filename(r), HRR_path_info(r));
+	D("WSP CALL uri(%s) filename(%s) path_info(%s)", uri, (char*)HRR_filename(r), (char*)HRR_path_info(r));
 	ret = pool2apache(cf, r, ses.at);
 	D_DEDENT("chkuid: ");
 	return ret;
@@ -538,8 +538,8 @@ static int chkuid(request_rec* r)
 	return OK;
       }
     }
-    if (HRR_args(r) && HRR_args(r)[0] == 'l') {
-      D("Detect login(%s)", HRR_args(r));
+    if (HRR_args(r) && ((char*)HRR_args(r))[0] == 'l') {
+      D("Detect login(%s)", (char*)HRR_args(r));
     } else
       cgi.op = 'E';   /* Trigger IdP selection screen */
     D("other page: no_ses uri(%s) templ(%s) tf(%s) k(%s)", uri, STRNULLCHKNULL(cgi.templ), STRNULLCHKNULL(cf->idp_sel_templ_file), STRNULLCHKNULL(cgi.skin));
@@ -571,14 +571,14 @@ process_zxid_simple_outcome:
     D_DEDENT("chkuid: ");
     return HTTP_FORBIDDEN;
   case 0: /* Logged in case */
-    D("SSO OK pre uri(%s) filename(%s) path_info(%s)", uri, HRR_filename(r), HRR_path_info(r));
+    D("SSO OK pre uri(%s) filename(%s) path_info(%s)", uri, (char*)HRR_filename(r), (char*)HRR_path_info(r));
     ret = pool2apache(cf, r, ses.at);
     D_DEDENT("chkuid: ");
     return ret;
 #if 0
   case 'd': /* Logged in case */
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("SSO OK LDIF(%s)", res);
-    D("SSO OK pre uri(%s) filename(%s) path_info(%s)", uri, HRR_filename(r), HRR_path_info(r));
+    D("SSO OK pre uri(%s) filename(%s) path_info(%s)", uri, (char*)HRR_filename(r), (char*)HRR_path_info(r));
     ret = ldif2apache(cf, r, res);
     D_DEDENT("chkuid: ");
     return ret;
