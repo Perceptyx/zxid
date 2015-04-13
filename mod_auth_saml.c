@@ -33,6 +33,12 @@
  *
  * http://httpd.apache.org/docs/2.2/developer/
  * http://modules.apache.org/doc/API.html
+ *
+ * Apache 2.4 Quirks
+ *
+ * [Mon Apr 13 23:04:07.291360 2015] [core:error] [pid 4841:tid 139900761208576] [client 127.0.0.1:60629] AH00027: No authentication done but request not allowed without authentication for /protected/index.html. Authentication not configured?
+ *
+ * See: httpd-2.4.12/server/request.c lines 250 and 287 (basically r->user needs to be set)
  */
 
 #define _LARGEFILE64_SOURCE   /* So off64_t is found, see: man 3 lseek64 */
@@ -218,7 +224,7 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
   
   //apr_table_setn(r->subprocess_env,
   //		 apr_psprintf(r->pool, "%sLDIF", cf->mod_saml_attr_prefix), ldif);
-  D("SSO OK ret(%d) uri(%s) filename(%s) path_info(%s)", ret, (char*)HRR_uri(r), (char*)HRR_filename(r), (char*)HRR_path_info(r));
+  D("SSO OK ret(%d) uri(%s) filename(%s) path_info(%s) user(%s)=%p", ret, (char*)HRR_uri(r), (char*)HRR_filename(r), (char*)HRR_path_info(r), STRNULLCHKD((char*)HRR_user(r)), HRR_user(r));
   return ret;
 }
 
@@ -337,6 +343,7 @@ static int chkuid(request_rec* r)
   const char* cookie_hdr=0;
   const char* set_cookie_hdr;
   const char* cur_auth;
+  request_rec* main_req;
   char* uri = r?HRR_uri(r):0;
   zxid_conf* cf = dir_cf(r);
   zxid_cgi cgi;
@@ -352,8 +359,10 @@ static int chkuid(request_rec* r)
     chdir(cf->wd);  /* Ensure the working dir is not / (sometimes Apache httpd changes dir) */
   D_INDENT("chkuid: ");
 
-  if (HRR_main(r)) {  /* subreq can't come from net: always auth OK. */
-    D("sub ok %d", OK);
+  if (main_req = HRR_main(r)) {  /* subreq can't come from net: always auth OK. */
+    D("sub ok user(%s)=%p", STRNULLCHKD((char*)HRR_user(r)), HRR_user(r));
+    HRR_set_user(r, HRR_user(main_req));
+    D("sub from main user(%s)=%p", STRNULLCHKD((char*)HRR_user(r)), HRR_user(r));
     D_DEDENT("chkuid: ");
     return OK;
   }
