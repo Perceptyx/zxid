@@ -604,10 +604,10 @@ struct zx_str* zxenc_symkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* e
     if (!cf->backwards_compat_ena) goto backwards_compat_disa;
     if (symkey->len != (256 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "AES-256-CBC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
-  } else if (sizeof(ENC_ALGO_AES256_GFC)-1 == ss->len
-	     && !memcmp(ENC_ALGO_AES256_GFC, ss->s, sizeof(ENC_ALGO_AES256_GFC)-1)) {
+  } else if (sizeof(ENC_ALGO_AES256_GCM)-1 == ss->len
+	     && !memcmp(ENC_ALGO_AES256_GCM, ss->s, sizeof(ENC_ALGO_AES256_GCM)-1)) {
     if (symkey->len != (256 >> 3)) goto wrong_key_len;
-    ss = zx_raw_cipher(cf->ctx, "AES-256-GFC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
+    ss = zx_raw_cipher(cf->ctx, "AES-256-GCM", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
   } else {
     ERR("Unsupported key transformation method(%.*s)", ss->len, ss->s);
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "ECRYPT", 0, "unsupported key transformation method");
@@ -728,7 +728,7 @@ struct zx_str* zxenc_privkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* 
  *         xmlns:e="http://www.w3.org/2001/04/xmlenc#"
  *         Id="ED38"
  *         Type="http://www.w3.org/2001/04/xmlenc#Element">
- *       <e:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-gfc"/>
+ *       <e:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-gcm"/>
  *       <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
  *         <ds:RetrievalMethod
  *             Type="http://www.w3.org/2001/04/xmlenc#EncryptedKey"
@@ -779,7 +779,7 @@ struct zx_xenc_EncryptedData_s* zxenc_symkey_enc(zxid_conf* cf, struct zx_str* d
   /* CBC is no longer considered sae so do not use it. */
   ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 1, symkey, data->len, data->s, 16, 0);
 #else
-  ss = zx_raw_cipher(cf->ctx, "AES-256-GFC", 1, symkey, data->len, data->s, 16, 0);
+  ss = zx_raw_cipher(cf->ctx, "AES-256-GCM", 1, symkey, data->len, data->s, 16, 0);
 #endif
   if (!ss) {
     ERR("Symmetric encryption failed %d",0);

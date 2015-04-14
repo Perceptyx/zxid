@@ -15,7 +15,7 @@
  * 23.2.2008, added support for function pointers to malloc(),
  *            realloc(), and free() --Sampo
  * 27.10.2010, namespace re-engineering --Sampo
- * 26.10.2014, changed crypto to GFC and OAEP to combat Backwards Compatibility Attacks --Sampo
+ * 26.10.2014, changed crypto to GCM and OAEP to combat Backwards Compatibility Attacks --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  *
@@ -366,9 +366,9 @@ struct zx_el_desc* zx_el_desc_lookup(int tok);
 #define ENC_ALGO_AES128_CBC    "http://www.w3.org/2001/04/xmlenc#aes128-cbc"
 #define ENC_ALGO_AES192_CBC    "http://www.w3.org/2001/04/xmlenc#aes192-cbc"
 #define ENC_ALGO_AES256_CBC    "http://www.w3.org/2001/04/xmlenc#aes256-cbc"
-#define ENC_ALGO_AES256_GFC    "http://www.w3.org/2001/04/xmlenc#aes256-gfc"
+#define ENC_ALGO_AES256_GCM    "http://www.w3.org/2001/04/xmlenc11#aes256-gcm"
 /* #define ENC_ALGO            ENC_ALGO_AES128_CBC  unsafe, see Backwards Compatibility Attacks */
-#define ENC_ALGO               ENC_ALGO_AES256_GFC
+#define ENC_ALGO               ENC_ALGO_AES256_GCM
 
 /* The ENC_KEYTRAN_ALGO setting must agree with setting in zxenc_pubkey_enc()
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
