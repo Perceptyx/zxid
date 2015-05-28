@@ -30,7 +30,7 @@ sub greeny { $ascii > 1 ? "\e[42m$_[0]\e[0m" : $_[0]; }
 
 use Encode;
 use Digest::MD5;
-use Digest::SHA1;  # apt-get install libdigest-sha1-perl
+use Digest::SHA;  # apt-get install libdigest-sha-perl
 use Net::SSLeay qw(get_httpx post_httpx make_headers make_form);  # Need Net::SSLeay-1.24
 use WWW::Curl::Easy;    # HTTP client library, see curl.haxx.se. apt-get install libwww-curl-perl
 use WWW::Curl::Multi;
