@@ -323,7 +323,7 @@ from the configuration.
 IDP_SEL_TEMPL_FILE:: Path for Template for IdP Selecton Page. Default "idpsel.html".
     This file, which you can edit for customization, is used as template to
     render the IdP selection page on the SP side. If the file does not exist,
-    the value of ZXID_IDP_SEL_TEMPL configuration option is used as template.
+    the value of IDP_SEL_TEMPL configuration option is used as template.
     By default idpsel.html uses idpsel.css as stylesheet. You can make many
     kinds of customization just by editing this stylesheet.
 

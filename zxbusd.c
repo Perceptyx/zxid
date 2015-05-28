@@ -14,9 +14,9 @@
  * This file contains option processing, configuration, and main().
  *
  * To create bus users, you should follow these steps
- * 1. Run ./zxbuslist -c 'URL=https://sp.foo.com/' -dc to determine the entity ID
- * 2. Convert entity ID to SHA1 hash: ./zxcot -p 'http://sp.foo.com?o=B'
- * 3. Create the user: ./zxpasswd -a 'eid: http://sp.foo.com?o=B' -new G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/ <passwd
+ * 1. Run ./zxbuslist -c 'BURL=https://sp.foo.com/' -dc to determine the entity ID
+ * 2. Convert entity ID to SHA1 hash: ./zxcot -p 'https://sp.foo.com?o=B'
+ * 3. Create the user: ./zxpasswd -a 'eid: https://sp.foo.com?o=B' -new G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/ <passwd
  * 4. To enable ClientTLS authentication, determine the subject_hash of
  *    the encryption certificate and symlink that to the main account:
  *      > openssl x509 -subject_hash -noout </var/zxid/buscli/pem/enc-nopw-cert.pem

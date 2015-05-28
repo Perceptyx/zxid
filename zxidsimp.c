@@ -302,6 +302,9 @@ static const char* zxid_map_bangbang(zxid_conf* cf, zxid_cgi* cgi, const char* k
   case 'A':
     if (BBMATCH("ACTION_URL", key, lim)) return cgi->action_url;
     break;
+  case 'B':
+    if (BBMATCH("BURL", key, lim)) return cf->burl;
+    break;
   case 'D':
     if (BBMATCH("DBG", key, lim)) return cgi->dbg;
     break;
