@@ -209,7 +209,7 @@
  * See also: VPATH
  *
  * Changing VURL may change BURL which requires new metadata export to CoT partners. */
- */
+ 
 #define ZXID_VURL "%a%h%s"
 
 /*(c) Override standard EntityID Construction
@@ -845,7 +845,7 @@
  * safe-base64 encode the result of the encryption.
  *
  * None of the logging options affect metadata. */
- */
+
 
 /* Most common combinations of the above flags. */
 #define ZXLOG_OP_NOLOG        0x00
