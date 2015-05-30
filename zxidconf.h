@@ -971,7 +971,7 @@
 #define ZXID_NOTIMESTAMP_FATAL 1 /* Missing Security/Timestamp is fatal. */
 
 /*(c) XML canonicalization compatibility kludges
-/* Shibboleth 2.1.5 IdP miscanonicalizes by
+ * Shibboleth 2.1.5 IdP miscanonicalizes by
  * ignoring InclusiveNamespaces/@PrefixList, yet
  * it still supplies such list. The miscanonicalization
  * leads namespaces missing. This has been reported to Scott Cantor as of 20101005

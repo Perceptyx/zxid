@@ -211,7 +211,8 @@ int zxid_pw_authn(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
   struct zx_str* ss;
   struct zxid_cstr_list* ac;
 
-  if (!an_level = zx_password_authn(cf->cpath, cgi->uid, cgi->pw, cgi->pin, 0)) {
+  an_level = zx_password_authn(cf->cpath, cgi->uid, cgi->pw, cgi->pin, 0);
+  if (!an_level) {
     cgi->err = login_failed;
     return 0;
   }

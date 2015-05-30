@@ -162,7 +162,7 @@ int zx_yubikey_authn(const char* cpath, char* uid, const char* passw, const char
 
   if (pin && *pin) { /* Pin supplied, may be we can perform two factor authn? */
     len = read_all(sizeof(pw_buf), (char*)pw_buf, "pin", 1, "%s/.pin", uidpath);
-    if (zx_pw_chk(uid, pw_buf, pin, 0)) {
+    if (zx_pw_chk(uid, (char*)pw_buf, pin, 0)) {
       D("Two factor pin+yubikey successful. %d", 1);
       return 4;
     }
