@@ -404,7 +404,7 @@ struct zxid_cgi {
   char  force_authn;   /* ff= Whether IdP SHOULD authenticate the user anew. */
   char  enc_hint;      /* Hint: Should NID be encrypted in SLO and MNI, see also cf->nameid_enc */
   char  atselafter;    /* at= Attribute selection requested checkbox. */
-  char  pad7;
+  char  mob;           /* Mobile device flag, detected from HTTP_USER_AGENT */
   char* sid;           /* If session is already active, the session ID. */
   char* nid;           /* NameID of the user. */
   char* uid;           /* au= Form field for user. */
@@ -484,6 +484,7 @@ struct zxid_cgi {
   char* updated_time;  /* OAuth2 */
 #endif
   char* inv;           /* Invitation ID */
+  char* pcode;         /* Mobile pairing code */
   char* skin;
   char* action_url;    /* <form action=URL> in some forms, such as post.html */
   char* uri_path;      /* SCRIPT_NAME or other URI path */
@@ -709,6 +710,7 @@ struct zxid_invite {
 #define ZXID_DIMD_DIR "dimd/"
 #define ZXID_INV_DIR  "inv/"
 #define ZXID_LOG_DIR  "log/"
+#define ZXID_PCODE_DIR  "pcode/"  /* Mobile pairing codes */
 #define ZXID_DCR_DIR  "dcr/"  /* OAUTH2 Dynamic Client Registrations */
 #define ZXID_RSR_DIR  "rsr/"  /* OAUTH2 Resource Set Registrations */
 #define ZXID_MAX_USER (256)   /* Maximum size of .mni or user file */

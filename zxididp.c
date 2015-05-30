@@ -144,9 +144,7 @@ int main(int argc, char** argv)
       *p = 0;  /* nul termination */
   }
   
-  /* Render protected content page. You should replace this
-   * with your own content, or establishment of your own session
-   * and then redirection to your own content. Whatever makes sense. */
+  /* Render protected content page. Usually you would be redirected back to SP. */
   
   if (setcookie && !ONE_OF_2(*setcookie, '-', 0))
     printf("SET-COOKIE: %s\r\n", setcookie);

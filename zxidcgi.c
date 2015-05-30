@@ -55,6 +55,14 @@ int zxid_parse_cgi(zxid_conf* cf, zxid_cgi* cgi, char* qs)
   DD("qs(%s)=%p len=%d", STRNULLCHK(qs), qs, qs?strlen(qs):-1);
   if (!qs)
     return 0;
+#if 0
+  p = getenv("HTTP_USER_AGENT");
+  if (p && !memcmp(p, "Synmobile", sizeof("Synmobile")-1)) {
+    D("Mobile detected UA(%s)", p);
+    cgi->mob = 1;
+  }
+#endif
+  
   while (qs && *qs) {
     qs = zxid_qs_nv_scan(qs, &n, &v, 2);
     if (!n)
@@ -70,6 +78,7 @@ int zxid_parse_cgi(zxid_conf* cf, zxid_cgi* cgi, char* qs)
       goto unknown;
     case 'p':
       if (!strcmp(n, "prompt")) { cgi->prompt = v; break; }  /* OAUTH2 */
+      if (!strcmp(n, "pcode"))  { cgi->pcode = v; break; }   /* Mobile pairing code */
       goto unknown;
     case 'r':
       if (!strcmp(n, "response_type")) { cgi->response_type = v; break; }  /* OAUTH2/OIDC1 */

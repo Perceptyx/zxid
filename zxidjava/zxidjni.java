@@ -2420,12 +2420,12 @@ public class zxidjni implements zxidjniConstants {
     return zxidjniJNI.zxid_cgi_atselafter_get(zxid_cgi.getCPtr(self));
   }
 
-  public static void cgi_pad7_set(zxid_cgi self, char value) {
-    zxidjniJNI.zxid_cgi_pad7_set(zxid_cgi.getCPtr(self), value);
+  public static void cgi_mob_set(zxid_cgi self, char value) {
+    zxidjniJNI.zxid_cgi_mob_set(zxid_cgi.getCPtr(self), value);
   }
 
-  public static char cgi_pad7_get(zxid_cgi self) {
-    return zxidjniJNI.zxid_cgi_pad7_get(zxid_cgi.getCPtr(self));
+  public static char cgi_mob_get(zxid_cgi self) {
+    return zxidjniJNI.zxid_cgi_mob_get(zxid_cgi.getCPtr(self));
   }
 
   public static void cgi_sid_set(zxid_cgi self, String value) {
@@ -2906,6 +2906,14 @@ public class zxidjni implements zxidjniConstants {
 
   public static String cgi_inv_get(zxid_cgi self) {
     return zxidjniJNI.zxid_cgi_inv_get(zxid_cgi.getCPtr(self));
+  }
+
+  public static void cgi_pcode_set(zxid_cgi self, String value) {
+    zxidjniJNI.zxid_cgi_pcode_set(zxid_cgi.getCPtr(self), value);
+  }
+
+  public static String cgi_pcode_get(zxid_cgi self) {
+    return zxidjniJNI.zxid_cgi_pcode_get(zxid_cgi.getCPtr(self));
   }
 
   public static void cgi_skin_set(zxid_cgi self, String value) {

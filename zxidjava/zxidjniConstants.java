@@ -73,6 +73,7 @@ public interface zxidjniConstants {
   public final static String ZXID_DIMD_DIR = zxidjniJNI.ZXID_DIMD_DIR_get();
   public final static String ZXID_INV_DIR = zxidjniJNI.ZXID_INV_DIR_get();
   public final static String ZXID_LOG_DIR = zxidjniJNI.ZXID_LOG_DIR_get();
+  public final static String ZXID_PCODE_DIR = zxidjniJNI.ZXID_PCODE_DIR_get();
   public final static String ZXID_DCR_DIR = zxidjniJNI.ZXID_DCR_DIR_get();
   public final static String ZXID_RSR_DIR = zxidjniJNI.ZXID_RSR_DIR_get();
   public final static int ZXID_MAX_USER = zxidjniJNI.ZXID_MAX_USER_get();

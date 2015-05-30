@@ -1481,8 +1481,7 @@ zxidjava.jar: zxidjava/zxidjni.class zxidjava/README.zxid-java
 	$(JAR) cf zxidjava.jar zxidjava/*.class zxidjava/*.java zxidjava/COPYING zxidjava/LICENSE*
 
 zxiddemo.war: zxidjava.jar
-	mkdir -p zxidservlet/WEB-INF/classes/
-	#mkdir -p zxidservlet/WEB-INF/classes/zxidjava/
+	mkdir -p zxidservlet/WEB-INF/classes/ #mkdir -p zxidservlet/WEB-INF/classes/zxidjava/
 	$(CP) -f zxidjava.jar ./zxidservlet/WEB-INF/classes/
 	$(CP) -f ./servlet/WEB-INF/web.xml ./zxidservlet/WEB-INF/
 	$(CP) -f zxidsrvlet.class zxidappdemo.class zxidwscprepdemo.class zxidwspdemo.class zxidwspleaf.class zxidhlo.class zxidservlet/WEB-INF/classes/

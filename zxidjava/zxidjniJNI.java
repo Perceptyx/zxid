@@ -636,8 +636,8 @@ public class zxidjniJNI {
   public final static native char zxid_cgi_enc_hint_get(long jarg1);
   public final static native void zxid_cgi_atselafter_set(long jarg1, char jarg2);
   public final static native char zxid_cgi_atselafter_get(long jarg1);
-  public final static native void zxid_cgi_pad7_set(long jarg1, char jarg2);
-  public final static native char zxid_cgi_pad7_get(long jarg1);
+  public final static native void zxid_cgi_mob_set(long jarg1, char jarg2);
+  public final static native char zxid_cgi_mob_get(long jarg1);
   public final static native void zxid_cgi_sid_set(long jarg1, String jarg2);
   public final static native String zxid_cgi_sid_get(long jarg1);
   public final static native void zxid_cgi_nid_set(long jarg1, String jarg2);
@@ -758,6 +758,8 @@ public class zxidjniJNI {
   public final static native String zxid_cgi_id_get(long jarg1);
   public final static native void zxid_cgi_inv_set(long jarg1, String jarg2);
   public final static native String zxid_cgi_inv_get(long jarg1);
+  public final static native void zxid_cgi_pcode_set(long jarg1, String jarg2);
+  public final static native String zxid_cgi_pcode_get(long jarg1);
   public final static native void zxid_cgi_skin_set(long jarg1, String jarg2);
   public final static native String zxid_cgi_skin_get(long jarg1);
   public final static native void zxid_cgi_action_url_set(long jarg1, String jarg2);
@@ -1073,6 +1075,7 @@ public class zxidjniJNI {
   public final static native String ZXID_DIMD_DIR_get();
   public final static native String ZXID_INV_DIR_get();
   public final static native String ZXID_LOG_DIR_get();
+  public final static native String ZXID_PCODE_DIR_get();
   public final static native String ZXID_DCR_DIR_get();
   public final static native String ZXID_RSR_DIR_get();
   public final static native int ZXID_MAX_USER_get();

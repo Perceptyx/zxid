@@ -20091,7 +20091,7 @@ fail:
 }
 
 
-ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_pad7_set) {
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_mob_set) {
   struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
   char arg2 ;
   zval **args[2];
@@ -20103,7 +20103,7 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_pad7_set) {
   
   {
     if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
-      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_pad7_set. Expected SWIGTYPE_p_zxid_cgi");
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_mob_set. Expected SWIGTYPE_p_zxid_cgi");
     }
   }
   if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
@@ -20113,7 +20113,7 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_pad7_set) {
   arg2 = (char) *Z_STRVAL_PP(args[1]);
   /*@SWIG@*/;
   
-  if (arg1) (arg1)->pad7 = arg2;
+  if (arg1) (arg1)->mob = arg2;
   
   return;
 fail:
@@ -20121,7 +20121,7 @@ fail:
 }
 
 
-ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_pad7_get) {
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_mob_get) {
   struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
   zval **args[1];
   char result;
@@ -20133,11 +20133,11 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_pad7_get) {
   
   {
     if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
-      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_pad7_get. Expected SWIGTYPE_p_zxid_cgi");
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_mob_get. Expected SWIGTYPE_p_zxid_cgi");
     }
   }
   if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
-  result = (char) ((arg1)->pad7);
+  result = (char) ((arg1)->mob);
   {
     ZVAL_STRINGL(return_value,&result, 1, 1);
   }
@@ -24438,6 +24438,78 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_inv_get) {
   }
   if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
   result = (char *) ((arg1)->inv);
+  {
+    if(!result) {
+      ZVAL_NULL(return_value);
+    } else {
+      ZVAL_STRING(return_value, (char *)result, 1);
+    }
+  }
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_pcode_set) {
+  struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+  char *arg2 = (char *) 0 ;
+  zval **args[2];
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 2 || zend_get_parameters_array_ex(2, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_pcode_set. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[1])->type==IS_NULL) {
+    arg2 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[1]);
+    arg2 = (char *) Z_STRVAL_PP(args[1]);
+  }
+  /*@SWIG@*/;
+  
+  {
+    free(arg1->pcode);
+    if (arg2) {
+      arg1->pcode = (char *) malloc(strlen((const char *)arg2)+1);
+      strcpy((char *)arg1->pcode, (const char *)arg2);
+    } else {
+      arg1->pcode = 0;
+    }
+  }
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_pcode_get) {
+  struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+  zval **args[1];
+  char *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_pcode_get. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  result = (char *) ((arg1)->pcode);
   {
     if(!result) {
       ZVAL_NULL(return_value);
@@ -44925,8 +44997,8 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zxid_cgi_enc_hint_get,_wrap_zxid_cgi_enc_hint_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_atselafter_set,_wrap_zxid_cgi_atselafter_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_atselafter_get,_wrap_zxid_cgi_atselafter_get,NULL)
- SWIG_ZEND_NAMED_FE(zxid_cgi_pad7_set,_wrap_zxid_cgi_pad7_set,NULL)
- SWIG_ZEND_NAMED_FE(zxid_cgi_pad7_get,_wrap_zxid_cgi_pad7_get,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_mob_set,_wrap_zxid_cgi_mob_set,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_mob_get,_wrap_zxid_cgi_mob_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_sid_set,_wrap_zxid_cgi_sid_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_sid_get,_wrap_zxid_cgi_sid_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_nid_set,_wrap_zxid_cgi_nid_set,NULL)
@@ -45047,6 +45119,8 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zxid_cgi_id_get,_wrap_zxid_cgi_id_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_inv_set,_wrap_zxid_cgi_inv_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_inv_get,_wrap_zxid_cgi_inv_get,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_pcode_set,_wrap_zxid_cgi_pcode_set,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_pcode_get,_wrap_zxid_cgi_pcode_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_skin_set,_wrap_zxid_cgi_skin_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_skin_get,_wrap_zxid_cgi_skin_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_action_url_set,_wrap_zxid_cgi_action_url_set,NULL)
@@ -46029,6 +46103,7 @@ SWIG_STRING_CONSTANT(ZXID_COT_DIR, "cot/");
 SWIG_STRING_CONSTANT(ZXID_DIMD_DIR, "dimd/");
 SWIG_STRING_CONSTANT(ZXID_INV_DIR, "inv/");
 SWIG_STRING_CONSTANT(ZXID_LOG_DIR, "log/");
+SWIG_STRING_CONSTANT(ZXID_PCODE_DIR, "pcode/");
 SWIG_STRING_CONSTANT(ZXID_DCR_DIR, "dcr/");
 SWIG_STRING_CONSTANT(ZXID_RSR_DIR, "rsr/");
 SWIG_LONG_CONSTANT(ZXID_MAX_USER, (256));

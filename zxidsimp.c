@@ -1053,7 +1053,6 @@ static char* zxid_simple_idp_show_an(zxid_conf* cf, zxid_cgi* cgi, int* res_len,
   zxid_ses sess;
   ZERO(&sess, sizeof(sess));
   D("cf=%p cgi=%p", cf, cgi);
-  
   DD("z saml_req(%s) rs(%s) sigalg(%s) sig(%s)", cgi->saml_req, cgi->rs, cgi->sigalg, cgi->sig);  
   if (cgi->uid && zxid_pw_authn(cf, cgi, &sess)) {  /* Try login, just in case. */
     return zxid_simple_idp_an_ok_do_rest(cf, cgi, &sess, res_len, auto_flags);
@@ -1174,6 +1173,17 @@ static char* zxid_simple_idp_show_an(zxid_conf* cf, zxid_cgi* cgi, int* res_len,
 	*p = '_';
       }
   }
+#if 1
+  /* Hack: Different page for mobile */
+  if (cgi->mob) {
+    D("Mobile detected TF(%s)", cf->an_templ_file);
+    /* Replace final .html  with -mob.html */
+    cf->an_templ_file = zx_alloc_sprintf(cf->ctx, 0, "%.*s-mob.html",
+					 strlen(cf->an_templ_file)-sizeof(".html")+1,
+					 cf->an_templ_file);
+    D("New TF(%s)", cf->an_templ_file);
+  }
+#endif
   ss = zxid_template_page_cf(cf, cgi, cf->an_templ_file, cf->an_templ, 4096, auto_flags);
   /* if (cgi->ssoreq) ZX_FREE(cf->ctx, cgi->ssoreq); might not be malloc'd if tabs have CGI */
   DD("an_page: ret(%s)", ss?ss->len:1, ss?ss->s:"?");
@@ -1271,9 +1281,10 @@ static char* zxid_show_protected_content_setcookie(zxid_conf* cf, zxid_cgi* cgi,
   char* rs_qs;
 
   if (cf->ses_cookie_name && *cf->ses_cookie_name) {
-    ses->setcookie = zx_alloc_sprintf(cf->ctx, 0, "%s=%s; path=/%s",
+    ses->setcookie = zx_alloc_sprintf(cf->ctx, 0, "%s=%s; path=/%s%s",
 				      cf->ses_cookie_name, ses->sid,
-				      ONE_OF_2(cf->burl[4], 's', 'S')?"; secure":"");
+				      cgi->mob?"; Max-Age=15481800":"",
+				      ONE_OF_2(cf->burl[4], 's', 'S')?"; secure; HttpOnly":"; HttpOnly");
     ses->cookie = zx_alloc_sprintf(cf->ctx, 0, "$Version=1; %s=%s",
 				   cf->ses_cookie_name, ses->sid);
     D("setcookie(%s)=(%s) ses=%p", cf->ses_cookie_name, ses->setcookie, ses);
