@@ -544,6 +544,10 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, ch
 
 /* ------------- XML-ENC support -------------- */
 
+// AES256-GCM-SHA384
+//#define AES256GCM "AES-256-GCM"
+#define AES256GCM "aes-256-gcm"
+
 /*() Symmetric key decryption using XML-ENC. The encryption algorithm is
  * auto-detected from the XML-ENC data.
  *
@@ -607,7 +611,7 @@ struct zx_str* zxenc_symkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* e
   } else if (sizeof(ENC_ALGO_AES256_GCM)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES256_GCM, ss->s, sizeof(ENC_ALGO_AES256_GCM)-1)) {
     if (symkey->len != (256 >> 3)) goto wrong_key_len;
-    ss = zx_raw_cipher(cf->ctx, "AES-256-GCM", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
+    ss = zx_raw_cipher(cf->ctx, AES256GCM, 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
   } else {
     ERR("Unsupported key transformation method(%.*s)", ss->len, ss->s);
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "ECRYPT", 0, "unsupported key transformation method");
@@ -779,7 +783,7 @@ struct zx_xenc_EncryptedData_s* zxenc_symkey_enc(zxid_conf* cf, struct zx_str* d
   /* CBC is no longer considered sae so do not use it. */
   ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 1, symkey, data->len, data->s, 16, 0);
 #else
-  ss = zx_raw_cipher(cf->ctx, "AES-256-GCM", 1, symkey, data->len, data->s, 16, 0);
+  ss = zx_raw_cipher(cf->ctx, AES256GCM, 1, symkey, data->len, data->s, 16, 0);
 #endif
   if (!ss) {
     ERR("Symmetric encryption failed %d",0);
