@@ -206,10 +206,11 @@
  * VURL in your own configuration.
  *
  * Default value: "%a%h%s"
+ *
  * See also: VPATH
  *
  * Changing VURL may change BURL which requires new metadata export to CoT partners. */
- */
+ 
 #define ZXID_VURL "%a%h%s"
 
 /*(c) Override standard EntityID Construction
@@ -842,7 +843,7 @@
  * safe-base64 encode the result of the encryption.
  *
  * None of the logging options affect metadata. */
- */
+
 
 /* Most common combinations of the above flags. */
 #define ZXLOG_OP_NOLOG        0x00
@@ -1352,29 +1353,28 @@
 #define ZXID_WSC_LOCALPDP_OBL_ACCEPT  0  /* String: WSC acceptable obligations in SOL notation */
 
 /*(c) Unix Group Authorization
-
-  UNIX_GRP_AZ_MAP=affil$attr$val$group$ext
-
-where
-
-affil:: Specifies who is allowed to supply the attribute. Typically
-    the IdP EntityID. Specifying '**' accepts any IdP, but this
-    is problematic if different IdPs use same attribute name to
-    mean different things. Suffix and prefix matching can be
-    performed using "**" and "*".
-attr:: The name of the SSO attribute, e.g "role" or "o" (organization).
-    Can also be specified as "*", which is interpretted as any
-    user from the IdP specified in affil. No other wildcarding.
-val:: The value of the attribute that needs to match. Prefix and
-    suffix matching using "*" and "**" is supported. Use | to
-    supply alternatives.
-group:: The Unix group name.
-ext:: Extension field.
-
-Leave as empty (null) to disable the feature.
-
+ *
+ *  UNIX_GRP_AZ_MAP=affil$attr$val$group$ext
+ *
+ * where
+ *
+ * affil:: Specifies who is allowed to supply the attribute. Typically
+ *     the IdP EntityID. Specifying '**' accepts any IdP, but this
+ *     is problematic if different IdPs use same attribute name to
+ *     mean different things. Suffix and prefix matching can be
+ *     performed using "**" and "*".
+ * attr:: The name of the SSO attribute, e.g "role" or "o" (organization).
+ *     Can also be specified as "*", which is interpretted as any
+ *     user from the IdP specified in affil. No other wildcarding.
+ * val:: The value of the attribute that needs to match. Prefix and
+ *     suffix matching using "*" and "**" is supported. Use | to
+ *     supply alternatives.
+ * group:: The Unix group name.
+ * ext:: Extension field.
+ *
+ * Leave as empty (null) to disable the feature.
+ *
  * Does not affect metadata. */
- */
 
 #define ZXID_UNIX_GRP_AZ_MAP 0
 
