@@ -63,10 +63,10 @@ that ZXID generates. This tutorial assumes you chose following URL
   https://idp.example.com/zxididp
 
 > N.B. Prior to version 1.10 (early 2012) zxididp would
-> use /var/zxid/idp as default ~PATH~ and /var/zxid/idpzxid/conf
+> use /var/zxid/idp as default ~CPATH~ and /var/zxid/idpzxid/conf
 > as default configuration file. Since implementation of ~VPATH~
 > and ~VURL~ this is no longer supported. We recommend either using
-> virtual hosting - with ~PATH~ ending up something like
+> virtual hosting - with ~CPATH~ ending up something like
 > /var/zxid/idp.example.com:8443/ and configuration file in
 > /var/zxid/idp.example.com:8443/zxid.conf - or deploying the
 > IdP as sole application on its server and using nonvirtual
@@ -81,8 +81,8 @@ that ZXID generates. This tutorial assumes you chose following URL
   NICE_NAME=Your IdP Name for End Users to See
   ORG_NAME=Your org
   ORG_URL=http://example.com/
-  BUTTON_URL=/example-saml2_icon_150x60.png
-  URL=https://idp.example.com/zxididp
+  BUTTON_URL=http://example.com/example-saml2_icon_150x60.png
+  BURL=https://idp.example.com/zxididp
   IDP_ENA=1
   AS_ENA=1
 
@@ -278,7 +278,7 @@ When generating a SSO assertion, the attributes are collected as follows:
 4.  LDIF at ~/var/zxid/idpuid/.all/SP,SHA/.at~
 
 As of version 0.33 (20090904) the attributes are rendered
-singlevalued. If multiple occurrances of an attribute happen,
+single valued. If multiple occurrances of an attribute happen,
 the first instance is used and others ignored. However, in
 a future version, we expect to support multivalued attributes.
 
@@ -477,23 +477,23 @@ For *IIS* this could mean something like
 You must choose location for the configuration and logging hierachy
 of the zxididp(8) and then populate it. See earlier section in this
 document for details. By default the hierarchy will live in
-/var/zxid and the directories will have prefix "idp".
+/var/zxid.
 
   /var/zxid/
    |
-   +-- idpzxid.conf  Main configuration file
-   +-- idppem/       Our certificates
-   +-- idpcot/       Metadata of CoT partners (metadata cache)
-   +-- idpses/       Sessions
-   +-- idpuid/       Local user ID (local login name) to SHA1 mapping
-   +-- idpnid/       Index of federated NameIDs, to map to uid
-   +-- idpdimd/      Discovery Metadata registrations
-   +-- idpinv/       Invitations
-   `-- idplog/       Log files, pid files, and the lik
+   +-- zxid.conf  Main configuration file
+   +-- pem/       Our certificates
+   +-- cot/       Metadata of CoT partners (metadata cache)
+   +-- ses/       Sessions
+   +-- uid/       Local user ID (local login name) to SHA1 mapping
+   +-- nid/       Index of federated NameIDs, to map to uid
+   +-- dimd/      Discovery Metadata registrations
+   +-- inv/       Invitations
+   `-- log/       Log files, pid files, and the lik
 
 You can create this hierarchy by running
 
-  make dir ZXID_PATH=/var/zxid/idp
+  zxcot -dirs
 
 4.4 Adding Service Providers to Circle of Trust (CoT) of zxididp
 ----------------------------------------------------------------
@@ -585,16 +585,16 @@ directory will contain the .pw file for password authentication
 and possibly a .yk file for Yubikey authentication. The directory
 will also contain .bs/.at file for specifying user's attributes.
 
-Easiest way to create a new user is using -n option:
+Easiest way to create a new user is using -new option:
 
-  zxpasswd -n user /var/zxid/idpuid <passwd
+  zxpasswd -new user /var/zxid/idpuid <passwd
 
 4.5.2 Setting or Changing Password
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   zxpasswd user /var/zxid/idpuid <newpasswd
 
-N.B. By default the password is stored as MD5 hash. Use -h X command
+N.B. By default the password is stored as MD5 hash. Use -t X command
 line option to choose other hashing algorithm.
 
 4.5.3 Adding Yubikey Authentication
@@ -603,7 +603,7 @@ line option to choose other hashing algorithm.
 Yubikeys are One Time Password (OTP) hardware tokens that connect to
 the USB port and act as keyboard emulators. They are sold by yubico.com
 
-  zxpasswd -h y -s user yubikeyalias /var/zxid/idpuid <yk_aes128_secret
+  zxpasswd -t y -s user yubikeyalias /var/zxid/idpuid <yk_aes128_secret
 
 N.B. To program a Yubikey and agree to a AES 128 bit shared secret, you
 need ~ykpersonalize~ program, available from Yubico.
@@ -798,7 +798,7 @@ example 3.
 It is important to note that grant tokens are bearer tokens,
 i.e. whoever gets their hands on them is able to acquire the attribute
 and corresponding access rights. Therefore the distribution should be
-limited.
+limited and well controlled.
 
 In the SP specific access token case, the SP promoter can make
 a restriction that the grant token can be consumed only by
@@ -1069,7 +1069,7 @@ As of version 0.47 (20100114) zxididp supports the following specifications
 Old session files will accumulate in the filesystem. You should use
 a cron job to clean them up
 
-  touch /var/zxid/idpses; find /var/zxid/idpses -atime +30 | xargs rm -rf
+  touch /var/zxid/ses; find /var/zxid/ses -atime +30 | xargs rm -rf
 
 N.B. the ~touch~ is needed in the above command line to ensure that
 the entire directory is not deleted.
@@ -1343,8 +1343,9 @@ than conveying genuine delegation relationship.
 96 License
 ==========
 
-Copyright (c) 2009-2010 Sampo Kellomäki (sampo@iki.fi), All Rights Reserved.
 Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
+Copyright (c) 2009-2011 Sampo Kellomäki (sampo@iki.fi), All Rights Reserved.
+Copyright (c) 2012-2015 Synergetics (sampo@synergetics.be), All Rights Reserved.
 Author: Sampo Kellomäki (sampo@iki.fi)
 
 Licensed under the Apache License, Version 2.0 (the "License");

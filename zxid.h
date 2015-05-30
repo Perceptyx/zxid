@@ -253,7 +253,7 @@ struct zxid_conf {
   char* anon_ok;
   char* optional_login_pat;
   char** required_authnctx;  /* Array of acceptable authentication context class refs */
-  char* issue_authnctx_pw;   /* What authentication context IdP issues for password authent. */
+  struct zxid_cstr_list* issue_authnctx;  /* What authentication context IdP issues for for different authentication methods. */
   char* idp_pref_acs_binding;
   char* mandatory_attr;
   int   before_slop;
@@ -409,6 +409,7 @@ struct zxid_cgi {
   char* nid;           /* NameID of the user. */
   char* uid;           /* au= Form field for user. */
   char* pw;            /* ap= Form field for password. */
+  char* pin;           /* aq= Form field for pin code (second password, used in 2 factor Yubikey. */
   char* ssoreq;        /* ar= Used for conveying original AuthnReq through authn phase. */
   char* cdc;           /* c=  Common Domain Cookie, returned by the CDC reader, also succinctID */
   char* eid;           /* e=, d= Entity ID of an IdP (typically for login) */

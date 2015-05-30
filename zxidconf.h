@@ -50,15 +50,15 @@
 
 #define ZXID_PATH_MAX_RECURS_EXPAND_DEPTH 5 /* (compile) Max no of includes, nested PATH or VPATH */
 
-/*(c) VPATH - PATH for a virtual server
- * The VPATH allows different configuration PATH for different
+/*(c) VPATH - CPATH for a virtual server
+ * The VPATH allows different configuration CPATH for different
  * virtual servers (multihoming) to exist, thus allowing
  * different zxid.conf files and different /var/zxid/ subdirectory.
- * If the config file <PATH><VPATH>zxid.conf exists (i.e. /var/zxid/<VPATH>zxid.conf
- * when using default PATH), then the PATH configuration variable is changed
+ * If the config file <CPATH><VPATH>zxid.conf exists (i.e. /var/zxid/<VPATH>zxid.conf
+ * when using default CPATH), then the CPATH configuration variable is changed
  * to point to the VPATH, and the virtual host specific config file is read.
  *
- * VPATH is rendered by first inserting current PATH, unless VPATH starts by '/',
+ * VPATH is rendered by first inserting current CPATH, unless VPATH starts by '/',
  * and then rendering each ordinary letter as is, but expanding the
  * following % (percent) specifications, inline:
  *
@@ -77,10 +77,10 @@
  *
  * VPATH is not really a configuration option on its own right (there is
  * no corresponding entry in struct zxid_conf), but rather a directive
- * that instructs on point of occurrance of the PATH variable (see zxid.h)
+ * that instructs on point of occurrance of the CPATH variable (see zxid.h)
  * to change and configuration file to be read.
  *
- * Default value: "%h/" (see definition of PATH for example).
+ * Default value: "%h/" (see definition of CPATH for example).
  * See also: VURL, INCLUDE
  */
 
@@ -394,9 +394,6 @@
  *   /var/zxid/pem/logsign-nopw-cert.pem
  *   /var/zxid/pem/ssl-nopw-cert.pem
  *
- * Hint: you can use same certificate - private key pair for
- * all purposes. Just copy the file.
- *
  * Does not affect metadata when correctly used, but beware that if you change
  * certificates, you will need to perform new metadata export to your CoT partners.
  */
@@ -466,10 +463,10 @@
  * 0x01::  Sibling, with Recipient hint (interops with many commercial implementations and Shibboleth as of August 2010)
  * 0x20::  Nested method, i.e. EncryptedData/KeyInfo/EncryptedKey (interops with all versions of Shibboleth and many others)
  *
- * N.B:: SAML2 specs fail to say which approach is preferred, therefore both
- *     approaches are valid. In reading messages ZXID automatically understands both.
- *     This option only controls how outbound messages are generated so that others
- *     can understand them (ideally they would autodetect so we would not need this option).
+ * > N.B: SAML2 specs fail to say which approach is preferred, therefore both
+ * > approaches are valid. In reading messages ZXID automatically understands both.
+ * > This option only controls how outbound messages are generated so that others
+ * > can understand them (ideally they would autodetect so we would not need this option).
  *
  * Does not affect metadata.
  */
@@ -944,7 +941,9 @@
  * Does not affect metadata. */
 #define ZXID_BUS_PW 0
 
-/*(c) How Audit Bus receipts are issued. 0x00 = no receipt, 0x01 = plain, 0x05 = RSA-SHA1.
+/*(c) How Audit Bus receipts are issued
+ * 0x00 = no receipt, 0x01 = plain, 0x05 = RSA-SHA1.
+ *
  * Does not affect metadata. */
 #define ZXBUS_RCPT 0x05
 
@@ -988,7 +987,8 @@
  * Does not affect metadata. */
 #define ZXID_ENC_TAIL_OPT 1
 
-/*(c) SOAP Envelope validation options. In well configured and
+/*(c) SOAP Envelope validation options
+ * In a well configured and
  * bug free environment, you should not need any of these options.
  * Turning them on will reduce security as validations are not made.
  *
@@ -1057,7 +1057,6 @@
 #define ZXID_REMOTE_USER_ENA 1
 
 /*(c) Query String if None Given
- *
  * Does not affect metadata.
  */
 
@@ -1067,6 +1066,7 @@
  * Any URL matching this pattern is treated as web service call rather
  * than SSO attempt. Understood by mod_auth_saml, zxid_httpd and mini_httpd_zxid.
  * WSP_PAT is matched before UMA_PAT and SSO_PAT.
+ *
  * Does not affect metadata. */
 #define ZXID_WSP_PAT "*.wsp"
 
@@ -1074,6 +1074,7 @@
  * Any URL matching this pattern is treated as web service call protected by UMA rather
  * than SSO attempt. Understood by mod_auth_saml, zxid_httpd and mini_httpd_zxid.
  * UMA_PAT is matched after WSP_PAT but before SSO_PAT.
+ *
  * Does not affect metadata. */
 #define ZXID_UMA_PAT "*/uma/*"
 
@@ -1081,6 +1082,7 @@
  * Any URL matching this pattern requires SSO. However
  * WSP_PAT is matched first. Understood by mod_auth_saml (additional
  * Apache configuration needed), zxid_httpd and mini_httpd_zxid.
+ *
  * Does not affect metadata. */
 #define ZXID_SSO_PAT "**"
 
@@ -1095,12 +1097,12 @@
  * if user already has session, but allow the user to access page anonymously
  * without logging in if he does not have session.
  *
- * *** This option does not prevent the SSO from being tried in the
- * *** first place and consequently, IdP selection will be invoked in any
- * *** case - even if user has no meaningful IdP in mind. This option only
- * *** controls what happens after IdP redirects back without having
- * *** authenticated the user. By clever manupulation of DEFAULTQS and fp=1
- * *** this could be made to work, if there is only one IdP.
+ * > N.B. This option does not prevent the SSO from being tried in the
+ * > first place and consequently, IdP selection will be invoked in any
+ * > case - even if user has no meaningful IdP in mind. This option only
+ * > controls what happens after IdP redirects back without having
+ * > authenticated the user. By clever manupulation of DEFAULTQS and fp=1
+ * > this could be made to work, if there is only one IdP.
  *
  * Does not affect metadata. */
 #define ZXID_ANON_OK 0
@@ -1133,15 +1135,23 @@
  * Does not affect metadata. */
 #define ZXID_REQUIRED_AUTHNCTX 0
 
-/*(c) IdP: Authentication Context Class Ref for Passwords
- * What authentication context IdP issues for password authentication. The
+/*(c) IdP: Authentication Context Class Refs
+ * What authentication context IdP issues for for different authentication methods. The
  * problem here is that ZXID does not know whether transport layer is TLS (assumed).
  * If it is not, you should configure this to be
  * "urn:oasis:names:tc:SAML:2.0:ac:classes:Password"
  * or you can configure this according to your IdP operational policies.
  *
+ * Comma separated list corresponding to internal authentication levels.
+ *
+ * - 0 = no authentication, used as default if no other value is available
+ * - 1 = weaker than password
+ * - 2 = password
+ * - 3 = yubikey
+ * - 4 = pin + yubikey
+ *
  * Does not affect metadata. */
-#define ZXID_ISSUE_AUTHNCTX_PW "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
+#define ZXID_ISSUE_AUTHNCTX "none,weak,urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport,yubikey,pin-yubikey"
 
 /*(c) IdP preference for ACS
  * If SP does not manifest preference regarding the binding for Assertion Consumer Service,
@@ -1506,7 +1516,6 @@ Leave as empty (null) to disable the feature.
 #define ZXID_AN_PAGE 0
 
 /*(c) Path for Template for IdP Authentication Page
- *
  * Does not affect metadata. */
 
 #define ZXID_AN_TEMPL_FILE "an-main.html"
@@ -1536,7 +1545,6 @@ Leave as empty (null) to disable the feature.
   "</form><div class=zxbot>!!VERSION (builtin)</div>"
 
 /*(c) Path for Template for POST profile page
- *
  * Does not affect metadata. */
 
 #define ZXID_POST_TEMPL_FILE "post.html"

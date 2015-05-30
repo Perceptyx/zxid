@@ -28,6 +28,7 @@
 # 4.11.2013, reformed the TARGET system; include and lib paths per Debian --Sampo
 # 21.11.2013, added zxid_httpd --Sampo
 # 9.2.2014,  added musl-libc compile --Sampo
+# 29.5.2015  upgraded the version due to addition of two factor authentication --Sampo
 #
 # Build so far only tested on Linux, Solaris 8, MacOS 10.3, and mingw-w64. This
 # makefile needs gmake-3.78 or newer.
@@ -44,8 +45,8 @@ vpath %.h ../zxid
 
 ### This is the authorative spot to set version number. Document in Changes file.
 ### c/zxidvers.h is generated from these, see `make updatevers'
-ZXIDVERSION=0x000138
-ZXIDREL=1.38
+ZXIDVERSION=0x000139
+ZXIDREL=1.39
 
 TOP=$(shell pwd)
 

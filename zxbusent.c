@@ -147,7 +147,7 @@ static int zxbus_pw_authn_ent(const char* eid, const char* passw, int fd_hint)
   memcpy(pw_buf, passw, len);
   pw_buf[len] = 0;
   
-  return zx_password_authn(zxbus_path, sha1_name, pw_buf, fd_hint);
+  return zx_password_authn(zxbus_path, sha1_name, pw_buf, 0, fd_hint);
   /* *** add password overwrite in memory */
 }
 
@@ -160,6 +160,7 @@ static int zxbus_pw_authn_ent(const char* eid, const char* passw, int fd_hint)
  *
  * To create bus users, which use SHA1 of their EntityID (the entityID is passed
  * in STOMP 1.1 login header) as username, you should follow these steps
+ *
  * 1. Run ./zxbuslist -c 'URL=https://sp.foo.com/' -dc to determine the entity ID
  * 2. Convert entity ID to SHA1 hash: ./zxcot -p 'http://sp.foo.com?o=B'
  * 3. Create the user: ./zxpasswd -at 'eid: http://sp.foo.com?o=B' -new G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/ <passwd

@@ -785,12 +785,7 @@ See libcurl documentation at curl.haxx.se for more information.
       "PATH=/var/zxid&URL=..."    # WRONG!
       "PATH=/var/zxid/&URL=..."   # Right
 
-9.  If configuration appears to be prematurely truncated, then
-    see if you need to adjust ZXID_MAX_CONF (default 4KB) in
-    zxidconf.h and recompile.
-
-
-10. *Q1:* I get rejection due to NotOnOrAfter or NotBefore. I think I have
+9.  *Q1:* I get rejection due to NotOnOrAfter or NotBefore. I think I have
     synchronized the clocks on IdP and SP. Log messages are
 
       t  zxidsso.c:466 zxid_validate_cond     zx d ssof: NotOnOrAfter ok. Time to expiry 21900 secs

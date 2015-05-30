@@ -207,9 +207,11 @@ static char* login_failed = "Login failed. Check username and password. Make sur
 /* Called by:  zxid_idp_as_do, zxid_simple_idp_pw_authn, zxid_simple_idp_show_an */
 int zxid_pw_authn(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 {
+  int an_level;
   struct zx_str* ss;
+  struct zxid_cstr_list* ac;
 
-  if (!zx_password_authn(cf->cpath, cgi->uid, cgi->pw, 0)) {
+  if (!an_level = zx_password_authn(cf->cpath, cgi->uid, cgi->pw, cgi->pin, 0)) {
     cgi->err = login_failed;
     return 0;
   }
@@ -219,7 +221,12 @@ int zxid_pw_authn(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
   ZERO(ses, sizeof(zxid_ses));
   ses->magic = ZXID_SES_MAGIC;
   ses->an_instant = time(0);  /* This will be later used by AuthnStatement constructor. */
-  ses->an_ctx = cf->issue_authnctx_pw;  /* *** Should also depend on how user was registered */
+  
+  for (ac = cf->issue_authnctx; ac && an_level > 0; ac = ac->n, --an_level) ;
+  if (!ac)
+    ac = cf->issue_authnctx;
+  ses->an_ctx = ac->s;
+  
   /* Master session. Each pairwise SSO has its own to avoid correlation, see zxid_mk_an_stmt() */
   ss = zxid_mk_id(cf, "MMSES", ZXID_ID_BITS);
   ses->sesix = ss->s;

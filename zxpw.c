@@ -1,5 +1,5 @@
-/* zxpw.c  -  Password authentication
- * Copyright (c) 2012 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+/* zxpw.c  -  Password and other authentication methods for IdP
+ * Copyright (c) 2012-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2010 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -14,6 +14,14 @@
  * 14.11.2009, added yubikey (yubico.com) support --Sampo
  * 23.9.2010,  added delegation support --Sampo
  * 1.9.2012,   distilled the authentication backend from zxiduser.c to its own module --Sampo
+ * 29.5.2015,  added two factor authentication, i.e. pin + yubikey --Sampo
+ *
+ * Ranking of authentication methods
+ *  0 = No authentication or failed authentication
+ *  1 = Username + PIN
+ *  2 = Username + Simple password
+ *  3 = Yubikey
+ *  4 = PIN + Yubikey
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -34,6 +42,55 @@
 #include "zxidutil.h"
 #include "zxidconf.h"
 #include "yubikey.h"   /* from libyubikey-1.5 */
+
+/*() Low level password check using various different types of hash
+ * The passw contains the supplied password and the pw_buf the password
+ * from the database (the caller must make this query). The pw_buf from
+ * database may indicate various hashing and other methods which are
+ * handled by this function. The fd_hint is only used for debug prints.
+ * return:: 0 on failure, 1 on success  */
+
+/* Called by:  zx_password_authn */
+static int zx_pw_chk(const char* uid, const char* pw_buf, const char* passw, int fd_hint)
+{
+  unsigned char pw_hash[120];
+  
+  /* *** Add here support for other authentication backends */
+  
+  DD("io(%x) pw_buf (%s) len=%d", fd_hint, pw_buf, strlen(pw_buf));
+  
+  if (!memcmp(pw_buf, "$1$", sizeof("$1$")-1)) {              /* MD5 hashed password */
+    zx_md5_crypt(passw, (char*)pw_buf, (char*)pw_hash);
+    D("io(%x) pw_hash(%s)", fd_hint, pw_hash);
+    if (strcmp((char*)pw_buf, (char*)pw_hash)) {
+      ERR("Bad password. uid(%s)", uid);
+      D("md5 pw(%s) .pw(%s) pw_hash(%s)", passw, pw_buf, pw_hash);
+      return 0;
+    }
+#ifdef USE_OPENSSL
+  } else if (!memcmp(pw_buf, "$c$", sizeof("$c$")-1)) {       /* DES fcrypt hashed password */
+    DES_fcrypt(passw, (char*)pw_buf+3, (char*)pw_hash);
+    D("io(%x) pw_hash(%s)", fd_hint, pw_hash);
+    if (strcmp((char*)pw_buf+3, (char*)pw_hash)) {
+      ERR("Bad password for uid(%s)", uid);
+      D("crypt pw(%s) .pw(%s) pw_hash(%s)", passw, pw_buf, pw_hash);
+      return 0;
+    }
+#endif
+  } else if (ONE_OF_2(pw_buf[0], '$', '_')) {                 /* Unsupported hash */
+    ERR("Unsupported password hash. uid(%s)", uid);
+    D("io(%x) pw(%s) .pw(%s)", fd_hint, passw, pw_buf);
+    return 0;
+  } else {                                                    /* Plaintext password (no hash) */
+    if (strcmp((char*)pw_buf, passw)) {
+      ERR("Bad password. uid(%s)", uid);
+      D("io(%x) pw(%s) .pw(%s)", fd_hint, passw, pw_buf);
+      return 0;
+    }
+  }
+  INFO("Login(%x) OK acnt(%s)", fd_hint, uid);
+  return 2;
+}
 
 /*() Low level Yubikey one time password token (usbkey) authentication.
  * The yubikey system requires that spent OTPs are remembered to prevent
@@ -56,12 +113,12 @@
  * cpath:: The configuration path from which uid directory path is formed, typically cf->cpath
  * uid:: Both the UID and OTP concatenated
  * passw:: not used in Yubikey authentication
- * return:: 0 on failure, 1 on success  */
+ * return:: 0 on failure, 1 (1 factor yubikey) or 2 (pin+yubikey) on success  */
 
 /* Called by:  zx_password_authn */
-int zx_yubikey_authn(const char* cpath, char* uid, const char* passw)
+int zx_yubikey_authn(const char* cpath, char* uid, const char* passw, const char* pin)
 {
-  unsigned char buf[256];
+  unsigned char uidpath[256];
   unsigned char pw_buf[256];
   unsigned char pw_hash[120];
   yubikey_token_st yktok;
@@ -69,19 +126,19 @@ int zx_yubikey_authn(const char* cpath, char* uid, const char* passw)
 
   strcpy((char*)pw_hash, uid + len - 32);
   uid[len - 32] = 0;
-  D("yubikey user(%s) ticket(%s)", uid, pw_hash);
+  D("yubikey user(%s) ticket(%s) pin(%s)", uid, pw_hash, STRNULLCHK(pin));
   
-  snprintf((char*)buf, sizeof(buf)-1, "%s" ZXID_UID_DIR "%s", cpath, uid);
-  buf[sizeof(buf)-1] = 0;
-  len = read_all(sizeof(pw_buf), (char*)pw_buf, "ykspent", 0, "%s/.ykspent/%s", buf, pw_hash);
+  snprintf((char*)uidpath, sizeof(uidpath)-1, "%s" ZXID_UID_DIR "%s", cpath, uid);
+  uidpath[sizeof(uidpath)-1] = 0;
+  len = read_all(sizeof(pw_buf), (char*)pw_buf, "ykspent", 0, "%s/.ykspent/%s", uidpath, pw_hash);
   if (len) {
-    ERR("The One Time Password has already been spent. ticket(%s%s) buf(%.*s)", uid, pw_hash, len, pw_buf);
+    ERR("The One Time Password has already been spent. ticket(%s%s) pw_buf(%.*s)", uid, pw_hash, len, pw_buf);
     return 0;
   }
-  if (!write_all_path("ykspent", "%s/.ykspent/%s", (char*)buf, (char*)pw_hash, 1, "1"))
+  if (!write_all_path("ykspent", "%s/.ykspent/%s", (char*)uidpath, (char*)pw_hash, 1, "1"))
     return 0;
   
-  len = read_all(sizeof(pw_buf), (char*)pw_buf, "ykaes", 1, "%s/.yk", buf);
+  len = read_all(sizeof(pw_buf), (char*)pw_buf, "ykaes", 1, "%s/.yk", uidpath);
   D("buf    (%s) got=%d", pw_buf, len);
   if (len < 32) {
     ERR("User's %s/.yk file must contain aes128 key as 32 hexadecimal characters. Too few characters %d ticket(%s)", uid, len, pw_hash);
@@ -102,66 +159,32 @@ int zx_yubikey_authn(const char* cpath, char* uid, const char* passw)
     ERR("yubikey ticket validation failure %d", 0);
     return 0;
   }
-  return 1;
-}
 
-/*() Low level password check using various different types of hash
- * return:: 0 on failure, 1 on success  */
-
-/* Called by:  zx_password_authn */
-static int zx_pw_chk(const char* uid, const char* pw_buf, const char* passw, int fd_hint)
-{
-  unsigned char pw_hash[120];
-  
-  /* *** Add here support for other authentication backends */
-  
-  DD("io(%x) pw_buf (%s) len=%d", fd_hint, pw_buf, strlen(pw_buf));
-  
-  if (!memcmp(pw_buf, "$1$", sizeof("$1$")-1)) {
-    zx_md5_crypt(passw, (char*)pw_buf, (char*)pw_hash);
-    D("io(%x) pw_hash(%s)", fd_hint, pw_hash);
-    if (strcmp((char*)pw_buf, (char*)pw_hash)) {
-      ERR("Bad password. uid(%s)", uid);
-      D("md5 pw(%s) .pw(%s) pw_hash(%s)", passw, pw_buf, pw_hash);
-      return 0;
+  if (pin && *pin) { /* Pin supplied, may be we can perform two factor authn? */
+    len = read_all(sizeof(pw_buf), (char*)pw_buf, "pin", 1, "%s/.pin", uidpath);
+    if (zx_pw_chk(uid, pw_buf, pin, 0)) {
+      D("Two factor pin+yubikey successful. %d", 1);
+      return 4;
     }
-#ifdef USE_OPENSSL
-  } else if (!memcmp(pw_buf, "$c$", sizeof("$c$")-1)) {
-    DES_fcrypt(passw, (char*)pw_buf+3, (char*)pw_hash);
-    D("io(%x) pw_hash(%s)", fd_hint, pw_hash);
-    if (strcmp((char*)pw_buf+3, (char*)pw_hash)) {
-      ERR("Bad password for uid(%s)", uid);
-      D("crypt pw(%s) .pw(%s) pw_hash(%s)", passw, pw_buf, pw_hash);
-      return 0;
-    }
-#endif
-  } else if (ONE_OF_2(pw_buf[0], '$', '_')) {
-    ERR("Unsupported password hash. uid(%s)", uid);
-    D("io(%x) pw(%s) .pw(%s)", fd_hint, passw, pw_buf);
+    ERR("pin validation failure (after successful yubikey) %d", 0);
     return 0;
-  } else {
-    if (strcmp((char*)pw_buf, passw)) {
-      ERR("Bad password. uid(%s)", uid);
-      D("io(%x) pw(%s) .pw(%s)", fd_hint, passw, pw_buf);
-      return 0;
-    }
   }
-  INFO("Login(%x) OK acnt(%s)", fd_hint, uid);
-  return 1;
+
+  return 3;
 }
 
 /*() Authenticate user using password like mechanism
- * Expects to get username and password in cgi->au and cgi->ap
+ * Expects to get username and password as in cgi->au and cgi->ap
  * respectively. User authetication is done against local database or
  * by default using /var/zxid/uid/UID/.pw file. When filesystem
  * backend is used, for safety reasons the uid (user) component can
  * not have certain characters, such as slash (/) or sequences like "..".
  * See also: zxpasswd.c
  *
- * return:: 0 on failure, 1 on success  */
+ * return:: 0 on failure, 1 or larger on success depending on authentication quality  */
 
 /* Called by:  zxbus_pw_authn_ent, zxid_pw_authn */
-int zx_password_authn(const char* cpath, char* uid, const char* passw, int fd_hint)
+int zx_password_authn(const char* cpath, char* uid, const char* passw, const char* pin, int fd_hint)
 {
   char pw_buf[256];
   int len;
@@ -182,7 +205,7 @@ int zx_password_authn(const char* cpath, char* uid, const char* passw, int fd_hi
 
   len = strlen(uid);
   if (len > 32)
-    return zx_yubikey_authn(cpath, uid, passw);
+    return zx_yubikey_authn(cpath, uid, passw, pin);
   
   if (!passw || !passw[0]) {
     ERR("No password supplied. uid(%s)", uid);

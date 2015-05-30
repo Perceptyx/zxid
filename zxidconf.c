@@ -1209,7 +1209,7 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->anon_ok        = ZXID_ANON_OK;
   cf->optional_login_pat = ZXID_OPTIONAL_LOGIN_PAT;
   cf->required_authnctx = ZXID_REQUIRED_AUTHNCTX;	/* NB: NULL. */
-  cf->issue_authnctx_pw = ZXID_ISSUE_AUTHNCTX_PW;
+  cf->issue_authnctx = zxid_load_cstr_list(cf, 0, ZXID_ISSUE_AUTHNCTX);
   cf->idp_pref_acs_binding = ZXID_IDP_PREF_ACS_BINDING;
   cf->mandatory_attr = ZXID_MANDATORY_ATTR;
 
@@ -1329,6 +1329,7 @@ void zxid_free_conf(zxid_conf *cf)
   zxid_free_cstr_list(cf, cf->localpdp_role_deny);
   zxid_free_cstr_list(cf, cf->localpdp_idpnid_permit);
   zxid_free_cstr_list(cf, cf->localpdp_idpnid_deny);
+  zxid_free_cstr_list(cf, cf->issue_authnctx);
   zxid_free_map(cf, cf->unix_grp_az_map);
   if (cf->required_authnctx) {
     ZX_FREE(cf->ctx, cf->required_authnctx);
@@ -1790,7 +1791,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
     case 'I':  /* ISSUE_A7N, ISSUE_MSG */
       if (!strcmp(n, "ISSUE_A7N"))       { SCAN_INT(v, cf->log_issue_a7n); break; }
       if (!strcmp(n, "ISSUE_MSG"))       { SCAN_INT(v, cf->log_issue_msg); break; }
-      if (!strcmp(n, "ISSUE_AUTHNCTX_PW")) { cf->issue_authnctx_pw = v; break; }
+      if (!strcmp(n, "ISSUE_AUTHNCTX"))  { cf->issue_authnctx = zxid_load_cstr_list(cf, cf->issue_authnctx, v); break; }
 #if 0
       if (!strcmp(n, "IDP_SEL_START"))   { cf->idp_sel_start = v; break; }
       if (!strcmp(n, "IDP_SEL_NEW_IDP")) { cf->idp_sel_new_idp = v; break; }
@@ -2111,6 +2112,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
   struct zx_str* localpdp_role_deny;
   struct zx_str* localpdp_idpnid_permit;
   struct zx_str* localpdp_idpnid_deny;
+  struct zx_str* issue_authnctx;
   struct zx_str* unix_grp_az_map;
   if (cf->log_level>0)
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "MYCONF", 0, 0);
@@ -2166,6 +2168,8 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
   localpdp_role_deny     = zxid_show_cstr_list(cf, cf->localpdp_role_deny);
   localpdp_idpnid_permit = zxid_show_cstr_list(cf, cf->localpdp_idpnid_permit);
   localpdp_idpnid_deny   = zxid_show_cstr_list(cf, cf->localpdp_idpnid_deny);
+
+  issue_authnctx = zxid_show_cstr_list(cf, cf->issue_authnctx);
 
   unix_grp_az_map = zxid_show_map(cf, cf->unix_grp_az_map);
 
@@ -2296,7 +2300,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 
 "ANON_OK=%s\n"
 "OPTIONAL_LOGIN_PAT=%s\n"
-"ISSUE_AUTHNCTX_PW=%s\n"
+"ISSUE_AUTHNCTX=%s\n"
 "IDP_PREF_ACS_BINDING=%s\n"
 "MANDATORY_ATTR=%s\n"
 "PDP_URL=%s\n"
@@ -2501,7 +2505,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 
 		 STRNULLCHK(cf->anon_ok),
 		 STRNULLCHK(cf->optional_login_pat),
-		 STRNULLCHK(cf->issue_authnctx_pw),
+		 issue_authnctx->s,
 		 STRNULLCHK(cf->idp_pref_acs_binding),
 		 STRNULLCHK(cf->mandatory_attr),
 		 STRNULLCHK(cf->pdp_url),

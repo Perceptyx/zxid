@@ -1,4 +1,5 @@
 /* zxidutil.h  -  (Private) Utility API functions
+ * Copyright (c) 2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -13,6 +14,7 @@
  * 13.11.2010, added ZXID_DECL for benefit of the Windows port --Sampo
  * 12.12.2010, separate zxidpriv.h and zxidutil.h from zxid.h --Sampo
  * 10.1.2011,  added TrustPDP support --Sampo
+ * 29.5.2015,  tweaked some prototypes --Sampo
  */
 
 #ifndef _zxidutil_h
@@ -38,7 +40,7 @@ extern "C" {
 
 /* zxpw */
 
-ZXID_DECL int zx_password_authn(const char* path, char* uid, const char* passw, int fd_hint);
+ZXID_DECL int zx_password_authn(const char* path, char* uid, const char* passw, const char* pin, int fd_hint);
 
 /* zxidsso - trivial mapping functions */
 

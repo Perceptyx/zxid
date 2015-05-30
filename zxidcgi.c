@@ -199,6 +199,7 @@ set_eid:
       case 'l': if (n[3]) goto unknown;  cgi->op = n[2];           break;  /* al = login */
       case 'u': if (n[2]) goto unknown;  if (v[0] || !cgi->uid) cgi->uid = v; break; /* au =user */
       case 'p': if (n[2]) goto unknown;  cgi->pw = v;              break;  /* ap = password */
+      case 'q': if (n[2]) goto unknown;  cgi->pin = v;             break;  /* aq = pin */
       case 'r': if (n[2]) goto unknown;  cgi->ssoreq = v;          break;  /* ar = AnRq */
       case 'n': if (n[2]) goto unknown;  cgi->op = 'N';            break;  /* an = new user */
       case 'w': if (n[2]) goto unknown;  cgi->op = 'W';            break;  /* aw = recover pw */

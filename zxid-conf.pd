@@ -72,6 +72,7 @@ explanation):
   # Demo /var/zxid/zxid.conf file
   CPATH=/var/zxid/
   BURL=https://sp.mydomain.com:8443/zxid
+  BUTTON_URL=https://sp.mydomain.com:8443/mysp-saml2_icon_150x60.png
   NICE_NAME=My SP's human%0areadable name.
   ORG_NAME=My Company, Inc.
   ORG_URL=http://www.mycompany.be/
@@ -3011,6 +3012,9 @@ PRAGMA:: Implementation dependent config parsing time option. Ignore if not unde
 ==========
 
 Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
+Copyright (c) 2010-2011 Sampo Kellomäki (sampo@iki.fi), All Rights Reserved.
+Copyright (c) 2012-2015 Synergetics (sampo@synergetics.be), All Rights Reserved.
+
 Author: Sampo Kellomäki (sampo@iki.fi)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -3036,7 +3040,7 @@ limitations under the License.
    A: httpd.conf can contain ZXIDConf directives. Those directives are
    processed as if they came from /var/zxid/zxid.conf file (which is
    processed first, before and ZXIDConf directives), except that if you
-   specify ZXIDConf "CPATH=/your/path", this triggers reporcessing of
+   specify ZXIDConf "CPATH=/your/path", this triggers reprocessing of
    the zxid.conf (from the new path).
 
 2. Q: In mod_auth_saml, what is the relation between the +port+ in ZXIDConf
@@ -3184,11 +3188,6 @@ limitations under the License.
       "CPATH=/var/zxid&BURL=..."    # WRONG!
       "CPATH=/var/zxid/&BURL=..."   # Right
 
-9.  If configuration appears to be prematurely truncated, then
-    see if you need to adjust ZXID_MAX_CONF (default 4KB) in
-    zxidconf.h and recompile.
-
-
 <<references:
 
 [SAML2core] "Assertions and Protocols for the OASIS Security Assertion Markup Language (SAML) V2.0", Oasis Standard, 15.3.2005, saml-core-2.0-os
@@ -3208,21 +3207,5 @@ limitations under the License.
 <<doc-end.pd>>
 <<notapath: TCP/IP a.k.a xBSD/Unix n/a Perl/mod_perl PHP/mod_php Java/Tomcat>>
 <<EOF: >>
-
-#/var/zxid/zxid.conf
-
-IDP_SEL_START=<title>ZXID SP SSO: Choose IdP</title><body bgcolor=white><h1>ZXID SP Federated SSO (user NOT logged in, no session)</h1>
-
-IDP_SEL_NEW_IDP=<h3>Login Using New IdP</h3><i>A new IdP is one whose metadata we do not have yet. We need to know the IdP URL (aka Entity ID) in order to fetch the metadata using the well known location method. You will need to ask the adminstrator of the IdP to tell you what the EntityID is.</i><p>IdP URL <input name=e size=80><input type=submit name=l1 value=" Login (A2) ">\n<input type=submit name=l2 value=" Login (P2) "><br>
-
-IDP_SEL_OUR_EID=Entity ID of this SP (click on the link to fetch the SP metadata): 
-
-IDP_SEL_TECH_USER=<h3>Technical options</h3><input type=checkbox name=fc value=1 checked> Create federation, NID Format: <select name=fn><option value=prstnt>Persistent<option value=trnsnt>Transient<option value="">(none)</select><br>
-
-IDP_SEL_TECH_SITE=<input type=hidden name=fq value=""><input type=hidden name=fy value=""><input type=hidden name=fa value=""><input type=hidden name=fm value=""><input type=hidden name=fp value=0><input type=hidden name=ff value=0><!-- ZXID built-in defaults, see IDP_SEL_TECH_SITE in zxidconf.h -->
-
-IDP_SEL_FOOTER=<hr><a href=\"http://zxid.org/\">zxid.org</a>, 
-IDP_SEL_END=<!-- EOF -->
-
 
 <<fi: >>
