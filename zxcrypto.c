@@ -172,6 +172,7 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
   const EVP_CIPHER* evp_cipher;
   EVP_CIPHER_CTX ctx;
   OpenSSL_add_all_algorithms();
+  if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("plain  ", s, len, 256);  
   EVP_CIPHER_CTX_init(&ctx);
   evp_cipher = EVP_get_cipherbyname(algo);
   if (!evp_cipher) {
@@ -188,11 +189,14 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
       }
       ivv = iv;
     } else {
+      iv_len = tmplen;
       ivv = ZX_DEFAULT_IV;
       ASSERTOPI(EVP_MAX_IV_LENGTH, <=, sizeof(ZX_DEFAULT_IV));
     }
+    if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("iv     ", ivv, iv_len, 1024);
   } else
     ivv = 0;
+  if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("symkey ", key->s, key->len, 1024);
   
   alloclen = EVP_CIPHER_block_size(evp_cipher);
   alloclen = len + alloclen + alloclen;  /* bit pessimistic, but man EVP_CipherInit is ambiguous about the actual size needed. */
@@ -205,15 +209,14 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
     memcpy(out->s, ivv, iv_len);
   else
     iv_len = 0;  /* When decrypting, the iv has already been stripped. */
-  
-  if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("symkey ", key->s, key->len, 1024);
-  
+    
   if (!EVP_CipherInit_ex(&ctx, evp_cipher, 0 /* engine */, (unsigned char*)key->s, (unsigned char*)ivv, encflag)) {
     where = "EVP_CipherInit_ex()";
     goto sslerr;
   }
   
   if (!EVP_CIPHER_CTX_set_key_length(&ctx, key->len)) {
+    D("key->len=%d", key->len);
     where = "wrong key length for algorithm (block ciphers only accept keys of determined length)";
     goto sslerr;
   }
@@ -254,6 +257,7 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
   ASSERTOPI(outlen + iv_len, <=, alloclen);
   out->len = outlen + iv_len;
   out->s[outlen + iv_len] = 0;  /* nul term */
+  if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("cipher ", out->s, out->len, 256);  
   return out;
 
  sslerr:

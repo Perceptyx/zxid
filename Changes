@@ -118,8 +118,14 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
     - Expected namespaces feature for effective suppression of warnings about payload namespaces
     - mod_auth_saml: Apache 2.4 does not recognize authentication as having happened
     - l0 causes pr_ix == 0 error at zxidpsso.c:196, at least on Marcin's machine
+    - Upgrade zxid_psobj_enc() and zxid_psobj_dec() to AES256GCM
 
 No authentication done but request not allowed without authentication for Authentication not configured?
+
+zxid-1.39:: 1.6.2015
+    - Upgrade cipher suites to aes-256-gcm and RSA-OAEP
+    - Added PIN+Yubikey two factor authentication
+    - Added mobile pairing authentication
 
 zxid-1.38:: 11.4.2015
     - Added UNIX_GRP_AZ_MAP

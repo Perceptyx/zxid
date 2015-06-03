@@ -587,31 +587,31 @@ struct zx_str* zxenc_symkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* e
   ss = &ed->EncryptionMethod->Algorithm->g;
   if (sizeof(ENC_ALGO_TRIPLEDES_CBC)-1 == ss->len
       && !memcmp(ENC_ALGO_TRIPLEDES_CBC, ss->s, sizeof(ENC_ALGO_TRIPLEDES_CBC)-1)) {
-    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
+    if (!(cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_ACCEPT)) goto backwards_compat_disa;
     if (symkey->len != (192 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "DES-EDE3-CBC", 0, symkey, raw.len-8, raw.s+8, 8, raw.s);
 
   } else if (sizeof(ENC_ALGO_AES128_CBC)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES128_CBC, ss->s, sizeof(ENC_ALGO_AES128_CBC)-1)) {
-    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
+    if (!(cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_ACCEPT)) goto backwards_compat_disa;
     if (symkey->len != (128 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
 
   } else if (sizeof(ENC_ALGO_AES192_CBC)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES192_CBC, ss->s, sizeof(ENC_ALGO_AES192_CBC)-1)) {
-    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
+    if (!(cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_ACCEPT)) goto backwards_compat_disa;
     if (symkey->len != (192 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "AES-192-CBC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);    
 
   } else if (sizeof(ENC_ALGO_AES256_CBC)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES256_CBC, ss->s, sizeof(ENC_ALGO_AES256_CBC)-1)) {
-    if (!cf->backwards_compat_ena) goto backwards_compat_disa;
+    if (!(cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_ACCEPT)) goto backwards_compat_disa;
     if (symkey->len != (256 >> 3)) goto wrong_key_len;
     ss = zx_raw_cipher(cf->ctx, "AES-256-CBC", 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
   } else if (sizeof(ENC_ALGO_AES256_GCM)-1 == ss->len
 	     && !memcmp(ENC_ALGO_AES256_GCM, ss->s, sizeof(ENC_ALGO_AES256_GCM)-1)) {
     if (symkey->len != (256 >> 3)) goto wrong_key_len;
-    ss = zx_raw_cipher(cf->ctx, AES256GCM, 0, symkey, raw.len-16, raw.s+16, 16, raw.s);
+    ss = zx_raw_cipher(cf->ctx, AES256GCM, 0, symkey, raw.len-12, raw.s+12, 12, raw.s);
   } else {
     ERR("Unsupported key transformation method(%.*s)", ss->len, ss->s);
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "ECRYPT", 0, "unsupported key transformation method");
@@ -690,7 +690,7 @@ struct zx_str* zxenc_privkey_dec(zxid_conf* cf, struct zx_xenc_EncryptedData_s* 
   
   if (sizeof(ENC_KEYTRAN_RSA_1_5)-1 == ss->len
       && !memcmp(ENC_KEYTRAN_RSA_1_5, ss->s, sizeof(ENC_KEYTRAN_RSA_1_5)-1)) {
-    if (!cf->backwards_compat_ena) {
+    if (!(cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_ACCEPT)) {
       ERR("PKCS#1 v1.5 disabled to prevent Backwards Compatibility Attacks (see http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/) %d",0);
       zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "C", "EBC", 0, "Ciphersuite rejected to prevent backwards compatibility attacks");
       return 0;
@@ -779,12 +779,12 @@ struct zx_xenc_EncryptedData_s* zxenc_symkey_enc(zxid_conf* cf, struct zx_str* d
   }
   DD("Plaintext(%.*s)", data->len, data->s);
   D_XML_BLOB(cf, "PLAINTEXT", data->len, data->s);
-#if 0
-  /* CBC is no longer considered sae so do not use it. */
-  ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 1, symkey, data->len, data->s, 16, 0);
-#else
-  ss = zx_raw_cipher(cf->ctx, AES256GCM, 1, symkey, data->len, data->s, 16, 0);
-#endif
+  if (cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_GEN) {
+    /* CBC is no longer considered safe so do not use it. */
+    ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 1, symkey, data->len, data->s, 16, 0);
+  } else {
+    ss = zx_raw_cipher(cf->ctx, AES256GCM, 1, symkey, data->len, data->s, 12, 0);
+  }
   if (!ss) {
     ERR("Symmetric encryption failed %d",0);
     return 0;
@@ -816,7 +816,7 @@ struct zx_xenc_EncryptedData_s* zxenc_symkey_enc(zxid_conf* cf, struct zx_str* d
 struct zx_xenc_EncryptedData_s* zxenc_pubkey_enc(zxid_conf* cf, struct zx_str* data, struct zx_xenc_EncryptedKey_s** ekp, X509* cert, char* idsuffix, zxid_entity* meta)
 {
   struct rsa_st* rsa_pkey;
-  char symkey[128/8];
+  char symkey[256/8];  /* Large enough for AES256GCM */
   struct zx_str symkey_ss;
   struct zx_str* ss;
   struct zx_str* b64;
@@ -832,9 +832,15 @@ struct zx_xenc_EncryptedData_s* zxenc_pubkey_enc(zxid_conf* cf, struct zx_str* d
     ek->Recipient = zx_dup_attr(cf->ctx, &ek->gg, zx_Recipient_ATTR, meta->eid);
   }
   
-  zx_rand(symkey, sizeof(symkey));
-  symkey_ss.len = sizeof(symkey);
-  symkey_ss.s = symkey;
+  if (cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_GEN) {
+    zx_rand(symkey, 128/8);  /* AES-128-CBC */
+    symkey_ss.len = 128/8;
+    symkey_ss.s = symkey;
+  } else {
+    zx_rand(symkey, 256/8);  /* AES256GCM */
+    symkey_ss.len = 256/8;
+    symkey_ss.s = symkey;
+  }
   rsa_pkey = zx_get_rsa_pub_from_cert(cert, "zxenc_pubkey_enc");
   if (!rsa_pkey)
     return 0;

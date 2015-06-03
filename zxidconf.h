@@ -1385,7 +1385,10 @@
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  *
  * Does not affect metadata. */
-#define ZXID_BACKWARDS_COMPAT_ENA 0 /* safe default */
+#define ZXID_BACKWARDS_COMPAT_ENA 0 /* safe default, 1=emable acceptance of old unsafe ciphers, 2=use old unsafe ciphers when generating protocol messages, 3=be backwards compatible in input and output */
+
+#define ZXID_BACKWARDS_COMPAT_ACCEPT 1
+#define ZXID_BACKWARDS_COMPAT_GEN    2
 
 /* ----------------------------------------------------------------------------- */
 /*(c) Change current working directory
