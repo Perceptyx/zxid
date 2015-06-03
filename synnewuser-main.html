@@ -1,0 +1,54 @@
+<title>IdP New User</title>
+<link type="text/css" rel=stylesheet href="an.css">
+<body bgcolor=white>
+<h1 class=zxtop>IdP New User Creation</h1>
+
+<div class=zxerr>!!ERR</div>
+<div class=zxmsg>!!MSG</div>
+<div class=zxdbg>!!DBG</div>
+
+<form method=post action="https://idp.i-dent.eu/synnewuser.pl">
+<table>
+
+<tr><th>Attribute</th><th>Value</th></tr>
+
+<tr><th>Your Name (CN)*</th>
+    <td><input name=cn value="!!cn" size=40>
+      <input type=hidden name=cnshare value=1> Share</td></tr>
+
+<tr><th>Email**</th>
+    <td><input name=email value="!!email" size=40>
+      <input type=hidden name=emailshare value=1> Share</td></tr>
+
+<tr><th>Reg. Source IP</th><td>!!ip</i></td></tr>
+
+</table>
+
+<b>*</b> The Common Name (CN) is used to greet you in user interface and
+    as a basis for your username. It does not have to be your legal name.<br>
+<b>**</b> You have to supply email if you ever want to use
+    password reset feature.<br>
+
+<p> We follow assigned password policy (i.e. you do not get to choose
+    password - we generate random one for you) because this prevents sharing
+    password with, e.g. facebook, and prevents choice of easily guessable
+    passwords. If you let your web browser's password manager remeber
+    the password, be sure the protect the password manager with a master password.
+    If you write down the password, be sure to encrypt it or store it in
+    an otherwise safe way. <i>You will see your assigned username and password
+    in the next screen.</i>
+
+<p><input type=submit name=ok value="Agree to terms and conditions and register new user">
+<a href="html/user-terms.html">Terms and Conditions for Users</a>
+
+<input type=hidden name=ar value="!!ar">
+<input type=hidden name=rfr value="!!rfr">
+<input type=hidden name=idpurl value="!!idpurl">
+<input type=hidden name=eid value="!!eid">
+<input type=hidden name=appeid value="!!appeid">
+<input type=hidden name=appsecs value="!!appsecs">
+<input type=hidden name=appcode value="!!appcode">
+<input type=hidden name=ssoena value=1>
+<input type=hidden name=rs value="!!rs">
+
+</form>
