@@ -168,11 +168,12 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
   const char* ivv;
   char* where = "start";
   struct zx_str* out;
-  int outlen, tmplen, alloclen;
+  int outlen=0, tmplen, alloclen;
   const EVP_CIPHER* evp_cipher;
   EVP_CIPHER_CTX ctx;
   OpenSSL_add_all_algorithms();
   if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("plain  ", s, len, 256);  
+  D("len=%d s=%p", len, s);
   EVP_CIPHER_CTX_init(&ctx);
   evp_cipher = EVP_get_cipherbyname(algo);
   if (!evp_cipher) {
@@ -223,6 +224,7 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
   }
   
   if (!EVP_CipherUpdate(&ctx, (unsigned char*)out->s + iv_len, &outlen, (unsigned char*)s, len)) { /* Actual crypto happens here */
+    D("len=%d s=%p iv_len=%d outlen=%d out->s=%p", len, s, iv_len, outlen, out->s);
     where = "EVP_CipherUpdate()";
     goto sslerr;
   }
