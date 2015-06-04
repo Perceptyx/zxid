@@ -204,7 +204,7 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
     alloclen += iv_len;
   
   out = zx_new_len_str(c, alloclen);
-  D("alloclen=%d out=%p", alloclen, out);
+  D("alloclen=%d iv_len=%d encflag=%d out=%p iv=%p", alloclen, iv_len, encflag, out, iv);
   if (!out) goto clean;
   if (encflag)
     memcpy(out->s, ivv, iv_len);
@@ -262,6 +262,7 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
   return out;
 
  sslerr:
+  D("where(%s)", where);
   zx_report_openssl_err(where);
  clean:
   EVP_CIPHER_CTX_cleanup(&ctx);
