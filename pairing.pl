@@ -98,7 +98,7 @@ sub show_templ {
 
 # Since we share the session with the real IdP, we can fish out the original IdP uid from there.
 $sespath = "$cgi{'sespath'}/.ses";
-$sesobj = readall($path);
+$sesobj = readall($sespath);
 $uid = (split /\|/, $sesobj)[4];  # Fifth pipey separated field is the IdP side uid
 
 for ($iter = 50; $iter; --$iter) {  # Try again until successful
