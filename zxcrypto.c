@@ -1,4 +1,5 @@
 /* zxid/zxcrypto.c  -  Glue for cryptographical functions
+ * Copyright (c) 2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -11,6 +12,7 @@
  * 7.10.2008, added documentation --Sampo
  * 29.8.2009, added zxid_mk_self_signed_cert() --Sampo
  * 12.12.2011, added HMAC SHA-256 as needed by JWT/JWS --Sampo
+ * 6.6.3015,   added aes-256-gcm --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  */

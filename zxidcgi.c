@@ -55,7 +55,7 @@ int zxid_parse_cgi(zxid_conf* cf, zxid_cgi* cgi, char* qs)
   DD("qs(%s)=%p len=%d", STRNULLCHK(qs), qs, qs?strlen(qs):-1);
   if (!qs)
     return 0;
-#if 0
+#if 1
   p = getenv("HTTP_USER_AGENT");
   if (p && !memcmp(p, "Synmobile", sizeof("Synmobile")-1)) {
     D("Mobile detected UA(%s)", p);
