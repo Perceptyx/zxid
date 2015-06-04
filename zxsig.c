@@ -764,7 +764,11 @@ struct zx_xenc_EncryptedData_s* zxenc_symkey_enc(zxid_conf* cf, struct zx_str* d
   ed->Id = zx_ref_len_attr(cf->ctx, &ed->gg, zx_Id_ATTR, ed_id->len, ed_id->s);
   ed->Type = zx_ref_attr(cf->ctx, &ed->gg, zx_Type_ATTR, "http://www.w3.org/2001/04/xmlenc#Element");
   ed->EncryptionMethod = zx_NEW_xenc_EncryptionMethod(cf->ctx, &ed->gg);
-  ed->EncryptionMethod->Algorithm = zx_ref_attr(cf->ctx, &ed->EncryptionMethod->gg, zx_Algorithm_ATTR, ENC_ALGO);
+  if (cf->backwards_compat_ena & ZXID_BACKWARDS_COMPAT_GEN) {
+    ed->EncryptionMethod->Algorithm = zx_ref_attr(cf->ctx, &ed->EncryptionMethod->gg, zx_Algorithm_ATTR, ENC_ALGO_AES128_CBC);
+  } else {
+    ed->EncryptionMethod->Algorithm = zx_ref_attr(cf->ctx, &ed->EncryptionMethod->gg, zx_Algorithm_ATTR, ENC_ALGO_AES256_GCM);
+  }
   if (ek) {
     ed->KeyInfo = zx_NEW_ds_KeyInfo(cf->ctx, &ed->gg);
     if (cf->enckey_opt & 0x20) {
