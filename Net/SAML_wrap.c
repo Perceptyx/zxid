@@ -44345,6 +44345,51 @@ XS(_wrap_zxid_as_call) {
 }
 
 
+XS(_wrap_zxid_start_sso_url) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    int argvi = 0;
+    struct zx_str *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 2) || (items > 2)) {
+      SWIG_croak("Usage: zxid_start_sso_url(cf,cgi);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_start_sso_url" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_start_sso_url" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    result = (struct zx_str *)zxid_start_sso_url(arg1,arg2);
+    {
+      if (argvi >= items) {
+        EXTEND(sp,1);
+      }
+      ST(argvi) = result?newSVpv(result->s, result->len):&PL_sv_undef;  /* newSV(0) */
+      /* Do not free underlying zx_str because they are usually returned by reference. */
+      ++argvi;
+    }
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
 XS(_wrap_zxid_sp_slo_soap) {
   {
     zxid_conf *arg1 = (zxid_conf *) 0 ;
@@ -50946,6 +50991,7 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zxid_sp_deref_art", _wrap_zxid_sp_deref_art},
 {"Net::SAMLc::zxid_as_call_ses", _wrap_zxid_as_call_ses},
 {"Net::SAMLc::zxid_as_call", _wrap_zxid_as_call},
+{"Net::SAMLc::zxid_start_sso_url", _wrap_zxid_start_sso_url},
 {"Net::SAMLc::zxid_sp_slo_soap", _wrap_zxid_sp_slo_soap},
 {"Net::SAMLc::zxid_sp_slo_redir", _wrap_zxid_sp_slo_redir},
 {"Net::SAMLc::zxid_sp_mni_soap", _wrap_zxid_sp_mni_soap},

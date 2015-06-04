@@ -15,10 +15,16 @@
 #
 # Web GUI for creating new user, possibly in middle of login sequence.
 # The AuthnRequest is preserved through new user creation by passing ar.
+#
+# If cgi->ssoena and cgi->eid are specified, then after provisioning new user,
+# a single sign-on is performed as well.
+#
+# Start url: https://sp.citizendata.eu:8445/synnewuser.cgi
 
 $from = 'sampo-synnewuser-noreply@zxid.org';
 $admin_mail = 'sampo-synnewuser@zxid.org';
 $dir = '/home/sampo/sidemo/zxid/idp.i-dent.eu/';
+#$dir = '/d/ssoid/e2eta/ssoid.com/';
 $appeid = 'https://sp.citizendata.eu:8445/protected/saml?o=B';
 $appkey = 'foobar123ABC';  # appkey agreed between the IdP and the SP
 $url_after_sso = '/provis-sso-ok.html'; # where user is redirected after provisioning and SSO
@@ -47,8 +53,7 @@ sub encode_safe_base64 { my ($x) = @_; $x = encode_base64 $x, ''; $x=~tr[+/][-_]
 use Net::SAML;
 use Digest::SHA;
 
-close STDERR;
-open STDERR, ">>/var/tmp/zxid.stderr" or die "Cant open error log: $!";
+close STDERR; open STDERR, ">>/var/tmp/zxid.stderr" or die "Cant open error log: $!";
 select STDERR; $|=1; select STDOUT;
 
 ($sec,$min,$hour,$mday,$mon,$year) = gmtime(time);
@@ -90,7 +95,7 @@ sub readall {
     my ($f) = @_;
     my ($pkg, $srcfile, $line) = caller;
     undef $/;         # Read all in, without breaking on lines
-    open F, "<$f" or die "$srcfile:$line: Cant read($f): $!";
+    open F, "<$f" or die "$srcfile:$line: Cant read($f): $! ".`pwd`;
     binmode F;
     my $x = <F>;
     close F;
@@ -108,12 +113,14 @@ sub show_templ {
 
 sub redirect {
     my ($url) = @_;
+    warn "redirect($url)";
     syswrite STDOUT, "Location: $url\r\n\r\n";
     exit;
 }
 
 sub send_mail {
     my ($to, $subj, $body) = @_;
+    # sudo apt-get install nullmailer; cat /etc/nullmailer/remotes: def-smtp
     open S, "|/usr/sbin/sendmail -i -B 8BITMIME -t" or die "No sendmail in path: $! $?";
     $msg = <<MAIL;
 From: $from
@@ -147,14 +154,18 @@ BODY
 
 sub gen_username {
     my ($cn) = @_;
-    my ($first) = split /\w+/, $cn;
+    my ($first) = split /\s+/, $cn;
+    warn "cn($cn) first($first)";
     $first =~ tr[A-Za-z0-9_-][_]cs;
-    for ($i = 1; $i < 1000; ++$i) {  # Keep trying but reasonably avoid infinite loop
-	return "$first$i" unless -e "${dir}uid/$first$i";
+    if (length $first >= 3) {
+	for ($i = 1; $i < 1000; ++$i) {  # Keep trying but reasonably avoid infinite loop
+	    return "$first$i" unless -e "${dir}uid/$first$i";
+	}
     }
     # Short form username did not workout in forst 1000 tries. Probably a popular first
     # name. Lets take the full cn to help generate some uniqueness.
     $cn =~ tr[A-Za-z0-9_-][_]cs;
+    $cn .= 'user' if length $cn < 3;
     for ($i = 1; $i < 1000000; ++$i) {  # Keep trying but reasonably avoid infinite loop
 	return "$cn$i" unless -e "${dir}uid/$cn$i";
     }
@@ -170,7 +181,7 @@ sub gen_password {
 
 sub gen_app_code {
     my ($secs) = @_;
-    return encode_safe_base64(SHA1("$secs$appkey"));
+    return encode_safe_base64(Digest::SHA::sha1("$secs$appkey"));
 }
 
 ### Post processing
@@ -181,10 +192,20 @@ if (length $cgi{'continue'}) {
 	redirect("$cgi{'idpurl'}?o=$cgi{'rfr'}&ar=$cgi{'ar'}");
     } elsif ($cgi{'ssoena'}) {
 	$cf = Net::SAML::new_conf_to_cf("NON_STANDARD_ENTITYID=$cgi{'appeid'}&AUTHN_REQ_SIGN=0");
-	$cgi = Net::SAML::new_cgi($cf, "rs=$cgi{'rs'}&eid=$cgi{'eid'}");
+	$cgi = Net::SAML::new_cgi($cf, "rs=$cgi{'rs'}&e=$cgi{'eid'}");
 	$an_req = Net::SAML::start_sso_url($cf, $cgi);
-	warn "an_req($an_req)";
-	redirect($an_req);
+
+	for ($iter = 50; $iter; --$iter) {  # Try again until successful
+	    $pcode = gen_password();
+	    #($pcode_path = $sespath) =~ s%/ses/[A-Za-z0-9_=-]+/.ses$%/pcode/$cgi{PCODE}%;
+	    $pcode_path = "${dir}pcode/$pcode";
+	    next if -e $pcode_path;  # This PCODE has already been issued (and not consumed)
+	    open P, ">$pcode_path" or die "Cant open write $pcode_path: $!";
+	    printf P "%d %s", time()+180, $cgi{'au'};
+	    close P;
+	}
+	warn "an_req($an_req) pcode($pcode)";
+	redirect("$an_req&pcode=$pcode");
     } else {
 	warn "Redirecting back to index page.";
 	redirect("/");
@@ -195,7 +216,7 @@ if (length $cgi{'continue'}) {
 
 if (length $cgi{'ok'}) {
     if (length($appkey)
-	&& (($cgi{'appcode'} ne gen_app_code())
+	&& (($cgi{'appcode'} ne gen_app_code($cgi{'appsecs'}))
 	    || ($cgi{'appsecs'} > time()+4000)      # forward slop 1h in case of time zone screwup
 	    || ($cgi{'appsecs'} < time()-8000))) {  # backward slop 2h to fill the form in
 	die "Bad appcode($cgi{'appcode'}) appsecs($cgi{'appsecs'}) time=".time();
@@ -212,7 +233,7 @@ if (length $cgi{'ok'}) {
 	$cgi{'ap'} = gen_password();
     }
     if (length $cgi{'au'} < 3 || length $cgi{'au'} > 40) {
-	$cgi{'ERR'} = "Username must be at least 3 characters long (and no longer than 40 chars).";
+	$cgi{'ERR'} = "Username must be at least 3 characters long (and no longer than 40 chars). You gave au($cgi{'au'})";
     } elsif ($cgi{'au'} !~ /^[A-Za-z0-9_-]+$/s) {
 	$cgi{'ERR'} = "Username can only contain characters [A-Za-z0-9_-]";
     } elsif (length $cgi{'ap'} < 5 || length $cgi{'ap'} > 80) {
@@ -242,8 +263,8 @@ if (length $cgi{'ok'}) {
 	    #mkdir "${dir}uid/$cgi{'au'}/.bs" or warn "Cant mkdir .bs: $!"; zxpasswd creates .bs
 	    open AT, ">${dir}uid/$cgi{'au'}/.bs/.at" or die "Cant write .bs/.at: $!";
 	    open OPTAT, ">${dir}uid/$cgi{'au'}/.bs/.optat" or die "Cant write .bs/.optat: $!";
-	    $essential_at_list = "cn email lang";
-	    for $at (qw($essential_at_list)) {
+	    @essential_at_list = qw(cn email lang);
+	    for $at (@essential_at_list) {
 		$val = $cgi{$at};
 		$val =~ s/[\r\n]//g;
 		next if !length $val;
@@ -265,7 +286,7 @@ if (length $cgi{'ok'}) {
 		show_templ("synnewuser-status.html", \%cgi);
 	    } elsif ($cgi{'ssoena'}) {
 		warn "Created user($cgi{'au'})";
-		$cgi{MSG} = "Success! Created user <b>$cgi{'au'}</b>, password <b>$cgi{'pw'}</b>. Make note of these login credentials. Click Continue to get back to application.";
+		$cgi{MSG} = "Success! Created user <b>$cgi{'au'}</b>, password <b>$cgi{'ap'}</b>. Make note of these login credentials. Click Continue to get back to application.";
 		show_templ("synnewuser-status.html", \%cgi);
             } else {
 		warn "Created user($cgi{'au'})";

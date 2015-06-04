@@ -1148,6 +1148,7 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_dec_a7n);
 ZEND_NAMED_FUNCTION(_wrap_zxid_sp_deref_art);
 ZEND_NAMED_FUNCTION(_wrap_zxid_as_call_ses);
 ZEND_NAMED_FUNCTION(_wrap_zxid_as_call);
+ZEND_NAMED_FUNCTION(_wrap_zxid_start_sso_url);
 ZEND_NAMED_FUNCTION(_wrap_zxid_sp_slo_soap);
 ZEND_NAMED_FUNCTION(_wrap_zxid_sp_slo_redir);
 ZEND_NAMED_FUNCTION(_wrap_zxid_sp_mni_soap);

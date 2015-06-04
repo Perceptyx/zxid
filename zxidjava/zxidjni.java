@@ -4642,6 +4642,8 @@ public class zxidjni implements zxidjniConstants {
     return (cPtr == 0) ? null : new zxid_ses(cPtr, false);
   }
 
+  public static String start_sso_url(zxid_conf cf, zxid_cgi cgi) { return zxidjniJNI.zxid_start_sso_url(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi)); }
+
   public static int sp_slo_soap(zxid_conf cf, zxid_cgi cgi, zxid_ses ses) {
     return zxidjniJNI.zxid_sp_slo_soap(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), zxid_ses.getCPtr(ses));
   }

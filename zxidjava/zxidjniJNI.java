@@ -1265,6 +1265,7 @@ public class zxidjniJNI {
   public final static native int zxid_sp_deref_art(long jarg1, long jarg2, long jarg3);
   public final static native int zxid_as_call_ses(long jarg1, long jarg2, long jarg3, long jarg4);
   public final static native long zxid_as_call(long jarg1, long jarg2, String jarg3, String jarg4);
+  public final static native String zxid_start_sso_url(long jarg1, long jarg2);
   public final static native int zxid_sp_slo_soap(long jarg1, long jarg2, long jarg3);
   public final static native String zxid_sp_slo_redir(long jarg1, long jarg2, long jarg3);
   public final static native int zxid_sp_mni_soap(long jarg1, long jarg2, long jarg3, String jarg4);

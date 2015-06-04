@@ -257,6 +257,7 @@ package Net::SAML;
 *sp_deref_art = *Net::SAMLc::zxid_sp_deref_art;
 *as_call_ses = *Net::SAMLc::zxid_as_call_ses;
 *as_call = *Net::SAMLc::zxid_as_call;
+*start_sso_url = *Net::SAMLc::zxid_start_sso_url;
 *sp_slo_soap = *Net::SAMLc::zxid_sp_slo_soap;
 *sp_slo_redir = *Net::SAMLc::zxid_sp_slo_redir;
 *sp_mni_soap = *Net::SAMLc::zxid_sp_mni_soap;
