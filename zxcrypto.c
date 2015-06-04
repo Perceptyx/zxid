@@ -204,6 +204,7 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
     alloclen += iv_len;
   
   out = zx_new_len_str(c, alloclen);
+  D("alloclen=%d out=%p", alloclen, out);
   if (!out) goto clean;
   if (encflag)
     memcpy(out->s, ivv, iv_len);

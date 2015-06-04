@@ -418,7 +418,7 @@ void zx_m20_EntityDescriptor_REV_Signature(struct zx_m20_EntityDescriptor_s* x);
 
 #endif
 /* -------------------------- m20_Extension -------------------------- */
-/* refby( zx_m20_EntityDescriptor_s zx_m20_ContactPerson_s zx_m20_SPDescriptor_s zx_m20_IDPDescriptor_s zx_m20_AffiliationDescriptor_s zx_m20_KeyDescriptor_s zx_m20_Organization_s ) */
+/* refby( zx_m20_EntityDescriptor_s zx_m20_KeyDescriptor_s zx_m20_Organization_s zx_m20_AffiliationDescriptor_s zx_m20_ContactPerson_s zx_m20_SPDescriptor_s zx_m20_IDPDescriptor_s ) */
 #ifndef zx_m20_Extension_EXT
 #define zx_m20_Extension_EXT
 #endif
@@ -685,7 +685,7 @@ void zx_m20_IDPDescriptor_REV_AuthnServiceURL(struct zx_m20_IDPDescriptor_s* x);
 
 #endif
 /* -------------------------- m20_KeyDescriptor -------------------------- */
-/* refby( zx_m20_SPDescriptor_s zx_m20_IDPDescriptor_s zx_m20_AffiliationDescriptor_s ) */
+/* refby( zx_m20_AffiliationDescriptor_s zx_m20_SPDescriptor_s zx_m20_IDPDescriptor_s ) */
 #ifndef zx_m20_KeyDescriptor_EXT
 #define zx_m20_KeyDescriptor_EXT
 #endif
