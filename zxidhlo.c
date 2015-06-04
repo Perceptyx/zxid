@@ -93,7 +93,7 @@ int main(int argc, char** argv)
     exit(1);
   }
   
-  res = zxid_simple(ZX_CONF, 0, 0x1fff);  /* 0xfff == full CGI automation */
+  res = zxid_simple(ZX_CONF, 0, 0x0fff);  /* 0xfff == full CGI automation */
   switch (res[0]) {
   default:
     ERR("Unknown zxid_simple() response(%s)", res);
