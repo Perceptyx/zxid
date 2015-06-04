@@ -184,6 +184,7 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
     //else if (!strcmp(at->name, "rs"))         rs = at->val;
   }
 #if 0
+  /* This code moved to zxidsimp.c: zxid_show_protected_content_setcookie() */
   if (rs && rs[0] && rs[0] != '-') {
     /* N.B. RelayState was set by chkuid() "some other page" section by setting cgi.rs
      * to deflated and safe base64 encoded value which was then sent to IdP as RelayState.

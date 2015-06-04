@@ -1054,7 +1054,7 @@ static char* zxid_simple_idp_show_an(zxid_conf* cf, zxid_cgi* cgi, int* res_len,
   ZERO(&sess, sizeof(sess));
   D("cf=%p cgi=%p", cf, cgi);
   DD("z saml_req(%s) rs(%s) sigalg(%s) sig(%s)", cgi->saml_req, cgi->rs, cgi->sigalg, cgi->sig);  
-  if (cgi->uid && zxid_pw_authn(cf, cgi, &sess)) {  /* Try login, just in case. */
+  if ((cgi->uid || cgi->pcode) && zxid_pw_authn(cf, cgi, &sess)) {  /* Try login, just in case. */
     return zxid_simple_idp_an_ok_do_rest(cf, cgi, &sess, res_len, auto_flags);
   }
   if (cgi->redirafter) { /* Save next screen for local login (e.g. zxidatsel.pl */

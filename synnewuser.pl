@@ -73,7 +73,7 @@ warn "$$: cgi: " . Dumper(\%cgi);
 sub uridec {
     my ($val) = @_;
     $val =~ s/\+/ /g;
-    $val =~ s/%([0-9a-f]{2})/chr(hex($1))/gsexi;  # URI decode
+    $val =~ s/%([0-9a-fA-F]{2})/chr(hex($1))/gsexi;  # URI decode
     return $val;
 }
 
@@ -113,7 +113,7 @@ sub show_templ {
 
 sub redirect {
     my ($url) = @_;
-    warn "redirect($url)";
+    #warn "redirect($url)";
     syswrite STDOUT, "Location: $url\r\n\r\n";
     exit;
 }
@@ -154,6 +154,8 @@ BODY
 
 sub gen_username {
     my ($cn) = @_;
+    $cn =~ s/^\s+//gs;
+    $cn =~ s/\s+$//gs;
     my ($first) = split /\s+/, $cn;
     warn "cn($cn) first($first)";
     $first =~ tr[A-Za-z0-9_-][_]cs;
@@ -191,9 +193,10 @@ if (length $cgi{'continue'}) {
 	warn "Redirecting back to IdP";
 	redirect("$cgi{'idpurl'}?o=$cgi{'rfr'}&ar=$cgi{'ar'}");
     } elsif ($cgi{'ssoena'}) {
-	$cf = Net::SAML::new_conf_to_cf("NON_STANDARD_ENTITYID=$cgi{'appeid'}&AUTHN_REQ_SIGN=0");
-	$cgi = Net::SAML::new_cgi($cf, "rs=$cgi{'rs'}&e=$cgi{'eid'}");
+	$cf = Net::SAML::new_conf_to_cf("IDP_ENA=0&NON_STANDARD_ENTITYID=$cgi{'appeid'}&AUTHN_REQ_SIGN=0");
+	$cgi = Net::SAML::new_cgi($cf, "fr=$cgi{'rs'}&e=$cgi{'eid'}");
 	$an_req = Net::SAML::start_sso_url($cf, $cgi);
+	$an_req =~ s/\s+$//gs;
 
 	for ($iter = 50; $iter; --$iter) {  # Try again until successful
 	    $pcode = gen_password();
@@ -204,7 +207,7 @@ if (length $cgi{'continue'}) {
 	    printf P "%d %s", time()+180, $cgi{'au'};
 	    close P;
 	}
-	warn "an_req($an_req) pcode($pcode)";
+	#warn "an_req($an_req) pcode($pcode)";
 	redirect("$an_req&pcode=$pcode");
     } else {
 	warn "Redirecting back to index page.";

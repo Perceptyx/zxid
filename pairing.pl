@@ -13,6 +13,10 @@
 # CGI / QUERY_STRING variables
 #   c  $cmd    Command
 #   d  $dir    Path to ZXID config directory, e.g: /var/zxid/ or /var/zxid/idp
+#
+# cd zxid/idp.i-dent.eu/
+# e2etacot -c 'CPATH=./&BURL=https://idp.i-dent.eu/synpairing.pl&BARE_URL_ENTITYID=0&IDP_ENA=0&NICE_NAME=I-Dent IdP: Mobile Pairing' -m >synpairing-meta.xml
+# e2etacot -c 'CPATH=./' -a <synpairing-meta.xml
 
 #$cpath = '/d/ssoid/e2eta/ssoid.com/';
 $cpath = '/d/ssoid/e2eta/';  # Rely on VURL and VPATH

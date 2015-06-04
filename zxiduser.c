@@ -221,6 +221,7 @@ static int zxid_check_mobile_pairing(zxid_conf* cf, zxid_cgi* cgi)
     ERR("Bad pairing pcode(%s) buf(%s) uid not found", cgi->pcode, buf);
     return 0;
   }
+  ++uid;
   D("Pairing OK pcode(%s) buf(%s) expired=%d, now=%d uid=%s", cgi->pcode, buf, secs, (int)time(0), uid);
   cgi->uid = zx_dup_cstr(cf->ctx, uid);
   snprintf(buf, sizeof(buf), "%s" ZXID_PCODE_DIR "%s", cf->cpath, cgi->pcode);
