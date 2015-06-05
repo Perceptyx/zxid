@@ -1289,6 +1289,7 @@ static void handle_request(void)
   const char* index_names[] = {
     "index.html", "index.htm", "index.xhtml", "index.xht", "Default.htm",
     "index.cgi" };
+  char cwdbuf[1024];
 
   /* Set up the timeout for reading. */
 #ifdef HAVE_SIGSET
@@ -1476,7 +1477,7 @@ static void handle_request(void)
   }
 
   ret = stat(file, &sb);
-  D("stat(%s)=%d st_mode=%o", file, ret, sb.st_mode);
+  D("handle request stat(%s)=%d st_mode=%o cwd(%s)", file, ret, sb.st_mode, getcwd(cwdbuf, sizeof(cwdbuf)));
   if (ret < 0)
     ret = get_pathinfo();
   if (ret < 0)
