@@ -2039,7 +2039,7 @@ tags:
 
 #SSL=/aino/openssl-0.9.8g
 #SSL=/aino/openssl-1.0.0c
-SSL=/home/sampo/openssl-1.0.1c
+SSL=/home/sampo/openssl-1.0.1m
 BB=/aino/busybox-1.11.1
 #DS=~/ds
 #DS=/d/sampo/ds4/ds

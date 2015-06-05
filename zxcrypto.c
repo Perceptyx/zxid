@@ -201,8 +201,16 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
     ivv = 0;
   if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("symkey ", key->s, key->len, 1024);
   
+#if 0
   alloclen = EVP_CIPHER_block_size(evp_cipher);
   alloclen = len + alloclen + alloclen;  /* bit pessimistic, but man EVP_CipherInit is ambiguous about the actual size needed. */
+#else
+  /* 20150606, it appears aes-256-gcm reports too short block size, thus we impose a minimum. */
+  alloclen = EVP_CIPHER_block_size(evp_cipher);
+  D("block_size=%d", alloclen);
+  alloclen = MAX(alloclen, 256);
+  alloclen = len + alloclen + alloclen;  /* bit pessimistic, but man EVP_CipherInit is ambiguous about the actual size needed. */
+#endif
   if (encflag)
     alloclen += iv_len;
   
