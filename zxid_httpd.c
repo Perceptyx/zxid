@@ -2240,7 +2240,8 @@ void add_headers(int s, char* title, char* extra_header, char* me, char* mt, off
   int buflen;
   int s100;
   const char* rfc1123_fmt = "%a, %d %b %Y %H:%M:%S GMT";
-
+  
+  D("status=%d %s", s, title);
   status = s;
   bytes = byt;
   make_log_entry();

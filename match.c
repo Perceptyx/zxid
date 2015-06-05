@@ -29,6 +29,7 @@
 /* 20131121 slightly modified by Sampo Kellomaki (sampo@zxid.org) for zxid project.
  * See also fnmatch(1). */
 
+#include <zx/errmac.h>
 #include <string.h>
 
 /* Called by:  zx_match x2, zx_match_one */
@@ -74,6 +75,7 @@ static int zx_match_one(const char* pat, int patlen, const char* str)
 int zx_match(const char* pat, const char* str)
 {
   const char* or_clause;
+  D("pat(%s) str(%s)", pat, str);
   for (;;) {
     or_clause = strchr( pat, '|' );
     if (!or_clause)

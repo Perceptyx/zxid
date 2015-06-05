@@ -15,6 +15,9 @@
  * 6.6.3015,   added aes-256-gcm --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
+ *
+ * http://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
+ * https://www.openssl.org/docs/crypto/EVP_EncryptInit.html#gcm_and_ocb_modes
  */
 
 #include "platform.h"  /* needed on Win32 for snprintf() et al. */
