@@ -404,6 +404,7 @@ struct zx_root_s* zxid_soap_call_raw(zxid_conf* cf, struct zx_str* url, struct z
       snprintf(soap_action_buf,sizeof(soap_action_buf), "SOAPAction: \"%s\"", cf->soap_action_hdr);
       soap_action_buf[sizeof(soap_action_buf)-1] = 0;
       soap_act = soap_action_buf;
+      D("SOAPaction(%s)", soap_action_buf);
     }
   }
   
