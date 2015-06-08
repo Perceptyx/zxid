@@ -407,7 +407,8 @@ struct zx_root_s* zxid_soap_call_raw(zxid_conf* cf, struct zx_str* url, struct z
       D("SOAPaction(%s)", soap_action_buf);
     }
   }
-  
+  D("SOAPaction(%s) %p hdr(%s) %p", STRNULLCHK(soap_act), soap_act, STRNULLCHK(cf->soap_action_hdr), cf->soap_action_hdr);
+
   ret = zxid_http_cli(cf, url->len, url->s, ss->len, ss->s, cf->wsc_soap_content_type, soap_act, 0);
   zx_str_free(cf->ctx, ss);
   if (ret_enve)
