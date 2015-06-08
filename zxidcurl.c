@@ -1,5 +1,5 @@
 /* zxidcurl.c  -  libcurl interface for making SOAP calls and getting metadata
- * Copyright (c) 2013-2014 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2013-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -17,6 +17,7 @@
  * 26.10.2013, improved error reporting on credential expired case --Sampo
  * 12.3.2014,  added partial mime multipart support --Sampo
  * 27.5.2014,  Added feature to stop parsing after end of first top level tag has been seen --Sampo
+ * 8.6.2015,   Fixed bug relating to unset action header --Sampo
  *
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  *           http://curl.haxx.se/libcurl/
@@ -104,14 +105,14 @@ size_t zxid_curl_read_data(void *buffer, size_t size, size_t nmemb, void *userp)
 /*() HTTP client for GET or POST method.
  * This method is just a wrapper around underlying libcurl HTTP client.
  *
- * cf:: ZXID configuration object
- * url_len:: Length of the URL. If -1 is passed, strlen(url) is used
- * url:: URL for POST
- * len:: Length of the data. If -1 is passed, strlen(data) is used
- * data:: HTTP body for the POST. If NULL is passed, the method will be GET
- * content_type:: Content-Type header for POST data. NULL means application/x-www-form-encoded
- * headers:: A way to pass in additional header(s), typically SOAPaction or Authorization
- * flags:: Bitmask of flags to control behaviour: 0x01 == return will have both headers and body
+ * cf1:: ZXID configuration object
+ * url_len2:: Length of the URL. If -1 is passed, strlen(url) is used
+ * url3:: URL for POST
+ * len4:: Length of the data. If -1 is passed, strlen(data) is used
+ * data5:: HTTP body for the POST. If NULL is passed, the method will be GET
+ * content_type6:: Content-Type header for POST data. NULL means application/x-www-form-encoded
+ * headers7:: A way to pass in additional header(s), typically SOAPaction or Authorization
+ * flags8:: Bitmask of flags to control behaviour: 0x01 == return will have both headers and body
  * return:: HTTP body of the response or HTTP headers and body
  *
  * N.B. To use proxy, set environment variable all_proxy=proxyhost:port, see libcurl documentation.
@@ -383,7 +384,7 @@ struct zx_root_s* zxid_soap_call_raw(zxid_conf* cf, struct zx_str* url, struct z
   struct zx_str* ret;
   struct zx_str* ss;
   char soap_action_buf[1024];
-  char* soap_act;
+  char* soap_act = 0;
   const char* env_start;
 
   ss = zx_easy_enc_elem_opt(cf, &env->gg);
@@ -404,8 +405,7 @@ struct zx_root_s* zxid_soap_call_raw(zxid_conf* cf, struct zx_str* url, struct z
       soap_action_buf[sizeof(soap_action_buf)-1] = 0;
       soap_act = soap_action_buf;
     }
-  } else
-    soap_act = 0;
+  }
   
   ret = zxid_http_cli(cf, url->len, url->s, ss->len, ss->s, cf->wsc_soap_content_type, soap_act, 0);
   zx_str_free(cf->ctx, ss);

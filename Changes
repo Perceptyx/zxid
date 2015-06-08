@@ -122,6 +122,9 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
 
 No authentication done but request not allowed without authentication for Authentication not configured?
 
+zxid-1.40:: 8.6.2015
+    - Fixed bug relating to unset HTTP Action header (manifested as segv inside libcurl)
+
 zxid-1.39:: 1.6.2015
     - Upgrade cipher suites to aes-256-gcm and RSA-OAEP
     - Added PIN+Yubikey two factor authentication

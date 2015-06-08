@@ -765,7 +765,7 @@ struct zxid_bus_url* zxid_load_bus_url(zxid_conf* cf, struct zxid_bus_url* bu_ro
     bu->n = bu_root;
     bu_root = bu;
     COPYVAL(bu->s, q, p);
-    COPYVAL(bu->eid, q, p);
+    COPYVAL(bu->eid, q, p);  /* *** convention is that contact URL and eid are the same?!? */
   }
   return bu_root;
 }

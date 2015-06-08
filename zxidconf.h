@@ -363,7 +363,7 @@
  *
  * Usually the authority is the IdP that the SP trusts. This allows
  * centralized management of a Circle of Trust. Such IdP will know
- * to produce the AdditionalMetadataLocation in its own metadata.
+ * to include the AdditionalMetadataLocation in its own metadata.
  * See also: MD_AUTHORITY_ENA in IdP configuration.
  *
  * Does not affect metadata of the entity itself.
@@ -925,6 +925,9 @@
 /*(c) Audit Bus servers
  * Multiple, comma separated, URLs may be
  * specified (audit bus servers are instances of zxbusd, which see).
+ * The url is used for both contact and entity id of the audit bus server.
+ * Typical url would be "stomps://ab.ssoid.com:2229/,stomps://ab2.ssoid.com:2229/"
+ *
  * If no BUS_URL is configured, no audit bus logging is performed.
  *
  * Does not affect metadata. */
@@ -935,7 +938,7 @@
  * from metadata encryption certificate field so there is nothing
  * special to configure here. However, if for some reason you
  * need to run plain TLS, with STOMP 1.1 passcode filed for authentication,
- * the set this option to the passcode. Note that using passcode is much
+ * then set this option to the passcode. Note that using passcode is much
  * less secure than using ClientTLS. Another limitation of BUS_PW
  * approach is that it is shared across all audit bus servers.
  *
