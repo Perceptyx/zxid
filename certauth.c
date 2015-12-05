@@ -6,9 +6,7 @@
  *
  * This borrows quite heavily ideas and control flow from openssl/apps/ca.c
  * by Eric A. Young. You could say this file is destillation of Eric's
- * work with many of the parameters hard wired:
- *
- *   - MD5 hash
+ * work with many of the parameters hard wired
  *
  * 25.10.1999, Created. --Sampo
  */
@@ -238,8 +236,12 @@ certification_authority(X509* ca_cert,
   /* Sign it into a certificate */
   
   LOG_PRINT("ca signing x509");
+#if 0
   if (!(X509_sign(cert, ca_pkey, EVP_md5()))) GOTO_ERR("X509_sign");
-  
+#else
+  if (!(X509_sign(cert, ca_pkey, EVP_sha256()))) GOTO_ERR("X509_sign");
+#endif
+
   X509V3_EXT_cleanup();
   OBJ_cleanup();
   return cert;

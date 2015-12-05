@@ -1218,6 +1218,13 @@ samlmod Net/Makefile: Net/SAML_wrap.c Net/SAML.pm $(LIBZXID_A)
 samlmod_install: Net/Makefile
 	cd Net; $(MAKE) install
 
+samlmod_install_adhoc: Net/Makefile
+	mkdir -p /usr/local/lib/site_perl/Net/
+	mkdir -p /usr/local/lib/site_perl/auto/Net/SAML/
+	cp Net/SAML.pm /usr/local/lib/site_perl/Net/ 
+	cp Net/blib/arch/auto/Net/SAML/SAML.bs /usr/local/lib/site_perl/auto/Net/SAML/
+	cp Net/blib/arch/auto/Net/SAML/SAML.so /usr/local/lib/site_perl/auto/Net/SAML/
+
 mdmod: Metadata/Metadata_wrap.c Metadata/Metadata.pm
 	cd Metadata; $(PERL) Makefile.PL && $(MAKE)
 
@@ -1925,7 +1932,7 @@ precheckclean:
 	rm -f precheck/chk-zlib.exe precheck/chk-openssl.exe precheck/chk-curl.exe precheck/chk-apache.exe
 
 ###
-### Test suite
+### Test suite (outdated, use zxcot -dirs instead)
 ###
 
 t/cot:

@@ -37,6 +37,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <grp.h>
 #ifdef USE_CURL
@@ -2414,12 +2415,12 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 STRNULLCHK(cf->wsp_pat),
 		 STRNULLCHK(cf->uma_pat),
 		 STRNULLCHK(cf->sso_pat),
-		 STRNULLCHK(cf->cdc_url),
 		 STRNULLCHK(cf->wsc_soap_content_type),
 		 STRNULLCHK(cf->wsc_to_hdr),
 		 STRNULLCHK(cf->wsc_replyto_hdr),
 		 STRNULLCHK(cf->wsc_action_hdr),
 		 STRNULLCHK(cf->soap_action_hdr),
+		 STRNULLCHK(cf->cdc_url),
 		 cf->cdc_choice,
 
 		 STRNULLCHK(cf->load_cot_cache),

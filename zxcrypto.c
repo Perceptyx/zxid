@@ -12,7 +12,8 @@
  * 7.10.2008, added documentation --Sampo
  * 29.8.2009, added zxid_mk_self_signed_cert() --Sampo
  * 12.12.2011, added HMAC SHA-256 as needed by JWT/JWS --Sampo
- * 6.6.3015,   added aes-256-gcm --Sampo
+ * 6.6.2015,   added aes-256-gcm --Sampo
+ * 16.10.2015, upgraded sha256 support, eliminated MD5 from certs --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  *
@@ -33,6 +34,7 @@
 #ifdef USE_OPENSSL
 #include <openssl/evp.h>
 #include <openssl/md5.h>
+#include <openssl/sha.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/x509.h>
@@ -551,6 +553,7 @@ int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, 
 #if 0
   rsa = RSA_generate_key(1024 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
 #else
+  /* Crypto analysis (2015) suggests 1024bit key is too weak. */
   rsa = RSA_generate_key(2048 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
 #endif
   DD("keygen rsa key generated %s", name);
@@ -636,8 +639,14 @@ badurl:
   /*req->req_info->req_kludge=0;    / * no asn1 kludge *** filed deleted as of 0.9.7b?!? */
   
   DD("keygen signing request %s", lk);
+#if 0
   X509_REQ_sign(req, pkey, EVP_md5());
-  
+#else
+  /* Due to recent (2013) progress in crypto analysis, MD5 and SHA1 are considered
+   * weak and support is likely to be discontinued in browsers and operating systems. */
+  X509_REQ_sign(req, pkey, EVP_sha256());
+#endif
+
   /* ----- X509 create self signed certificate ----- */
   
   DD("keygen making x509ss %s", lk);
@@ -679,7 +688,12 @@ badurl:
   X509_add_ext(x509ss, ext, -1);
   
   DD("keygen signing x509ss %s", lk);
-  if (!(X509_sign(x509ss, pkey, EVP_md5()))) {
+#if 0
+  if (!(X509_sign(x509ss, pkey, EVP_md5())))
+#else
+  if (!(X509_sign(x509ss, pkey, EVP_sha256())))
+#endif
+  {
     ERR("Failed to sign x509ss %s", lk);
     zx_report_openssl_err("X509_sign");
     return 0;
@@ -937,7 +951,12 @@ int zxid_mk_at_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, zxid_n
   zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "mk_at_cert");
 
   DD("keygen signing x509ss %s", lk);
-  if (!(X509_sign(x509ss, sign_pkey, EVP_md5()))) {
+#if 0
+  if (!(X509_sign(x509ss, sign_pkey, EVP_md5())))
+#else
+  if (!(X509_sign(x509ss, sign_pkey, EVP_sha256())))
+#endif
+  {
     ERR("Failed to sign x509ss %s", lk);
     zx_report_openssl_err("X509_sign");
     return 0;

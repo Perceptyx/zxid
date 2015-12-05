@@ -13,6 +13,7 @@
  * 8.10.2007, added XML signing support --Sampo
  * 4.10.2008, improved documentation --Sampo
  * 1.12.2010, improved logging of canonicalizations --Sampo
+ * 16.10.2015, upgraded sha256 support --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  */
@@ -229,8 +230,8 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
   char* lim;
   char* p;
   char* q;
-  char md_calc[20];   /* SHA1 is 160 bits. */
-  char md_given[20];  /* SHA1 is 160 bits. */
+  char md_calc[64];   /* SHA1 is 160 bits, SHA256 is 32 bytes, SHA512 is 64 bytes. */
+  char md_given[64];  /* SHA1 is 160 bits, SHA256 is 32 bytes, SHA512 is 64 bytes. */
   struct zx_ns_s* ns;
   struct zx_str* ss;
   struct zx_str* dv;
@@ -287,10 +288,13 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     if (       ZX_STR_ENDS_IN_CONST(algo, "#sha1")) {
       SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
       siz = 20;
-#if 0
+#if 1
+    } else if (ZX_STR_ENDS_IN_CONST(algo, "#sha256")) {
+      SHA256((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+      siz = 32;
     } else if (ZX_STR_ENDS_IN_CONST(algo, "#sha512")) {
       SHA512((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
-      siz = 20;
+      siz = 32;
 #endif
     } else if (ZX_STR_ENDS_IN_CONST(algo, "#md5")) {
       MD5((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
@@ -351,6 +355,22 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     DD("VFY dsa-sha1 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha1: ",md_calc,20,20));
     verdict = DSA_verify(NID_sha1, (unsigned char*)md_calc, 20, (unsigned char*)old_sig_raw, lim - old_sig_raw, dsa_pkey);
     if (!verdict) goto vfyerr;
+#if 1
+  } else if (ZX_STR_ENDS_IN_CONST(algo, "#rsa-sha256")) {
+    rsa_pkey = EVP_PKEY_get1_RSA(evp_pkey);
+    if (!rsa_pkey) goto certerr;
+    SHA256((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+    DD("VFY rsa-sha256 canon sigInfo(%.*s) %d", ss->len, ss->s, hexdmp("inner sha256: ",md_calc,32,32));
+    verdict = RSA_verify(NID_sha256, (unsigned char*)md_calc, 32, (unsigned char*)old_sig_raw, lim - old_sig_raw, rsa_pkey);
+    if (!verdict) goto vfyerr;
+  } else if (ZX_STR_ENDS_IN_CONST(algo, "#dsa-sha256")) {
+    dsa_pkey = EVP_PKEY_get1_DSA(evp_pkey);
+    if (!dsa_pkey) goto certerr;
+    SHA256((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+    DD("VFY dsa-sha256 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha256: ",md_calc,32,32));
+    verdict = DSA_verify(NID_sha256, (unsigned char*)md_calc, 32, (unsigned char*)old_sig_raw, lim - old_sig_raw, dsa_pkey);
+    if (!verdict) goto vfyerr;
+#endif
   } else if (ZX_STR_ENDS_IN_CONST(algo, "#rsa-md5")) {
     rsa_pkey = EVP_PKEY_get1_RSA(evp_pkey);
     if (!rsa_pkey) goto certerr;

@@ -205,7 +205,7 @@ zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim)
     ZX_FREE(cf->ctx, r->EntitiesDescriptor);
     ZX_FREE(cf->ctx, r);  /* N.B Shallow free only, do not free the descriptors. */
     return ee;
-  }  
+  }
  bad_md:
   ERR("Bad metadata. EntityDescriptor could not be found or was corrupt. MD(%.*s) %d chars parsed.", ((int)(lim-cf->ctx->bas)), cf->ctx->bas, ((int)(*md - cf->ctx->bas)));
   zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "BADMD", 0, "chars_parsed(%d)", ((int)(*md - cf->ctx->bas)));

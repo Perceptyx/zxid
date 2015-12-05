@@ -398,7 +398,7 @@ struct zx_root_s* zxid_soap_call_raw(zxid_conf* cf, struct zx_str* url, struct z
 	soap_act = soap_action_buf;
 	D("SOAPaction(%s)", soap_action_buf);
       } else {
-	ERR("e:Envelope/e:Headers/a:Action SOAP header is malformed %p", env->Header);
+	ERR("e:Envelope/e:Headers/a:Action SOAP header is malformed %p %p", env->Header, soap_act);
       }
     } else {
       snprintf(soap_action_buf,sizeof(soap_action_buf), "SOAPAction: \"%s\"", cf->soap_action_hdr);

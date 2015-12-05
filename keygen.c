@@ -339,7 +339,11 @@ int keygen(const char* dn, const char* attr, const char* comment,
   
   if (req_out) {
     LOG_PRINT("keygen signing request");
-    if (!(X509_REQ_sign(req, pkey, EVP_md5()))) GOTO_ERR("X509_REQ_sign");
+#if 0
+  if (!(X509_REQ_sign(req, pkey, EVP_md5()))) GOTO_ERR("X509_REQ_sign");
+#else
+  if (!(X509_REQ_sign(req, pkey, EVP_sha256()))) GOTO_ERR("X509_REQ_sign");
+#endif
     LOG_PRINT("keygen request signed");
     *req_out = req;
   }
@@ -382,7 +386,11 @@ int keygen(const char* dn, const char* attr, const char* comment,
 				   comment)==-1) goto err;
     
     LOG_PRINT("keygen signing x509");
+#if 0
     if (!(X509_sign(x509ss, pkey, EVP_md5()))) GOTO_ERR("X509_sign");
+#else
+    if (!(X509_sign(x509ss, pkey, EVP_sha256()))) GOTO_ERR("X509_sign");
+#endif
     LOG_PRINT("keygen x509 ready");
     *x509ss_out = x509ss;
   }

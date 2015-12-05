@@ -1394,7 +1394,7 @@ char* zxid_simple_ses_active_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int
    *
    * M = CDC redirect and LECP detect
    * C = CDC reader
-   * E = Normal "Entry" page (e.g. after CDC read)
+   * E = Normal "Entry" page (e.g. after CDC read, idpsel)
    * L = Start SSO (submit of E)
    * A = Artifact processing
    * N = New User, during IdP Login (form an)
