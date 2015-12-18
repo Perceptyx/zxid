@@ -45,8 +45,8 @@ vpath %.h ../zxid
 
 ### This is the authorative spot to set version number. Document in Changes file.
 ### c/zxidvers.h is generated from these, see `make updatevers'
-ZXIDVERSION=0x000140
-ZXIDREL=1.40
+ZXIDVERSION=0x000141
+ZXIDREL=1.41
 
 TOP=$(shell pwd)
 

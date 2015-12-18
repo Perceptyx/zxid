@@ -21,6 +21,7 @@
  * 8.2.2014,  added OPTIONAL_LOGIN_PAT feature --Sampo
  * 5.3.2015,  improved Apache httpd-2.4 compatibility --Sampo
  * 9.3.2015,  refactored to isolate httpd version dependencies to httpdglue.c --Sampo
+ * 20151218,  added special placeholder user "-anon-" for the 2.4 optional_login_pat case --Sampo
  *
  * To configure this module add to httpd.conf something like
  *
@@ -543,7 +544,8 @@ static int chkuid(request_rec* r)
     } else {
       D("No active session(%s) op(%c)", STRNULLCHK(cgi.sid), cgi.op?cgi.op:'-');
       if (cf->optional_login_pat && zx_match(cf->optional_login_pat, uri)) {
-	D("optional_login_pat matches ok %d", OK);
+	D("optional_login_pat matches %d", OK);
+	HRR_set_user(r, "-anon-");  /* httpd-2.4 anz framework requires this, 2.2 does not care */
 	D_DEDENT("chkuid: ");
 	return OK;
       }
