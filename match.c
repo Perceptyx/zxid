@@ -75,7 +75,7 @@ static int zx_match_one(const char* pat, int patlen, const char* str)
 int zx_match(const char* pat, const char* str)
 {
   const char* or_clause;
-  D("pat(%s) str(%s)", pat, str);
+  DD("pat(%s) str(%s)", pat, str);
   for (;;) {
     or_clause = strchr( pat, '|' );
     if (!or_clause)

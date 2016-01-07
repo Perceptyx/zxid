@@ -73,7 +73,7 @@ struct zx_root_s* zxid_decode_redir_or_post(zxid_conf* cf, zxid_cgi* cgi, zxid_s
   struct zx_root_s* r = 0;
   struct zx_str id_ss;
   char id_buf[28];
-  char sigbuf[1024];  /* 192 should be large enough for 1024bit RSA keys */
+  char sigbuf[1024];  /* 192 is large enough for 1024bit RSA keys, target 4096 bit RSA keys */
   int simplesig = 0;
   int msglen, len;
   char* p;
