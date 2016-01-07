@@ -16,6 +16,7 @@
  * 12.3.2010,  added per user logging facility --Sampo
  * 9.9.2012,   added persist support --Sampo
  * 30.11.2013, fixed seconds handling re gmtime_r() - found by valgrind --Sampo
+ * 18.12.2015, applied patch from soconnor, perceptyx --Sampo
  *
  * See also: Logging chapter in README.zxid
  */
@@ -122,7 +123,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
       UNLOCK(cf->mx, "logsign wrln");      
       if (!log_sign_pkey)
 	break;
-      len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc log line");
+      len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc log line", 0);
       break;
     case 0x06:      /* Dx DSA-SHA1 signature */
       ERR("DSA-SHA1 sig not implemented in encrypted mode. Use RSA-SHA1 or none. %x", encflags);
@@ -221,7 +222,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
     UNLOCK(cf->mx, "logsign wrln");
     if (!log_sign_pkey)
       break;
-    zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line");
+    zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
     len = SIMPLE_BASE64_LEN(zlen) + 4;
     sig = ZX_ALLOC(cf->ctx, len);
     strcpy(sig, "RP ");
@@ -908,7 +909,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
     if (!cf->sign_pkey)
       break;
 
-    zlen = zxsig_data(cf->ctx, len, buf, &zbuf, cf->sign_pkey, "receipt");
+    zlen = zxsig_data(cf->ctx, len, buf, &zbuf, cf->sign_pkey, "receipt", 0);
 
     if (errmac_debug>2) HEXDUMP("zbuf:", zbuf, zbuf+zlen, 4096);
     len = 3+ZXLOG_TIME_SIZ+1+mid_len+1+SIMPLE_BASE64_LEN(zlen)+1;

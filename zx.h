@@ -16,6 +16,7 @@
  *            realloc(), and free() --Sampo
  * 27.10.2010, namespace re-engineering --Sampo
  * 26.10.2014, changed crypto to GCM and OAEP to combat Backwards Compatibility Attacks --Sampo
+ * 18.12.2015, applied patch from soconnor, perceptyx, adding algos --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  *
@@ -356,10 +357,38 @@ struct zx_root_s* zx_dec_zx_root(struct zx_ctx* c, int len, const char* start, c
 void zx_DEC_elem(struct zx_ctx* c, struct zx_elem_s* x);
 struct zx_el_desc* zx_el_desc_lookup(int tok);
 
-#define SIG_ALGO_RSA_SHA1  "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
-#define SIG_ALGO_DSA_SHA1  "http://www.w3.org/2000/09/xmldsig#dsa-sha1"
-#define SIG_ALGO    SIG_ALGO_RSA_SHA1
-#define DIGEST_ALGO        "http://www.w3.org/2000/09/xmldsig#sha1"
+#define SIG_ALGO_RSA_SHA1_URLENC   "http://www.w3.org/2000/09/xmldsig%23rsa-sha1"
+#define SIG_ALGO_RSA_SHA224_URLENC "http://www.w3.org/2001/04/xmldsig-more%23rsa-sha224"
+#define SIG_ALGO_RSA_SHA256_URLENC "http://www.w3.org/2001/04/xmldsig-more%23rsa-sha256"
+#define SIG_ALGO_RSA_SHA384_URLENC "http://www.w3.org/2001/04/xmldsig-more%23rsa-sha384"
+#define SIG_ALGO_RSA_SHA512_URLENC "http://www.w3.org/2001/04/xmldsig-more%23rsa-sha512"
+#define SIG_ALGO_DSA_SHA1_URLENC   "http://www.w3.org/2000/09/xmldsig%23dsa-sha1"
+#define SIG_ALGO_DSA_SHA224_URLENC "http://www.w3.org/2001/04/xmldsig-more%23dsa-sha224"
+#define SIG_ALGO_DSA_SHA256_URLENC "http://www.w3.org/2001/04/xmldsig-more%23dsa-sha256"
+#define SIG_ALGO_DSA_SHA384_URLENC "http://www.w3.org/2001/04/xmldsig-more%23dsa-sha384"
+#define SIG_ALGO_DSA_SHA512_URLENC "http://www.w3.org/2001/04/xmldsig-more%23dsa-sha512"
+
+#define SIG_ALGO_RSA_SHA1   "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+#define SIG_ALGO_RSA_SHA224 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha224"
+#define SIG_ALGO_RSA_SHA256 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+#define SIG_ALGO_RSA_SHA384 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384"
+#define SIG_ALGO_RSA_SHA512 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512"
+#define SIG_ALGO_DSA_SHA1   "http://www.w3.org/2000/09/xmldsig#dsa-sha1"
+#define SIG_ALGO_DSA_SHA224 "http://www.w3.org/2009/xmldsig11#dsa-sha224"
+#define SIG_ALGO_DSA_SHA256 "http://www.w3.org/2009/xmldsig11#dsa-sha256"
+#define SIG_ALGO_DSA_SHA384 "http://www.w3.org/2009/xmldsig11#dsa-sha384"
+#define SIG_ALGO_DSA_SHA512 "http://www.w3.org/2009/xmldsig11#dsa-sha512"
+
+#define DIGEST_ALGO_SHA1   "http://www.w3.org/2000/09/xmldsig#sha1"
+#define DIGEST_ALGO_SHA224 "http://www.w3.org/2001/04/xmldsig-more#sha224"
+#define DIGEST_ALGO_SHA256 "http://www.w3.org/2001/04/xmlenc#sha256"
+#define DIGEST_ALGO_SHA384 "http://www.w3.org/2001/04/xmldsig-more#sha384"
+#define DIGEST_ALGO_SHA512 "http://www.w3.org/2001/04/xmlenc#sha512"
+
+#define SIG_ALGO        SIG_ALGO_RSA_SHA1
+#define SIG_ALGO_URLENC SIG_ALGO_RSA_SHA1_URLENC
+#define SIG_SIZE 1024  /* Maximum size of the base64 encoded signature, for buffer allocation */
+#define DIGEST_ALGO     DIGEST_ALGO_SHA1
 #define CANON_ALGO         "http://www.w3.org/2001/10/xml-exc-c14n#"
 #define ENVELOPED_ALGO     "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
 #define ENC_ALGO_TRIPLEDES_CBC "http://www.w3.org/2001/04/xmlenc#tripledes-cbc"

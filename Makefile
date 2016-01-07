@@ -125,7 +125,8 @@ JNI_INC?=-I/usr/lib/jvm/java-6-openjdk-amd64/include -I/usr/lib/jvm/java-6-openj
 # Path where HttpServlet supplied by your application server resides
 # find / -name 'servlet*api*.jar'
 # sudo apt-get install tomcat6
-SERVLET_PATH=../apache-tomcat-5.5.20/common/lib/servlet-api.jar
+SERVLET_PATH=/usr/share/tomcat6/lib/servlet-api.jar
+#SERVLET_PATH=../apache-tomcat-5.5.20/common/lib/servlet-api.jar
 #SERVLET_PATH=../apache-tomcat-6.0.18/lib/servlet-api.jar
 
 ### You may supply additional include paths on command line.

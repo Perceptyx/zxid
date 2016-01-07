@@ -122,6 +122,10 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
 
 No authentication done but request not allowed without authentication for Authentication not configured?
 
+zxid-1.41:: 18.12.2015
+    - applied patch from soconnor, perceptyx, including detection of
+      signature algorithm from certificate. --Sampo
+
 zxid-1.40:: 8.6.2015
     - Fixed bug relating to unset HTTP Action header (manifested as segv inside libcurl)
 

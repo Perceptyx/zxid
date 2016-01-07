@@ -973,6 +973,15 @@
 #define ZXID_WSP_NOSIG_FATAL   1 /* Missing Security/Signature is fatal. */
 #define ZXID_NOTIMESTAMP_FATAL 1 /* Missing Security/Timestamp is fatal. */
 
+#if 0
+/*(c) Obscure signature and hash options
+ * 1 = invalid hash spacification is replaced by sha1
+ */
+
+#define ZXID_SIG_OPT 0x00
+#define ZXID_SIG_OPT_DEFAULT_BAD_TO_SHA1 0x01
+#endif
+
 /*(c) XML canonicalization compatibility kludges
  * Shibboleth 2.1.5 IdP miscanonicalizes by
  * ignoring InclusiveNamespaces/@PrefixList, yet

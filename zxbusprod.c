@@ -161,7 +161,7 @@
        UNLOCK(cf->mx, "logsign-wrln");      
        if (!log_sign_pkey)
 	 break;
-       len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc log line");
+len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc log line", 0);
        break;
      case 0x06:      /* Dx DSA-SHA1 signature */
        ERR("DSA-SHA1 sig not implemented in encrypted mode. Use RSA-SHA1 or none. %x", encflags);
@@ -260,7 +260,7 @@
      UNLOCK(cf->mx, "logsign-wrln");
      if (!log_sign_pkey)
        break;
-     zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line");
+zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
      len = SIMPLE_BASE64_LEN(zlen) + 4;
      sig = ZX_ALLOC(cf->ctx, len);
      strcpy(sig, "RP ");

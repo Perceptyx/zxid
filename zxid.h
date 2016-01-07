@@ -24,6 +24,7 @@
  * 16.2.2013,  added WD option --Sampo
  * 14.3.2013   added language/skin dependent templates --Sampo
  * 21.6.2013,  added wsp_pat --Sampo
+ * 18.12.2015, applied patch from soconnor, perceptyx --Sampo
  */
 
 #ifndef _zxid_h
@@ -800,7 +801,7 @@ struct zxsig_ref {
 #ifdef USE_OPENSSL
 ZXID_DECL struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* sref, X509* cert, EVP_PKEY* priv_key);
 ZXID_DECL int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, int n, struct zxsig_ref* refs);
-ZXID_DECL int zxsig_data(struct zx_ctx* c, int len, const char* d, char** sig, EVP_PKEY* priv_key, const char* lk);
+ZXID_DECL int zxsig_data(struct zx_ctx* c, int len, const char* d, char** sig, EVP_PKEY* priv_key, const char* lk, const char* md_alg);
 ZXID_DECL int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, char* lk);
 ZXID_DECL struct zx_xenc_EncryptedData_s* zxenc_pubkey_enc(zxid_conf* cf, struct zx_str* data, struct zx_xenc_EncryptedKey_s** ekp, X509* cert, char* idsuffix, zxid_entity* meta);
 #endif
@@ -875,6 +876,10 @@ ZXID_DECL EVP_PKEY*  zxid_extract_private_key(char* buf, char* name);
 ZXID_DECL X509* zxid_read_cert(zxid_conf* cf, char* name);
 ZXID_DECL EVP_PKEY*  zxid_read_private_key(zxid_conf* cf, char* name);
 ZXID_DECL int zxid_lazy_load_sign_cert_and_pkey(zxid_conf* cf, X509** cert, EVP_PKEY** pkey, const char* logkey);
+ZXID_DECL char* zxid_get_cert_signature_algo(X509* cert);
+ZXID_DECL char* zxid_get_cert_signature_algo_url(X509* cert);
+ZXID_DECL char* zxid_get_cert_signature_algo_urlenc(X509* cert);
+ZXID_DECL char* zxid_get_cert_digest_url(X509* cert);
 #endif
 ZXID_DECL int   zxid_set_opt(zxid_conf* cf, int which, int val);
 ZXID_DECL char* zxid_set_opt_cstr(zxid_conf* cf, int which, char* val);

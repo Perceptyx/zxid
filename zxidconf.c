@@ -30,6 +30,8 @@
  * 29.11.2013, added INCLUDE feature --Sampo
  * 4.12.2013,  changed URL to BURL --Sampo
  * 11.4.2015,  added UNIX_GRP_AZ_MAP --Sampo
+ * 18.12.2015, applied patch from soconnor, perceptyx, including detection of
+ *             signature algorithm from certificate. --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -141,7 +143,7 @@ X509* zxid_extract_cert(char* buf, char* name)
 X509* zxid_read_cert(zxid_conf* cf, char* name)
 {
   X509* x = 0;  /* Forces d2i_X509() to alloc the memory. */
-  char buf[4096];
+  char buf[8192];
   char* p;
   char* e;
   p = zxid_read_cert_pem(cf, name, sizeof(buf), buf);
@@ -213,7 +215,7 @@ EVP_PKEY* zxid_extract_private_key(char* buf, char* name)
 /* Called by:  hi_new_shuffler, test_ibm_cert_problem x2, test_ibm_cert_problem_enc_dec x2, zxbus_mint_receipt x2, zxenc_privkey_dec, zxid_init_conf x3, zxid_lazy_load_sign_cert_and_pkey, zxlog_write_line x2 */
 EVP_PKEY* zxid_read_private_key(zxid_conf* cf, char* name)
 {
-  char buf[4096];
+  char buf[8192];
   int got = read_all(sizeof(buf),buf,"read_private_key",1, "%s" ZXID_PEM_DIR "%s", cf->cpath, name);
   if (!got && cf->auto_cert)
     zxid_mk_self_sig_cert(cf, sizeof(buf), buf, "read_private_key", name);
@@ -222,8 +224,27 @@ EVP_PKEY* zxid_read_private_key(zxid_conf* cf, char* name)
 
 /*() Lazy load signing certificate and private key. This reads them from disk
  * if needed. If they do not exist and auto_cert is enabled, they will be
- * generated on disk and the read. Once read from disk, they will be cached in
- * memory. */
+ * generated on disk and then read. Once read from disk, they will be cached in
+ * memory.
+ *
+ * > N.B. If the cert does not yet exist, write access to disk will be needed.
+ * > If it already exists, read access is sufficient. Thus it is more secure
+ * > to pregenerate the certificate and then set the permissions so that
+ * > the process can read it, but can not alter it.
+ *
+ * cf:: Configuration object
+ * cert:: result parameter. If non null, the certificate will be extracted
+ *     from file and pointer to the X509 data structure will be deposited
+ *     to place pointed by this parameter. If null, certificate is neither
+ *     extracted nor returned. The data structure should be freed by the
+ *     caller.
+ * pkey:: result parameter. Must be specified. The private key data structure
+ *     is extracted from the file and returned using this parameter. The
+ *     data structure should be freed by the caller.
+ * logkey:: Free form string describing why the cert and private key are
+ *     being requested. Used for logging and debugging.
+ * return:: Returns 1 on success and 0 on failure.
+ */
 
 /* Called by:  zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_az_soap x3, zxid_idp_soap_dispatch x2, zxid_idp_sso, zxid_mk_art_deref, zxid_mk_at_cert, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxid_sp_mni_soap, zxid_sp_slo_soap, zxid_sp_soap_dispatch x7, zxid_ssos_anreq, zxid_wsf_sign */
 int zxid_lazy_load_sign_cert_and_pkey(zxid_conf* cf, X509** cert, EVP_PKEY** pkey, const char* logkey)
@@ -240,7 +261,64 @@ int zxid_lazy_load_sign_cert_and_pkey(zxid_conf* cf, X509** cert, EVP_PKEY** pke
     return 0;
   return 1;
 }
-#endif
+
+/*() Get certificate signature algorithm string. This reads the
+ * signature algorithm from certificate itself.
+ */
+
+/* Called by:  */
+char* zxid_get_cert_signature_algo(X509* cert)
+{
+    if (!cert)
+       return "";
+    return OBJ_nid2ln(OBJ_obj2nid(cert->sig_alg->algorithm));
+}
+
+char* zxid_get_cert_signature_algo_url(X509* cert)
+{
+    char* alg = zxid_get_cert_signature_algo(cert);
+    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO;
+    else if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1;
+    else if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1;
+    else if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224;
+    else if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO;
+    else if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256;
+    else if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256;
+    else if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384;
+    else if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO;
+    else if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512;
+    else                                              return SIG_ALGO;
+}
+
+char* zxid_get_cert_signature_algo_urlenc(X509* cert)
+{
+    char* alg = zxid_get_cert_signature_algo(cert);
+    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO_URLENC;
+    else if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1_URLENC;
+    else if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1_URLENC;
+    else if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224_URLENC;
+    else if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO_URLENC;
+    else if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256_URLENC;
+    else if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256_URLENC;
+    else if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384_URLENC;
+    else if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO_URLENC;
+    else if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512_URLENC;
+    else                                              return SIG_ALGO_URLENC;
+}
+
+char* zxid_get_cert_digest_url(X509* cert)
+{
+    char* alg = zxid_get_cert_signature_algo(cert);
+    if (!alg || !strcmp(alg, ""))                     return DIGEST_ALGO;
+    else if (!strcmp(alg, "sha1WithRSAEncryption"))   return DIGEST_ALGO_SHA1;
+    else if (!strcmp(alg, "sha224WithRSAEncryption")) return DIGEST_ALGO_SHA224;
+    else if (!strcmp(alg, "sha256WithRSAEncryption")) return DIGEST_ALGO_SHA256;
+    else if (!strcmp(alg, "sha384WithRSAEncryption")) return DIGEST_ALGO_SHA384;
+    else if (!strcmp(alg, "sha512WithRSAEncryption")) return DIGEST_ALGO_SHA512;
+    else                                              return DIGEST_ALGO;
+}
+
+#endif  /* USE_OPENSSL */
 
 /*() Set obscure options of ZX and ZXID layers. Used to set debug options.
  * Generally setting these options is not supported, but this function

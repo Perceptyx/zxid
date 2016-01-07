@@ -13,6 +13,7 @@
  * 14.4.2008,  added SimpleSign --Sampo
  * 7.10.2008,  added documentation --Sampo
  * 10.3.2010,  added predecode support --Sampo
+ * 18.12.2015, applied patch from soconnor, perceptyx, adding algos --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -72,7 +73,7 @@ struct zx_root_s* zxid_decode_redir_or_post(zxid_conf* cf, zxid_cgi* cgi, zxid_s
   struct zx_root_s* r = 0;
   struct zx_str id_ss;
   char id_buf[28];
-  char sigbuf[512];  /* 192 should be large enough for 1024bit RSA keys */
+  char sigbuf[1024];  /* 192 should be large enough for 1024bit RSA keys */
   int simplesig = 0;
   int msglen, len;
   char* p;
@@ -221,7 +222,11 @@ log_msg:
   
   /* strcmp(cgi->sigalg, SIG_ALGO_RSA_SHA1) would be the right test, but as
    * SigAlg can be arbitrarily URL encoded, we make the match fuzzier. */
-  if (cgi->sigalg && strstr(cgi->sigalg, "rsa-sha1")) {
+  D("cgi->sigalg(%s)", cgi->sigalg);
+  if (cgi->sigalg &&
+      (   strstr(cgi->sigalg, "rsa-sha1")   || strstr(cgi->sigalg, "rsa-sha512")
+       || strstr(cgi->sigalg, "rsa-sha256") || strstr(cgi->sigalg, "dsa-sha1")
+       || strstr(cgi->sigalg, "dsa-sha512") || strstr(cgi->sigalg, "dsa-sha256"))) {
     ses->sigres = zxsig_verify_data(ss->len  /* Adjust for Signature= which we log */
 				    - (sizeof("&Signature=")-1 + strlen(cgi->sig)),
 				    ss->s, p2-sigbuf, sigbuf,

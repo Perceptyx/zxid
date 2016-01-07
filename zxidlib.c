@@ -12,6 +12,7 @@
  * 16.1.2007, factored out ses, conf, cgi, ecp, cdc, and loc --Sampo
  * 7.10.2008, added documentation --Sampo
  * 4.9.2009,  added zxid_map_val() --Sampo
+ * 18.12.2015, applied patch from soconnor, perceptyx, adding algos --Sampo
  */
 
 #include "platform.h"
@@ -175,12 +176,7 @@ struct zx_attr_s* zxid_date_time_attr(zxid_conf* cf, struct zx_elem_s* father, i
 
 /* ============== Redirect Encodings ============= */
 
-#define SIG_ALGO_RSA_SHA1 "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
-#define SIG_ALGO_RSA_SHA1_URLENC "http://www.w3.org/2000/09/xmldsig%23rsa-sha1"
-#define SIG_ALGO SIG_ALGO_RSA_SHA1
-#define SIG_ALGO_URLENC SIG_ALGO_RSA_SHA1_URLENC
 #define ETSIGNATURE_EQ "&Signature="
-#define SIG_SIZE 256  /* Maximum size of the base64 encoded signature, for buffer allocation */
 
 /*(i) Encode (and sign if Simple Sign) a form according to SAML2 POST binding.
  * zxid_decode_redir_or_post() performs the opposite operation.
@@ -197,6 +193,8 @@ struct zx_attr_s* zxid_date_time_attr(zxid_conf* cf, struct zx_elem_s* father, i
 /* Called by:  zxid_idp_sso x3 */
 struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* payload, char* relay_state, int sign, struct zx_str* action_url)
 {
+  X509* sign_cert;
+  char* sig_alg;
   EVP_PKEY* sign_pkey;
   struct zx_str id_str;
   struct zx_str* logpath;
@@ -226,7 +224,8 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
   /* The url buf is allocated large enough to be used for both signing and/or base64 encoding. */
   alloc_len = MAX((field_len + 1 + payload->len
 		   + sizeof("&RelayState=")-1 + rs_len
-		   + sizeof("&SigAlg=" SIG_ALGO)-1 + sizeof(ETSIGNATURE_EQ)-1 + SIG_SIZE),
+		   + sizeof("&SigAlg=")-1 + MAX(sizeof(SIG_ALGO),sizeof(SIG_ALGO_RSA_SHA512))-1
+		   + sizeof(ETSIGNATURE_EQ)-1 + SIG_SIZE),
 		  SIMPLE_BASE64_LEN(payload->len));
   url = p = ZX_ALLOC(cf->ctx, alloc_len + 1);  /* +1 for nul term */
 
@@ -243,14 +242,27 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
       memcpy(p, relay_state, rs_len);
       p += rs_len;
     }
-    
+
+#if 0    
     memcpy(p, "&SigAlg=" SIG_ALGO, sizeof("&SigAlg=" SIG_ALGO)-1);
     p += sizeof("&SigAlg=" SIG_ALGO)-1;
-
     if (zxid_lazy_load_sign_cert_and_pkey(cf, 0, &sign_pkey, "SAML2 post"))
-      zlen = zxsig_data(cf->ctx, p-url, url, &zbuf, sign_pkey, "SAML2 post");
-    if (zlen == -1)
+      zlen = zxsig_data(cf->ctx, p-url, url, &zbuf, sign_pkey, "SAML2 post", 0);
+#else
+    if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "SAML2 post")) {
+      sig_alg = zxid_get_cert_signature_algo_url(sign_cert);
+      memcpy(p, "&SigAlg=", sizeof("&SigAlg=")-1);
+      p+=sizeof("&SigAlg=")-1;
+      memcpy(p, sig_alg, strlen(sig_alg));
+      p+=strlen(sig_alg);
+      zlen = zxsig_data(cf->ctx, p-url, url, &zbuf, sign_pkey, "SAML2 post", sig_alg);
+      if (zlen == -1)
+	return 0;
+    } else {
+      ERR("Simple Signing requested, but private key could not be loaded. Fail. %d", 0);
       return 0;
+    }
+#endif
 
     memcpy(p, ETSIGNATURE_EQ, sizeof(ETSIGNATURE_EQ)-1);
     p += sizeof(ETSIGNATURE_EQ)-1;
@@ -290,7 +302,6 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
   *p = 0;
   ASSERTOPI(p-url, <=, alloc_len); /* Check sig didn't overrun its fixed size alloc SIG_SIZE */  
 
-#if 1
   /* Template based POST page, see post.html */
   ZERO(&cgi, sizeof(cgi));
   cgi.action_url = zx_str_to_c(cf->ctx, action_url);
@@ -301,28 +312,9 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
     cgi.rs = zx_alloc_sprintf(cf->ctx, 0, "<input type=hidden name=RelayState value=\"%s\">", relay_state);
   }
   if (sign) {
-    cgi.sig = zx_alloc_sprintf(cf->ctx, 0, "<input type=hidden name=SigAlg value=\"" SIG_ALGO "\"><input type=hidden name=Signature value=\"%s\">", sigbuf);
+    cgi.sig = zx_alloc_sprintf(cf->ctx, 0, "<input type=hidden name=SigAlg value=\"%s\"><input type=hidden name=Signature value=\"%s\">", sig_alg, sigbuf);
   }
   payload = zxid_template_page_cf(cf, &cgi, cf->post_templ_file, cf->post_templ, 64*1024, 0);
-#else
-  payload = zx_strf(cf->ctx, "<title>ZXID POST Profile</title>"
-"<body bgcolor=white OnLoad=\"document.forms[0].submit()\">"
-"<h1>ZXID POST Profile POST</h1>"
-"<form method=post action=\"%.*s\">\n"
-"<input type=hidden name=%s value=\"%s\"><br>\n"
-"%s%s%s"  /* rs */
-"%s%s%s"  /* sigalg & sig */
-"<input type=submit name=ok value=\" If JavaScript is not on, please click here to complete the transaction \">"
-"</form>",
-		    action_url->len, action_url->s,
-		    field, url,
-		    rs_len?"<input type=hidden name=RelayState value=\"":"",
-		    rs_len?relay_state:"",
-		    rs_len?"\">":"",
-		    sign?"<input type=hidden name=SigAlg value=\"" SIG_ALGO "\"><input type=hidden name=Signature value=\"":"",
-		    sigbuf,
-		    sign?"\">":"");
-#endif
   ZX_FREE(cf->ctx, url);
   return payload;
 }
@@ -347,6 +339,8 @@ struct zx_str zxstr_unknown = {0,0,sizeof("UNKNOWN")-1, "UNKNOWN"};
 /* Called by:  zxid_saml2_redir, zxid_saml2_redir_url, zxid_saml2_resp_redir */
 struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* pay_load, char* relay_state)
 {
+  X509* sign_cert;
+  char* sig_alg_urlenc;
   EVP_PKEY* sign_pkey;
   struct zx_str* logpath;
   struct zx_str* ss;
@@ -369,8 +363,9 @@ struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* p
   p = base64_fancy_raw(zbuf, zlen, b64, std_basis_64, 1<<31, 0, 0, '=');
   
   len = field_len + zx_url_encode_len(p-b64, b64) - 1 /* zap nul termination */;
-  url = ZX_ALLOC(cf->ctx, len + sizeof("&SigAlg=" SIG_ALGO_URLENC)
-		 + (rs_len?(sizeof("&RelayState=")-1+rs_len):0));
+  url = ZX_ALLOC(cf->ctx, len + sizeof("&SigAlg=")-1
+		 + MAX(sizeof(SIG_ALGO_URLENC),sizeof(SIG_ALGO_RSA_SHA512_URLENC))-1
+		 + (rs_len?(sizeof("&RelayState=")-1+rs_len):0) + 1 /* nul term */);
   memcpy(url, field, field_len);
 
   zx_url_encode_raw(p-b64, b64, url+field_len);
@@ -388,13 +383,28 @@ struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* p
   }
   
   /* Additional URL signing */
-  
+
+#if 0  
   memcpy(url+len, "&SigAlg=" SIG_ALGO_URLENC, sizeof("&SigAlg=" SIG_ALGO_URLENC)-1);
   len += sizeof("&SigAlg=" SIG_ALGO_URLENC)-1;
   if (zxid_lazy_load_sign_cert_and_pkey(cf, 0, &sign_pkey, "SAML2 redir"))
-    zlen = zxsig_data(cf->ctx, len, url, &zbuf, sign_pkey, "SAML2 redir");
-  if (zlen == -1)
+    zlen = zxsig_data(cf->ctx, len, url, &zbuf, sign_pkey, "SAML2 redir", 0);
+#else
+  if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "SAML2 redir")) {
+    char* sig_alg = zxid_get_cert_signature_algo_url(sign_cert);
+    sig_alg_urlenc = zxid_get_cert_signature_algo_urlenc(sign_cert);
+    memcpy(url+len, "&SigAlg=", sizeof("&SigAlg=")-1);
+    len+=sizeof("&SigAlg=")-1;
+    memcpy(url+len, sig_alg_urlenc, strlen(sig_alg_urlenc));
+    len+=strlen(sig_alg_urlenc);
+    zlen = zxsig_data(cf->ctx, len, url, &zbuf, sign_pkey, "SAML2 redir", sig_alg);
+    if (zlen == -1)
+      return 0;
+  } else {
+    ERR("Signature requested, but failed to read private key. %d",0);
     return 0;
+  }
+#endif
   D("siglen=%d", zlen);
   
   /* Base64 and URL encode the sig. Had SAML2 specified safe base64, world would be simpler! */
