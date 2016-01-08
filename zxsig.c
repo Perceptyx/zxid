@@ -16,6 +16,7 @@
  * 1.12.2010, improved logging of canonicalizations --Sampo
  * 16.10.2015, upgraded sha256 support --Sampo
  * 18.12.2015, applied patch from soconnor, perceptyx, adding algos --Sampo
+ * 7.1.2016,  made hash algorithm for generated signatures more configurable --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  */
@@ -45,8 +46,91 @@
 
 ZXID_DECL struct zx_ds_KeyInfo_s* zxid_key_info(zxid_conf* cf, struct zx_elem_s* father, X509* x);
 
+/*(-) Heuristic guesser for extracting hash algorithm name
+ * Input is an algorithm URL like "http://www.w3.org/2001/04/xmldsig-more%23rsa-sha384"
+ * or "http://www.w3.org/2000/09/xmldsig#sha1" or an OpenSSL algorithm
+ * string like "sha384WithRSAEncryption" or "dsa_with_SHA256" */
+
+static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
+{
+  if (!spec || strstr(spec, "sha1") || strstr(spec, "SHA1")) if (dsp) *dsp = DIGEST_ALGO_SHA1; return "SHA1";
+  if (strstr(spec, "sha224") || strstr(spec, "SHA224")) if (dsp) *dsp = DIGEST_ALGO_SHA224; return "SHA224";
+  if (strstr(spec, "sha256") || strstr(spec, "SHA256")) if (dsp) *dsp = DIGEST_ALGO_SHA256; return "SHA256";
+  if (strstr(spec, "sha384") || strstr(spec, "SHA384")) if (dsp) *dsp = DIGEST_ALGO_SHA384; return "SHA384";
+  if (strstr(spec, "sha512") || strstr(spec, "SHA512")) if (dsp) *dsp = DIGEST_ALGO_SHA512; return "SHA512";
+  if (strstr(spec, "sha2")   || strstr(spec, "SHA2"))   if (dsp) *dsp = DIGEST_ALGO_SHA256; return "SHA256";
+  ERR("Could not determine hash algorithm from spec(%s)", spec);
+  if (dsp) *dsp = "err";
+  return 0;
+}
+
+#if 0
+const char* zxid_get_cert_signature_algo_url(X509* cert)
+{
+    const char* alg = zxid_get_cert_signature_algo(cert);
+    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO;
+    if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1;
+    if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1;
+    if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224;
+    if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO;
+    if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256;
+    if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256;
+    if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384;
+    if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO;
+    if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512;
+    return SIG_ALGO;
+}
+
+const char* zxid_get_cert_signature_algo_urlenc(X509* cert)
+{
+    const char* alg = zxid_get_cert_signature_algo(cert);
+    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO_URLENC;
+    if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1_URLENC;
+    if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1_URLENC;
+    if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224_URLENC;
+    if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO_URLENC;
+    if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256_URLENC;
+    if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256_URLENC;
+    if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384_URLENC;
+    if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO_URLENC;
+    if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512_URLENC;
+    return SIG_ALGO_URLENC;
+}
+
+const char* zxid_get_cert_digest_url(X509* cert)
+{
+    const char* alg = zxid_get_cert_signature_algo(cert);
+    if (!alg || !strcmp(alg, ""))                     return DIGEST_ALGO;
+    if (!strcmp(alg, "sha1WithRSAEncryption"))   return DIGEST_ALGO_SHA1;
+    if (!strcmp(alg, "sha224WithRSAEncryption")) return DIGEST_ALGO_SHA224;
+    if (!strcmp(alg, "sha256WithRSAEncryption")) return DIGEST_ALGO_SHA256;
+    if (!strcmp(alg, "sha384WithRSAEncryption")) return DIGEST_ALGO_SHA384;
+    if (!strcmp(alg, "sha512WithRSAEncryption")) return DIGEST_ALGO_SHA512;
+    return DIGEST_ALGO;
+}
+#endif
+
+const char* zxid_get_conf_digest_url(const char* algospec, X509* cert)
+{
+  if (!algospec)
+    algospec = zxid_get_cert_signature_algo_url(cert);
+  if (!algospec) {
+    ERR("No algospec %p", cert);
+    return DIGEST_ALGO;
+  }
+  return algospec;
+}
+
+const char* zxsig_choose_xmldsig_sig_meth_url(X509* cert, const char* digest_spec)
+{
+  if (!digest_spec || (digest_spec[0]=='0'&&!digest_spec[1])) {
+    digest_spec = zxid_get_cert_digest_url(cert);
+  }
+  
+}
+
 //static char*
-#define priv_key_missing_msg "Private key missing. Perhaps you have not installed one in the certificate file in the /var/zxid/pem directory (or other directory if configured, see previous error messages for file reading trouble)? Other reasons: permissions do not allow reading the key (current uid=%d gid=%d), the directory permissions do not allow reading, the private key file is empty, wrong format, or corrupt; or the private key is protected with a password (remove password prior to use with zxid). See http://zxid.org/html/zxid-cot.html for further help."
+#define priv_key_missing_msg "Private key missing. Perhaps you have not installed one in the certificate file in the /var/zxid/pem directory (or other directory if configured, see previous error messages for file reading trouble)? Other reasons: permissions do not allow reading the key (current uid=%d gid=%d), the directory permissions do not allow reading, the private key file is empty, wrong format, or corrupt; or the private key is protected with a password (remove password prior to use with zxid). Can also be caused by missing certificate. See http://zxid.org/html/zxid-cot.html for further help."
 
 /*(i) Sign, using XML-DSIG, some XML data in the ~sref~ array. The XML data is canonicalized
  * and the signature is generated and returned. Typically the caller will then insert the
@@ -58,6 +142,19 @@ ZXID_DECL struct zx_ds_KeyInfo_s* zxid_key_info(zxid_conf* cf, struct zx_elem_s*
  *     to be signed. See zxid_add_header_refs() for preparing sref array.
  * cert::     Certificate (public key) used for signing
  * priv_key:: Private key used for signing
+ * sig_meth_spec:: String used as SignatureMethod@Algorithm (i.e. a special URL
+ *     like "http://www.w3.org/2000/09/xmldsig#rsa-sha1"). The public key part
+ *     must agree with certificate. The hash part is used for choosing a hash
+ *     algorithm. If specified as 0 or "0", the public key part is determined
+ *     from the certificate and the hash part from the digest_spec. Since the
+ *     mapping is nontrivial, not all combinations can be autodetected.
+ *     This argument is usually fed from configuration option such as
+ *     XMLDSIG_SIG_METH at a higher level.
+ * digest_spec:: String used as Reference/DigestMethod@Algorithm. The digest
+ *     algorithm crypto level is determined by looking at suffix of this string. Special
+ *     value 0 means to use same digest algorithm as used in the signing
+ *     certificate. This argument is usually fed from configuration option such as
+ *     XMLDSIG_DIGEST_ALGO at a higher level.
  * return::   Signature as XML data, or 0 if failure.
  *
  * *Steps*
@@ -87,9 +184,15 @@ ZXID_DECL struct zx_ds_KeyInfo_s* zxid_key_info(zxid_conf* cf, struct zx_elem_s*
  */
 
 /* Called by:  zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_az_soap x3, zxid_idp_soap_dispatch x2, zxid_idp_sso, zxid_mk_art_deref, zxid_sp_mni_soap, zxid_sp_slo_soap, zxid_sp_soap_dispatch x7, zxid_ssos_anreq, zxid_wsf_sign */
-struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* sref, X509* cert, EVP_PKEY* priv_key)
+struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* sref, X509* cert, EVP_PKEY* priv_key, const char* sig_meth_spec, const char* digest_spec)
 {
-  char sha_buf[64]; /* SHA1 is 160 bits == 20 bytes, SHA256 is 32 bytes, SHA512 is 64 bytes. */
+  EVP_MD_CTX* mdctx;
+  const EVP_MD* evp_sig_digest;
+  const EVP_MD* evp_digest;
+  unsigned char mdbuf[EVP_MAX_MD_SIZE];
+  int mdlen;
+  char* csa;
+  char* dig_alg;
   char* sig_alg;
   char* sigu;
   int siglen;
@@ -98,18 +201,74 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
   struct zx_str* ss;
   struct zx_str* b64;
   struct zx_ds_Reference_s* ref;
-  struct zx_ds_Signature_s* sig = zx_NEW_ds_Signature(c,0);
-  struct zx_ds_SignedInfo_s* si = sig->SignedInfo = zx_NEW_ds_SignedInfo(c, &sig->gg);
-  si->CanonicalizationMethod = zx_NEW_ds_CanonicalizationMethod(c, &si->gg);
-  si->CanonicalizationMethod->Algorithm = zx_ref_attr(c, &si->CanonicalizationMethod->gg, zx_Algorithm_ATTR, CANON_ALGO);
-  si->SignatureMethod = zx_NEW_ds_SignatureMethod(c, &si->gg);
-#if 0
-  si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, SIG_ALGO);
+  struct zx_ds_Signature_s* sig;
+  struct zx_ds_SignedInfo_s* si;
+
+  if (!priv_key || !cert) {
+    ERR(priv_key_missing_msg, geteuid(), getegid());
+    return 0;
+  }
+#if 0  
+  /* The digest_spec is typically passed from configuration option XMLDSIG_DIGEST_ALGO,
+   * which see for documentation. Typical value "http://www.w3.org/2000/09/xmldsig#sha1".
+   * Here we basically use fuzzy or heuristic detection in the hope that all the myriard
+   * algorithm URLs that are in use out there (some standards based, some not) will match. */
+  if (!digest_spec || (digest_spec[0]=='0'&&!digest_spec[1])) {
+    /* digest_spec not specified, extract from cert */
+    csa = zxid_get_cert_signature_algo(cert);
+    dig_alg = zxsig_extract_hash_algo(csa, &digest_spec);
+    if (!csa || strstr(csa, "sha1") || strstr(csa, "SHA1"))    digest_spec = DIGEST_ALGO_SHA1, dig_alg = "SHA1";
+    else if (strstr(csa, "sha224") || strstr(csa, "SHA224")) digest_spec = DIGEST_ALGO_SHA224, dig_alg = "SHA224";
+    else if (strstr(csa, "sha256") || strstr(csa, "SHA256")) digest_spec = DIGEST_ALGO_SHA256, dig_alg = "SHA256";
+    else if (strstr(csa, "sha384") || strstr(csa, "SHA384")) digest_spec = DIGEST_ALGO_SHA384, dig_alg = "SHA384";
+    else if (strstr(csa, "sha512") || strstr(csa, "SHA512")) digest_spec = DIGEST_ALGO_SHA512, dig_alg = "SHA512";
+    else if (strstr(csa, "sha2")   || strstr(csa, "SHA2"))   digest_spec = DIGEST_ALGO_SHA256, dig_alg = "SHA256";
+    else {
+      ERR("Could not determone hash algorithm from certificate algo(%s)", p);
+      return 0;
+    }
+  } else {
+    dig_alg = zxsig_extract_hash_algo(digest_spec, 0);
+  }
+  OpenSSL_add_all_digests();
+  evp_digest = EVP_get_digestbyname(dig_alg);
+  if (!evp_digest) {
+    ERR("digest algorithm(%s) not found or not supported at libcrypto (OpenSSL) level.", dig_alg);
+    return 0;
+  }
+  
+  switch (EVP_PKEY_type(priv_key->type)) {
+  case EVP_PKEY_RSA:
+  case EVP_PKEY_DSA:
+  }
+
+  const char* alg = zxid_get_cert_signature_algo(cert);
+
+  //si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, SIG_ALGO);
+  if (!sig_meth_spec || (sig_meth_spec[0]=='0'&&!sig_meth_spec[1])) {
+    sig_meth_spec = zxsig_choose_xmldsig_sig_meth_url(cert, digest_spec);
+  } else {
+  }
+  
+  if (!sig_meth_spec) {
+    si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, zxsig_choose_xmldsig_sig_meth_url());
+  } else {
+  }
+
+
+
 #else
   memset(sha_buf, 0, sizeof(sha_buf));
   sig_alg = zxid_get_cert_signature_algo_url(cert);
   si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, sig_alg);
 #endif
+
+  sig = zx_NEW_ds_Signature(c,0);
+  si = sig->SignedInfo = zx_NEW_ds_SignedInfo(c, &sig->gg);
+  si->CanonicalizationMethod = zx_NEW_ds_CanonicalizationMethod(c, &si->gg);
+  si->CanonicalizationMethod->Algorithm = zx_ref_attr(c, &si->CanonicalizationMethod->gg, zx_Algorithm_ATTR, CANON_ALGO);
+  si->SignatureMethod = zx_NEW_ds_SignatureMethod(c, &si->gg);
+  si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, sig_meth_spec);    
 
   for (; n; --n, ++sref) {
     ref = zx_NEW_ds_Reference(c, &si->gg);
@@ -120,39 +279,40 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
     ref->Transforms->Transform = zx_NEW_ds_Transform(c, &ref->Transforms->gg);
     ref->Transforms->Transform->Algorithm = zx_ref_attr(c, &ref->Transforms->Transform->gg, zx_Algorithm_ATTR, ENVELOPED_ALGO);
     
+    ref->URI = zx_attrf(c, &ref->gg, zx_URI_ATTR, "#%.*s", sref->id->len, sref->id->s);
     ref->DigestMethod = zx_NEW_ds_DigestMethod(c, &ref->gg);
 
 #if 0
-    ref->DigestMethod->Algorithm = zx_ref_attr(c, &ref->DigestMethod->gg, zx_Algorithm_ATTR, DIGEST_ALGO);    
-    ref->URI = zx_attrf(c, &ref->gg, zx_URI_ATTR, "#%.*s", sref->id->len, sref->id->s);
-    SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
-    siglen = 20
+    //ref->DigestMethod->Algorithm = zx_ref_attr(c, &ref->DigestMethod->gg, zx_Algorithm_ATTR, DIGEST_ALGO);    
+    //SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+    //mdlen = 20
+    ref->DigestMethod->Algorithm = zx_ref_attr(c, &ref->DigestMethod->gg, zx_Algorithm_ATTR, digest_spec);
+    mdlen = zx_raw_raw_digest2(c, mdbuf, evp_digest, sref->canon->len, sref->canon->s);
 #else
     ref->DigestMethod->Algorithm = zx_ref_attr(c, &ref->DigestMethod->gg, zx_Algorithm_ATTR, zxid_get_cert_digest_url(cert));
-    ref->URI = zx_attrf(c, &ref->gg, zx_URI_ATTR, "#%.*s", sref->id->len, sref->id->s);
 
     if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1)) {
       SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
-      siglen = 20;
+      mdlen = 20;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224)) {
       SHA224((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
-      siglen = 28;
+      mdlen = 28;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256)) {
       SHA256((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
-      siglen = 32;
+      mdlen = 32;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384)) {
       SHA384((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
-      siglen = 48;
+      mdlen = 48;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512)) {
       SHA512((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
-      siglen = 64;
+      mdlen = 64;
     } else {
       SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
-      siglen = 20;
+      mdlen = 20;
     }
 #endif
-    b64 = zx_new_len_str(c, SIMPLE_BASE64_LEN(siglen));
-    base64_fancy_raw(sha_buf, siglen, b64->s, std_basis_64, 1<<31, 0, 0, '=');    
+    b64 = zx_new_len_str(c, SIMPLE_BASE64_LEN(mdlen));
+    base64_fancy_raw(sha_buf, mdlen, b64->s, std_basis_64, 1<<31, 0, 0, '=');    
     ref->DigestValue = zx_new_str_elem(c, &ref->gg, zx_ds_DigestValue_ELEM, b64);
     si->Reference = ref;  /* *** Need to reverse the list? */
     /* This debug print allows you to debug canonicalization related signature
@@ -283,7 +443,7 @@ static void zxsig_canon_crnl_inplace(struct zx_str* ss)
  * Signature is validated agaist provided certificate, which
  * must have been previously looked up, usually using Issuer field of message
  * and metadata of the signing party. Trust in the certificate must have
- * been established by other means.
+ * been established by other means such as only populating trusted metadata.
  *
  * c::    ZX context. Used for memory allocation.
  * cert:: Signing party's certificate (public key), typically from metadata. If NULL,
@@ -569,7 +729,7 @@ int zx_report_openssl_err(const char* logkey)
  *            be allocated, will be returned via this parameter.
  * priv_key:: Private key used for signing.
  * lk::       Log key. Used to make logs and error messages more meaningful.
- * md_alg::  Message digest algorithm used for signature (assymmetric algorithm is autodetected from the private key)
+ * md_alg::   Message digest algorithm used for signature (assymmetric algorithm is autodetected from the private key)
  * return::   -1 on failure. Upon success the length of the raw signature data. */
 
 /* Called by:  zxbus_mint_receipt, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxlog_write_line x2 */

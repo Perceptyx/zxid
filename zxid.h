@@ -876,10 +876,10 @@ ZXID_DECL EVP_PKEY*  zxid_extract_private_key(char* buf, char* name);
 ZXID_DECL X509* zxid_read_cert(zxid_conf* cf, char* name);
 ZXID_DECL EVP_PKEY*  zxid_read_private_key(zxid_conf* cf, char* name);
 ZXID_DECL int zxid_lazy_load_sign_cert_and_pkey(zxid_conf* cf, X509** cert, EVP_PKEY** pkey, const char* logkey);
-ZXID_DECL char* zxid_get_cert_signature_algo(X509* cert);
-ZXID_DECL char* zxid_get_cert_signature_algo_url(X509* cert);
-ZXID_DECL char* zxid_get_cert_signature_algo_urlenc(X509* cert);
-ZXID_DECL char* zxid_get_cert_digest_url(X509* cert);
+ZXID_DECL const char* zxid_get_cert_signature_algo(X509* cert);
+ZXID_DECL const char* zxid_get_cert_signature_algo_url(X509* cert);
+ZXID_DECL const char* zxid_get_cert_signature_algo_urlenc(X509* cert);
+ZXID_DECL const char* zxid_get_cert_digest_url(X509* cert);
 #endif
 ZXID_DECL int   zxid_set_opt(zxid_conf* cf, int which, int val);
 ZXID_DECL char* zxid_set_opt_cstr(zxid_conf* cf, int which, char* val);

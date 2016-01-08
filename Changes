@@ -122,6 +122,9 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
 
 No authentication done but request not allowed without authentication for Authentication not configured?
 
+zxid-1.42:: 7.1.2016
+    - Made signature and hash algorithms more configurable
+
 zxid-1.41:: 18.12.2015
     - applied patch from soconnor, perceptyx, including detection of
       signature algorithm from certificate. --Sampo

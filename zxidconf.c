@@ -262,62 +262,6 @@ int zxid_lazy_load_sign_cert_and_pkey(zxid_conf* cf, X509** cert, EVP_PKEY** pke
   return 1;
 }
 
-/*() Get certificate signature algorithm string. This reads the
- * signature algorithm from certificate itself.
- */
-
-/* Called by:  */
-char* zxid_get_cert_signature_algo(X509* cert)
-{
-    if (!cert)
-       return "";
-    return OBJ_nid2ln(OBJ_obj2nid(cert->sig_alg->algorithm));
-}
-
-char* zxid_get_cert_signature_algo_url(X509* cert)
-{
-    char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO;
-    else if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1;
-    else if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1;
-    else if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224;
-    else if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO;
-    else if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256;
-    else if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256;
-    else if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384;
-    else if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO;
-    else if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512;
-    else                                              return SIG_ALGO;
-}
-
-char* zxid_get_cert_signature_algo_urlenc(X509* cert)
-{
-    char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO_URLENC;
-    else if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1_URLENC;
-    else if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1_URLENC;
-    else if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224_URLENC;
-    else if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO_URLENC;
-    else if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256_URLENC;
-    else if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256_URLENC;
-    else if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384_URLENC;
-    else if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO_URLENC;
-    else if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512_URLENC;
-    else                                              return SIG_ALGO_URLENC;
-}
-
-char* zxid_get_cert_digest_url(X509* cert)
-{
-    char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                     return DIGEST_ALGO;
-    else if (!strcmp(alg, "sha1WithRSAEncryption"))   return DIGEST_ALGO_SHA1;
-    else if (!strcmp(alg, "sha224WithRSAEncryption")) return DIGEST_ALGO_SHA224;
-    else if (!strcmp(alg, "sha256WithRSAEncryption")) return DIGEST_ALGO_SHA256;
-    else if (!strcmp(alg, "sha384WithRSAEncryption")) return DIGEST_ALGO_SHA384;
-    else if (!strcmp(alg, "sha512WithRSAEncryption")) return DIGEST_ALGO_SHA512;
-    else                                              return DIGEST_ALGO;
-}
-
 #endif  /* USE_OPENSSL */
 
 /*() Set obscure options of ZX and ZXID layers. Used to set debug options.

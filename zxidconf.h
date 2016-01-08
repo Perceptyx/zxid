@@ -973,6 +973,28 @@
 #define ZXID_WSP_NOSIG_FATAL   1 /* Missing Security/Signature is fatal. */
 #define ZXID_NOTIMESTAMP_FATAL 1 /* Missing Security/Timestamp is fatal. */
 
+/*(c) String used as SignatureMethod@Algorithm
+ * Typically a special URL like "http://www.w3.org/2000/09/xmldsig#rsa-sha1".
+ * The public key part must agree with certificate used for signature. The
+ * hash part is used for choosing a hash algorithm. If specified as 0 or "0",
+ * the public key part is determined from the certificate and the hash
+ * part from the XMLDSIG_DIGEST_ALGO. Since the mapping is
+ * nontrivial, not all combinations can be autodetected.
+ */
+#define ZXID_XMLDSIG_SIG_METH 0
+
+/*(c) Digest algorithm to use when generating XMLDSIG signatures
+ * The string is used as Reference/DigestMethod@Algorithm and is also
+ * used to choose (by looking at the local part of the URL) the actual
+ * digest algorithm for the crypto engine.
+ * If XMLDSIG_SIG_METH is specified as 0 or "0", as it often is, this
+ * option also determines the hash algorithm part for the signature.
+ * Special value 0 means to use the same hash algorithm as in
+ * signing certificate.
+ * Traditional default value (as of 2015): "http://www.w3.org/2000/09/xmldsig#sha1"
+ */
+#define ZXID_XMLDSIG_DIGEST_ALGO DIGEST_ALGO
+
 #if 0
 /*(c) Obscure signature and hash options
  * 1 = invalid hash spacification is replaced by sha1

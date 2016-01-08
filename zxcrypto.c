@@ -1,5 +1,5 @@
 /* zxid/zxcrypto.c  -  Glue for cryptographical functions
- * Copyright (c) 2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2015-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -69,54 +69,71 @@ int zx_EVP_CIPHER_iv_length(const EVP_CIPHER* cipher)  { return EVP_CIPHER_iv_le
 int zx_EVP_CIPHER_block_size(const EVP_CIPHER* cipher) { return EVP_CIPHER_block_size(cipher); }
 #endif
 
+/*() Get certificate signature algorithm string. This reads the
+ * signature algorithm from certificate itself.
+ */
+
+/* Called by:  */
+const char* zxid_get_cert_signature_algo(X509* cert)
+{
+    if (!cert)
+       return "";
+    return OBJ_nid2ln(OBJ_obj2nid(cert->sig_alg->algorithm));
+}
+
 /*() zx_raw_digest2() computes a message digest over two items. The result
  * is placed in buffer md, which must already be of length sufficient for
  * the digest. md will not be nul terminated (and will usually have binary
- * data). Possible algos: SHA1 */
+ * data). Possible algos: "SHA1", "SHA256", "SHA512", etc.
+ * Returns 0 on failure or length of the digest on success.  */
 
-char* zx_raw_digest2(struct zx_ctx* c, char* md, char* const algo, int len, const char* s, int len2, const char* s2)
+int zx_raw_raw_digest2(struct zx_ctx* c, char* md, const EVP_MD* evp_digest, int len, const char* s, int len2, const char* s2)
 {
-  char* where = "start";
-  const EVP_MD* evp_digest;
-  EVP_MD_CTX ctx;
-  OpenSSL_add_all_digests();
-  EVP_MD_CTX_init(&ctx);
-  evp_digest = EVP_get_digestbyname(algo);
-  if (!evp_digest) {
-    ERR("Digest algo name(%s) not recognized by the crypto library (OpenSSL)", algo);
-    return 0;
-  }
+  char* where = "a";
+  EVP_MD_CTX* mdctx;
+  int mdlen;
+  mdctx = EVP_MD_CTX_create();
     
-  if (!EVP_DigestInit_ex(&ctx, evp_digest, 0 /* engine */)) {
+  if (!EVP_DigestInit_ex(mdctx, evp_digest, 0 /* engine */)) {
     where = "EVP_DigestInit_ex()";
     goto sslerr;
   }
   
   if (len && s) {
-    if (!EVP_DigestUpdate(&ctx, s, len)) {
+    if (!EVP_DigestUpdate(mdctx, s, len)) {
       where = "EVP_DigestUpdate()";
       goto sslerr;
     }
   }
   
   if (len2 && s2) {
-    if (!EVP_DigestUpdate(&ctx, s2, len2)) {
+    if (!EVP_DigestUpdate(mdctx, s2, len2)) {
       where = "EVP_DigestUpdate() 2";
       goto sslerr;
     }
   }
   
-  if(!EVP_DigestFinal_ex(&ctx, (unsigned char*)md, 0)) {
+  if(!EVP_DigestFinal_ex(mdctx, (unsigned char*)md, &mdlen)) {
     where = "EVP_DigestFinal_ex()";
     goto sslerr;
   }
-  EVP_MD_CTX_cleanup(&ctx);
-  return md;
+  EVP_MD_CTX_destroy(mdctx);
+  return mdlen;
 
  sslerr:
   zx_report_openssl_err(where);
-  EVP_MD_CTX_cleanup(&ctx);
+  EVP_MD_CTX_destroy(mdctx);
   return 0;
+}
+
+int zx_raw_digest2(struct zx_ctx* c, char* md, const char* algo, int len, const char* s, int len2, const char* s2)
+{
+  char* where = "start";
+  const EVP_MD* evp_digest;
+  EVP_MD_CTX* mdctx;
+  int mdlen;
+  OpenSSL_add_all_digests();
+  return zx_raw_raw_digest2(c, md, evp_digest, len, s, len2, s2);
 }
 
 /*() zx_EVP_DecryptFinal_ex() is a drop-in replacement for OpenSSL EVP_DecryptFinal_ex.
