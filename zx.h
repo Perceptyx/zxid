@@ -379,6 +379,11 @@ struct zx_el_desc* zx_el_desc_lookup(int tok);
 #define SIG_ALGO_DSA_SHA256 "http://www.w3.org/2009/xmldsig11#dsa-sha256"
 #define SIG_ALGO_DSA_SHA384 "http://www.w3.org/2009/xmldsig11#dsa-sha384"
 #define SIG_ALGO_DSA_SHA512 "http://www.w3.org/2009/xmldsig11#dsa-sha512"
+#define SIG_ALGO_ECDSA_SHA1   "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha1"
+#define SIG_ALGO_ECDSA_SHA224 "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha224"
+#define SIG_ALGO_ECDSA_SHA256 "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"
+#define SIG_ALGO_ECDSA_SHA384 "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384"
+#define SIG_ALGO_ECDSA_SHA512 "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512"
 
 #define DIGEST_ALGO_SHA1   "http://www.w3.org/2000/09/xmldsig#sha1"
 #define DIGEST_ALGO_SHA224 "http://www.w3.org/2001/04/xmldsig-more#sha224"

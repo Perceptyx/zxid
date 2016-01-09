@@ -111,7 +111,7 @@ struct zx_sp_ArtifactResolve_s* zxid_mk_art_deref(zxid_conf* cf, struct zx_elem_
     refs.id = &ar->ID->g;
     refs.canon = zx_easy_enc_elem_sig(cf, &ar->gg);
     if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert art deref")) {
-      ar->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+      ar->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
       zx_add_kid_after_sa_Issuer(&ar->gg, &ar->Signature->gg);
     }
     zx_str_free(cf->ctx, refs.canon);

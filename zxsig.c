@@ -64,11 +64,55 @@ static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
   return 0;
 }
 
+/*(-) Heuristic to construct SIG_ALGO URL string based on chosen digest and algo pr private key */
+static const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* dig_alg)
+{
+  switch (EVP_PKEY_type(priv_key->type)) {
+  case EVP_PKEY_RSA:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_RSA_SHA1;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_RSA_SHA224;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_RSA_SHA256;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_RSA_SHA384;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_RSA_SHA512;
+    break;
+  case EVP_PKEY_DSA:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_DSA_SHA1;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_DSA_SHA224;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_DSA_SHA256;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_DSA_SHA384;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_DSA_SHA512;
+    break;
+  case EVP_PKEY_EC:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_ECDSA_SHA1;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_ECDSA_SHA224;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_ECDSA_SHA256;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_ECDSA_SHA384;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_ECDSA_SHA512;
+    break;
 #if 0
+    /* *** can not find documentation for these */
+  case EVP_PKEY_DH:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_DH_SHA1;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_DH_SHA224;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_DH_SHA256;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_DH_SHA384;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_DH_SHA512;
+    break;
+#endif
+  default:
+    ERR("Unknown private key type=%x", EVP_PKEY_type(priv_key->type));
+    return "#pkerr";
+  }
+  ERR("Unknown digest algo(%s)", STRNULLCHKQ(dig_alg));
+  return "#digerr";
+}
+
+#if 1
+/* *** these are no longer needed as selection is handled by configuration system */
 const char* zxid_get_cert_signature_algo_url(X509* cert)
 {
     const char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO;
+    if (!alg || !strcmp(alg, ""))                return SIG_ALGO;
     if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1;
     if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1;
     if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224;
@@ -84,7 +128,7 @@ const char* zxid_get_cert_signature_algo_url(X509* cert)
 const char* zxid_get_cert_signature_algo_urlenc(X509* cert)
 {
     const char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                     return SIG_ALGO_URLENC;
+    if (!alg || !strcmp(alg, ""))                return SIG_ALGO_URLENC;
     if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1_URLENC;
     if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1_URLENC;
     if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224_URLENC;
@@ -100,7 +144,7 @@ const char* zxid_get_cert_signature_algo_urlenc(X509* cert)
 const char* zxid_get_cert_digest_url(X509* cert)
 {
     const char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                     return DIGEST_ALGO;
+    if (!alg || !strcmp(alg, ""))                return DIGEST_ALGO;
     if (!strcmp(alg, "sha1WithRSAEncryption"))   return DIGEST_ALGO_SHA1;
     if (!strcmp(alg, "sha224WithRSAEncryption")) return DIGEST_ALGO_SHA224;
     if (!strcmp(alg, "sha256WithRSAEncryption")) return DIGEST_ALGO_SHA256;
@@ -109,25 +153,6 @@ const char* zxid_get_cert_digest_url(X509* cert)
     return DIGEST_ALGO;
 }
 #endif
-
-const char* zxid_get_conf_digest_url(const char* algospec, X509* cert)
-{
-  if (!algospec)
-    algospec = zxid_get_cert_signature_algo_url(cert);
-  if (!algospec) {
-    ERR("No algospec %p", cert);
-    return DIGEST_ALGO;
-  }
-  return algospec;
-}
-
-const char* zxsig_choose_xmldsig_sig_meth_url(X509* cert, const char* digest_spec)
-{
-  if (!digest_spec || (digest_spec[0]=='0'&&!digest_spec[1])) {
-    digest_spec = zxid_get_cert_digest_url(cert);
-  }
-  
-}
 
 //static char*
 #define priv_key_missing_msg "Private key missing. Perhaps you have not installed one in the certificate file in the /var/zxid/pem directory (or other directory if configured, see previous error messages for file reading trouble)? Other reasons: permissions do not allow reading the key (current uid=%d gid=%d), the directory permissions do not allow reading, the private key file is empty, wrong format, or corrupt; or the private key is protected with a password (remove password prior to use with zxid). Can also be caused by missing certificate. See http://zxid.org/html/zxid-cot.html for further help."
@@ -186,18 +211,17 @@ const char* zxsig_choose_xmldsig_sig_meth_url(X509* cert, const char* digest_spe
 /* Called by:  zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_az_soap x3, zxid_idp_soap_dispatch x2, zxid_idp_sso, zxid_mk_art_deref, zxid_sp_mni_soap, zxid_sp_slo_soap, zxid_sp_soap_dispatch x7, zxid_ssos_anreq, zxid_wsf_sign */
 struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* sref, X509* cert, EVP_PKEY* priv_key, const char* sig_meth_spec, const char* digest_spec)
 {
-  EVP_MD_CTX* mdctx;
   const EVP_MD* evp_sig_digest;
   const EVP_MD* evp_digest;
   unsigned char mdbuf[EVP_MAX_MD_SIZE];
   int mdlen;
-  char* csa;
-  char* dig_alg;
-  char* sig_alg;
+  const char* dig_alg;
   char* sigu;
   int siglen;
   RSA* rsa;
   DSA* dsa;
+  EC_KEY* ec;
+  DH* dh;
   struct zx_str* ss;
   struct zx_str* b64;
   struct zx_ds_Reference_s* ref;
@@ -208,61 +232,41 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
     ERR(priv_key_missing_msg, geteuid(), getegid());
     return 0;
   }
-#if 0  
+#if 1
   /* The digest_spec is typically passed from configuration option XMLDSIG_DIGEST_ALGO,
    * which see for documentation. Typical value "http://www.w3.org/2000/09/xmldsig#sha1".
    * Here we basically use fuzzy or heuristic detection in the hope that all the myriard
    * algorithm URLs that are in use out there (some standards based, some not) will match. */
   if (!digest_spec || (digest_spec[0]=='0'&&!digest_spec[1])) {
-    /* digest_spec not specified, extract from cert */
-    csa = zxid_get_cert_signature_algo(cert);
-    dig_alg = zxsig_extract_hash_algo(csa, &digest_spec);
-    if (!csa || strstr(csa, "sha1") || strstr(csa, "SHA1"))    digest_spec = DIGEST_ALGO_SHA1, dig_alg = "SHA1";
-    else if (strstr(csa, "sha224") || strstr(csa, "SHA224")) digest_spec = DIGEST_ALGO_SHA224, dig_alg = "SHA224";
-    else if (strstr(csa, "sha256") || strstr(csa, "SHA256")) digest_spec = DIGEST_ALGO_SHA256, dig_alg = "SHA256";
-    else if (strstr(csa, "sha384") || strstr(csa, "SHA384")) digest_spec = DIGEST_ALGO_SHA384, dig_alg = "SHA384";
-    else if (strstr(csa, "sha512") || strstr(csa, "SHA512")) digest_spec = DIGEST_ALGO_SHA512, dig_alg = "SHA512";
-    else if (strstr(csa, "sha2")   || strstr(csa, "SHA2"))   digest_spec = DIGEST_ALGO_SHA256, dig_alg = "SHA256";
-    else {
-      ERR("Could not determone hash algorithm from certificate algo(%s)", p);
-      return 0;
-    }
+    dig_alg = zxsig_extract_hash_algo(zxid_get_cert_signature_algo(cert), &digest_spec);
   } else {
     dig_alg = zxsig_extract_hash_algo(digest_spec, 0);
   }
   OpenSSL_add_all_digests();
   evp_digest = EVP_get_digestbyname(dig_alg);
   if (!evp_digest) {
-    ERR("digest algorithm(%s) not found or not supported at libcrypto (OpenSSL) level.", dig_alg);
+    ERR("digest algorithm(%s) not found or not supported at libcrypto (OpenSSL) level. digest_spec(%s)", dig_alg, digest_spec);
     return 0;
   }
   
-  switch (EVP_PKEY_type(priv_key->type)) {
-  case EVP_PKEY_RSA:
-  case EVP_PKEY_DSA:
-  }
-
-  const char* alg = zxid_get_cert_signature_algo(cert);
-
-  //si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, SIG_ALGO);
   if (!sig_meth_spec || (sig_meth_spec[0]=='0'&&!sig_meth_spec[1])) {
-    sig_meth_spec = zxsig_choose_xmldsig_sig_meth_url(cert, digest_spec);
+    evp_sig_digest = evp_digest;  /* sig_meth_spec not given, use same as digest_spec */
+    sig_meth_spec = zxsig_choose_xmldsig_sig_meth_url(priv_key, dig_alg);
   } else {
+    dig_alg = zxsig_extract_hash_algo(sig_meth_spec, 0);
+    evp_sig_digest = EVP_get_digestbyname(dig_alg);
+    if (!evp_sig_digest) {
+      ERR("signature digest algorithm(%s) not found or not supported at libcrypto (OpenSSL) level. Signature method specification(%s)", dig_alg, sig_meth_spec);
+      return 0;
+    }
   }
-  
-  if (!sig_meth_spec) {
-    si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, zxsig_choose_xmldsig_sig_meth_url());
-  } else {
-  }
-
-
-
 #else
-  memset(sha_buf, 0, sizeof(sha_buf));
-  sig_alg = zxid_get_cert_signature_algo_url(cert);
+  memset(mdbuf, 0, sizeof(mdbuf));
+  const char* sig_alg = zxid_get_cert_signature_algo_url(cert);
   si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, sig_alg);
+  //si->SignatureMethod->Algorithm = zx_ref_attr(c, &si->SignatureMethod->gg, zx_Algorithm_ATTR, SIG_ALGO);
 #endif
-
+  
   sig = zx_NEW_ds_Signature(c,0);
   si = sig->SignedInfo = zx_NEW_ds_SignedInfo(c, &sig->gg);
   si->CanonicalizationMethod = zx_NEW_ds_CanonicalizationMethod(c, &si->gg);
@@ -282,89 +286,90 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
     ref->URI = zx_attrf(c, &ref->gg, zx_URI_ATTR, "#%.*s", sref->id->len, sref->id->s);
     ref->DigestMethod = zx_NEW_ds_DigestMethod(c, &ref->gg);
 
-#if 0
+#if 1
     //ref->DigestMethod->Algorithm = zx_ref_attr(c, &ref->DigestMethod->gg, zx_Algorithm_ATTR, DIGEST_ALGO);    
-    //SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+    //SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)mdbuf);
     //mdlen = 20
     ref->DigestMethod->Algorithm = zx_ref_attr(c, &ref->DigestMethod->gg, zx_Algorithm_ATTR, digest_spec);
-    mdlen = zx_raw_raw_digest2(c, mdbuf, evp_digest, sref->canon->len, sref->canon->s);
+    mdlen = zx_raw_raw_digest2(c, (char*)mdbuf, evp_digest, sref->canon->len, sref->canon->s, 0,0);
 #else
     ref->DigestMethod->Algorithm = zx_ref_attr(c, &ref->DigestMethod->gg, zx_Algorithm_ATTR, zxid_get_cert_digest_url(cert));
 
     if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1)) {
-      SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+      SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)mdbuf);
       mdlen = 20;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224)) {
-      SHA224((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+      SHA224((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)mdbuf);
       mdlen = 28;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256)) {
-      SHA256((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+      SHA256((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)mdbuf);
       mdlen = 32;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384)) {
-      SHA384((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+      SHA384((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)mdbuf);
       mdlen = 48;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512)) {
-      SHA512((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+      SHA512((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)mdbuf);
       mdlen = 64;
     } else {
-      SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)sha_buf);
+      SHA1((unsigned char*)sref->canon->s, sref->canon->len, (unsigned char*)mdbuf);
       mdlen = 20;
     }
 #endif
     b64 = zx_new_len_str(c, SIMPLE_BASE64_LEN(mdlen));
-    base64_fancy_raw(sha_buf, mdlen, b64->s, std_basis_64, 1<<31, 0, 0, '=');    
+    base64_fancy_raw((char*)mdbuf, mdlen, b64->s, std_basis_64, 1<<31, 0, 0, '=');    
     ref->DigestValue = zx_new_str_elem(c, &ref->gg, zx_ds_DigestValue_ELEM, b64);
     si->Reference = ref;  /* *** Need to reverse the list? */
     /* This debug print allows you to debug canonicalization related signature
      * problems from the signer's end. The verifier's end is around line zxsig.c:270
      * in zxsig_validate() */
-    DD("SIG REF(#%.*s) sig_alg=%s hash(%.*s) CANON(%.*s)", sref->id->len, sref->id->s, sig_alg, b64->len, b64->s, sref->canon->len, sref->canon->s);
-    D("SIG REF(#%.*s) sig_alg=%s hash(%.*s)", sref->id->len, sref->id->s, sig_alg, b64->len, b64->s);
+    DD("SIG REF(#%.*s) hash(%.*s) CANON(%.*s)", sref->id->len, sref->id->s, b64->len, b64->s, sref->canon->len, sref->canon->s);
+    D("SIG REF(#%.*s) hash(%.*s)", sref->id->len, sref->id->s, b64->len, b64->s);
     D_XML_BLOB(0, "SIG CANON", sref->canon->len, sref->canon->s);
     zx_reverse_elem_lists(&si->Reference->gg);
   }
   zx_reverse_elem_lists(&si->gg);
   
+  /* Compute final hash over SignedInfo (which already contains hashes over referenced elements) */
   c->enc_tail_opt = 0;
   ss = zx_EASY_ENC_elem(c, &si->gg);
-#if 0
-  SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)sha_buf);
+#if 1
+  //SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)mdbuf);
+  mdlen = zx_raw_raw_digest2(c, (char*)mdbuf, evp_sig_digest, ss->len, ss->s, 0,0);
 #else
-  if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))        SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)sha_buf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224)) SHA224((unsigned char*)ss->s, ss->len, (unsigned char*)sha_buf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256)) SHA256((unsigned char*)ss->s, ss->len, (unsigned char*)sha_buf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384)) SHA384((unsigned char*)ss->s, ss->len, (unsigned char*)sha_buf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512)) SHA512((unsigned char*)ss->s, ss->len, (unsigned char*)sha_buf);
-  else                                            SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)sha_buf);
+  if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))        SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224)) SHA224((unsigned char*)ss->s, ss->len, (unsigned char*)mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256)) SHA256((unsigned char*)ss->s, ss->len, (unsigned char*)mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384)) SHA384((unsigned char*)ss->s, ss->len, (unsigned char*)mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512)) SHA512((unsigned char*)ss->s, ss->len, (unsigned char*)mdbuf);
+  else                                            SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)mdbuf);
 #endif
   zx_str_free(c, ss);
   
-  if (!priv_key) {
-    ERR(priv_key_missing_msg, geteuid(), getegid());
-    return 0;
-  }
-
+  /* *** Following section should be rewritten to use EVP API, e.g. SVP_SignInit_ex(),
+   * EVP_SignUpdate(), and EVP_SignFinal(). However the present lower level
+   * formulation makes it easier to debug broken signatures. */
   switch (EVP_PKEY_type(priv_key->type)) {
   case EVP_PKEY_RSA:
     rsa = EVP_PKEY_get1_RSA(priv_key);
     siglen = RSA_size(rsa);
     sigu = ZX_ALLOC(c, siglen);
 
-#if 0    
-    if (!RSA_sign(NID_sha1, (unsigned char*)sha_buf, sizeof(sha_buf), (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+#if 1
+    //if (!RSA_sign(NID_sha1, (unsigned char*)mdbuf, sizeof(mdbuf), (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+    if (!RSA_sign(EVP_MD_type(evp_sig_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
 #else
     if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1)) {
-      if (!RSA_sign(NID_sha1, (unsigned char*)sha_buf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+      if (!RSA_sign(NID_sha1, (unsigned char*)mdbuf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224)) {
-      if (!RSA_sign(NID_sha224, (unsigned char*)sha_buf, 28, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+      if (!RSA_sign(NID_sha224, (unsigned char*)mdbuf, 28, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256)) {
-      if (!RSA_sign(NID_sha256, (unsigned char*)sha_buf, 32, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+      if (!RSA_sign(NID_sha256, (unsigned char*)mdbuf, 32, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384)) {
-      if (!RSA_sign(NID_sha384, (unsigned char*)sha_buf, 48, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+      if (!RSA_sign(NID_sha384, (unsigned char*)mdbuf, 48, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
     } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512)) {
-      if (!RSA_sign(NID_sha512, (unsigned char*)sha_buf, 64, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+      if (!RSA_sign(NID_sha512, (unsigned char*)mdbuf, 64, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
     } else {
-      if (!RSA_sign(NID_sha1, (unsigned char*)sha_buf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
+      if (!RSA_sign(NID_sha1, (unsigned char*)mdbuf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, rsa)) goto rsaerr;
     }
 #endif
     break;
@@ -373,24 +378,39 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
     siglen = DSA_size(dsa);
     sigu = ZX_ALLOC(c, siglen);
     
-#if 0
-    if (!DSA_sign(NID_sha1, (unsigned char*)sha_buf, sizeof(sha_buf), (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+#if 1
+    //if (!DSA_sign(NID_sha1, (unsigned char*)mdbuf, sizeof(mdbuf), (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+    if (!DSA_sign(EVP_MD_type(evp_sig_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
 #else
-    if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1)) {
-      if (!DSA_sign(NID_sha1, (unsigned char*)sha_buf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
-    } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224)) {
-      if (!DSA_sign(NID_sha224, (unsigned char*)sha_buf, 28, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
-    } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256)) {
-      if (!DSA_sign(NID_sha256, (unsigned char*)sha_buf, 32, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
-    } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384)) {
-      if (!DSA_sign(NID_sha384, (unsigned char*)sha_buf, 48, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
-    } else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512)) {
-      if (!DSA_sign(NID_sha512, (unsigned char*)sha_buf, 64, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+    if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA1)) {
+      if (!DSA_sign(NID_sha1, (unsigned char*)mdbuf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+    } else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA224)) {
+      if (!DSA_sign(NID_sha224, (unsigned char*)mdbuf, 28, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+    } else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA256)) {
+      if (!DSA_sign(NID_sha256, (unsigned char*)mdbuf, 32, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+    } else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA384)) {
+      if (!DSA_sign(NID_sha384, (unsigned char*)mdbuf, 48, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+    } else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA512)) {
+      if (!DSA_sign(NID_sha512, (unsigned char*)mdbuf, 64, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
     } else {
-      if (!DSA_sign(NID_sha1, (unsigned char*)sha_buf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
+      if (!DSA_sign(NID_sha1, (unsigned char*)mdbuf, 20, (unsigned char*)sigu, (unsigned int*)&siglen, dsa)) goto dsaerr;
     }
 #endif
     break;
+  case EVP_PKEY_EC:
+    ec = EVP_PKEY_get1_EC_KEY(priv_key);
+    siglen = ECDSA_size(ec);
+    sigu = ZX_ALLOC(c, siglen);
+    if (!ECDSA_sign(EVP_MD_type(evp_sig_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sigu, (unsigned int*)&siglen, ec)) goto ecerr;
+    break;
+#if 0
+  case EVP_PKEY_DH:
+    dh = EVP_PKEY_get1_DH(priv_key);
+    siglen = DH_size(dh);
+    sigu = ZX_ALLOC(c, siglen);
+    if (!DH_sign(EVP_MD_type(evp_sig_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sigu, (unsigned int*)&siglen, dh)) goto ecerr;
+    break;
+#endif
   default:
     ERR("Unknown private key type 0x%x. Wrong or corrupt private key?", priv_key->type);
     return 0;
@@ -410,6 +430,16 @@ rsaerr:
   return 0;
 dsaerr:
   ERR("DSA_sign() failed. Bad certificate or private key? %p", dsa);
+  zx_report_openssl_err("signing error");
+  ZX_FREE(c, sigu);
+  return 0;
+ecerr:
+  ERR("EC_sign() failed. Bad certificate or private key? %p", ec);
+  zx_report_openssl_err("signing error");
+  ZX_FREE(c, sigu);
+  return 0;
+dherr:
+  ERR("DH_sign() failed. Bad certificate or private key? %p", dh);
   zx_report_openssl_err("signing error");
   ZX_FREE(c, sigu);
   return 0;
@@ -461,6 +491,7 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
   EVP_PKEY* evp_pkey;
   struct rsa_st* rsa_pkey;
   struct dsa_st* dsa_pkey;
+  struct ec_key_st* ec_pkey;
   int siz, verdict, nn;
   char* old_sig_raw;
   char* lim;
@@ -599,6 +630,14 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     DD("VFY dsa-sha1 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha1: ",md_calc,20,20));
     verdict = DSA_verify(NID_sha1, (unsigned char*)md_calc, 20, (unsigned char*)old_sig_raw, lim - old_sig_raw, dsa_pkey);
     if (!verdict) goto vfyerr;
+  } else if (ZX_STR_ENDS_IN_CONST(algo, "#ecdsa-sha1")) {
+    ec_pkey = EVP_PKEY_get1_EC_KEY(evp_pkey);
+    if (!ec_pkey) goto certerr;
+    SHA1((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+    DD("VFY ecdsa-sha1 canon sigInfo(%.*s) %d", ss->len,ss->s,hexdmp("inner sha1: ",md_calc,20,20));
+    verdict = ECDSA_verify(NID_sha1, (unsigned char*)md_calc, 20, (unsigned char*)old_sig_raw, lim - old_sig_raw, ec_pkey);
+    if (!verdict) goto vfyerr;
+
   } else if (ZX_STR_ENDS_IN_CONST(algo, "#rsa-sha224")) {
     rsa_pkey = EVP_PKEY_get1_RSA(evp_pkey);
     if (!rsa_pkey) goto certerr;
@@ -613,6 +652,14 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     DD("VFY dsa-sha256 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha224: ",md_calc,28,28));
     verdict = DSA_verify(NID_sha224, (unsigned char*)md_calc, 28, (unsigned char*)old_sig_raw, lim - old_sig_raw, dsa_pkey);
     if (!verdict) goto vfyerr;
+  } else if (ZX_STR_ENDS_IN_CONST(algo, "#ecdsa-sha224")) {
+    ec_pkey = EVP_PKEY_get1_EC_KEY(evp_pkey);
+    if (!ec_pkey) goto certerr;
+    SHA224((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+    DD("VFY ecdsa-sha256 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha224: ",md_calc,28,28));
+    verdict = ECDSA_verify(NID_sha224, (unsigned char*)md_calc, 28, (unsigned char*)old_sig_raw, lim - old_sig_raw, ec_pkey);
+    if (!verdict) goto vfyerr;
+
   } else if (ZX_STR_ENDS_IN_CONST(algo, "#rsa-sha256")) {
     rsa_pkey = EVP_PKEY_get1_RSA(evp_pkey);
     if (!rsa_pkey) goto certerr;
@@ -627,6 +674,14 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     DD("VFY dsa-sha256 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha256: ",md_calc,32,32));
     verdict = DSA_verify(NID_sha256, (unsigned char*)md_calc, 32, (unsigned char*)old_sig_raw, lim - old_sig_raw, dsa_pkey);
     if (!verdict) goto vfyerr;
+  } else if (ZX_STR_ENDS_IN_CONST(algo, "#ecdsa-sha256")) {
+    ec_pkey = EVP_PKEY_get1_EC_KEY(evp_pkey);
+    if (!ec_pkey) goto certerr;
+    SHA256((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+    DD("VFY ecdsa-sha256 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha256: ",md_calc,32,32));
+    verdict = ECDSA_verify(NID_sha256, (unsigned char*)md_calc, 32, (unsigned char*)old_sig_raw, lim - old_sig_raw, ec_pkey);
+    if (!verdict) goto vfyerr;
+
   } else if (ZX_STR_ENDS_IN_CONST(algo, "#rsa-sha384")) {
     rsa_pkey = EVP_PKEY_get1_RSA(evp_pkey);
     if (!rsa_pkey) goto certerr;
@@ -641,6 +696,14 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     DD("VFY dsa-sha384 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha384: ",md_calc,48,48));
     verdict = DSA_verify(NID_sha384, (unsigned char*)md_calc, 48, (unsigned char*)old_sig_raw, lim - old_sig_raw, dsa_pkey);
     if (!verdict) goto vfyerr;
+  } else if (ZX_STR_ENDS_IN_CONST(algo, "#ecdsa-sha384")) {
+    ec_pkey = EVP_PKEY_get1_EC_KEY(evp_pkey);
+    if (!ec_pkey) goto certerr;
+    SHA384((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+    DD("VFY ecdsa-sha384 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha384: ",md_calc,48,48));
+    verdict = ECDSA_verify(NID_sha384, (unsigned char*)md_calc, 48, (unsigned char*)old_sig_raw, lim - old_sig_raw, ec_pkey);
+    if (!verdict) goto vfyerr;
+
   } else if (ZX_STR_ENDS_IN_CONST(algo, "#rsa-sha512")) {
     rsa_pkey = EVP_PKEY_get1_RSA(evp_pkey);
     if (!rsa_pkey) goto certerr;
@@ -655,6 +718,14 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
     DD("VFY dsa-sha512 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha256: ",md_calc,64,64));
     verdict = DSA_verify(NID_sha512, (unsigned char*)md_calc, 64, (unsigned char*)old_sig_raw, lim - old_sig_raw, dsa_pkey);
     if (!verdict) goto vfyerr;
+  } else if (ZX_STR_ENDS_IN_CONST(algo, "#ecdsa-sha512")) {
+    ec_pkey = EVP_PKEY_get1_EC_KEY(evp_pkey);
+    if (!ec_pkey) goto certerr;
+    SHA512((unsigned char*)ss->s, ss->len, (unsigned char*)md_calc);
+    DD("VFY ecdsa-sha512 canon sigInfo(%.*s) %d", ss->len, ss->s,hexdmp("inner sha256: ",md_calc,64,64));
+    verdict = ECDSA_verify(NID_sha512, (unsigned char*)md_calc, 64, (unsigned char*)old_sig_raw, lim - old_sig_raw, ec_pkey);
+    if (!verdict) goto vfyerr;
+
   } else if (ZX_STR_ENDS_IN_CONST(algo, "#rsa-md5")) {
     rsa_pkey = EVP_PKEY_get1_RSA(evp_pkey);
     if (!rsa_pkey) goto certerr;
@@ -866,29 +937,23 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, ch
   EVP_PKEY* evp_pubk;
   struct rsa_st* rsa_pubk;
   struct dsa_st* dsa_pubk;
-  char sha[64];  /* 160 bits for sha1, 64 bytes for sha512 */
+  unsigned char mdbuf[EVP_MAX_MD_SIZE];   /* 160 bits for sha1, 64 bytes for sha512 */
 #if 0
-  SHA1((unsigned char*)data, len, (unsigned char*)sha);
+  SHA1((unsigned char*)data, len, mdbuf);
 #else
-  char* sig_alg = zxid_get_cert_signature_algo_url(cert);
+  const char* sig_alg = zxid_get_cert_signature_algo_url(cert);
 
-  memset(sha, 0, 64);
-  if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))
-    SHA1((unsigned char*)data, len, (unsigned char*)sha);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224))
-    SHA224((unsigned char*)data, len, (unsigned char*)sha);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256))
-    SHA256((unsigned char*)data, len, (unsigned char*)sha);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384))
-    SHA384((unsigned char*)data, len, (unsigned char*)sha);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512))
-    SHA512((unsigned char*)data, len, (unsigned char*)sha);
-  else
-    SHA1((unsigned char*)data, len, (unsigned char*)sha);
+  memset(mdbuf, 0, EVP_MAX_MD_SIZE);
+  if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))         SHA1((unsigned char*)data, len, mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224))  SHA224((unsigned char*)data, len, mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256))  SHA256((unsigned char*)data, len, mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384))  SHA384((unsigned char*)data, len, mdbuf);
+  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512))  SHA512((unsigned char*)data, len, mdbuf);
+  else SHA1((unsigned char*)data, len, mdbuf);
 #endif
   DD("%s: vfy data above %d", lk, hexdump("data: ", data, data+len, 8192));
   DD("%s: vfy sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 8192));
-  DD("%s: vfy sha1 above %d", lk, hexdump("md: ", sha, sha+64, 64));
+  DD("%s: vfy sha1 above %d", lk, hexdump("md: ", mdbuf, mdbuf+64, 64));
   
   evp_pubk = X509_get_pubkey(cert);
   if (!evp_pubk) {
@@ -906,20 +971,20 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, ch
     }
  
 #if 0
-    verdict = RSA_verify(NID_sha1, (unsigned char*)sha1, 20, (unsigned char*)sig, siglen, rsa_pubk);  /* PKCS#1 v2.0 */
+    verdict = RSA_verify(NID_sha1, mdbuf1, 20, (unsigned char*)sig, siglen, rsa_pubk);
 #else
     if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))
-      verdict = RSA_verify(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)sig, siglen, rsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = RSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, rsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224))
-      verdict = RSA_verify(NID_sha224, (unsigned char*)sha, 28, (unsigned char*)sig, siglen, rsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = RSA_verify(NID_sha224, mdbuf, 28, (unsigned char*)sig, siglen, rsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256))
-      verdict = RSA_verify(NID_sha256, (unsigned char*)sha, 32, (unsigned char*)sig, siglen, rsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = RSA_verify(NID_sha256, mdbuf, 32, (unsigned char*)sig, siglen, rsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384))
-      verdict = RSA_verify(NID_sha384, (unsigned char*)sha, 48, (unsigned char*)sig, siglen, rsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = RSA_verify(NID_sha384, mdbuf, 48, (unsigned char*)sig, siglen, rsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512))
-      verdict = RSA_verify(NID_sha512, (unsigned char*)sha, 64, (unsigned char*)sig, siglen, rsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = RSA_verify(NID_sha512, mdbuf, 64, (unsigned char*)sig, siglen, rsa_pubk);
     else
-      verdict = RSA_verify(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)sig, siglen, rsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = RSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, rsa_pubk);
 #endif
     if (!verdict) {
       ERR("RSA signature verify in %s data failed. Perhaps you have bad or no certificate(%p) len=%d data=%p siglen=%d sig=%p", lk, cert, len, data, siglen, sig);
@@ -939,20 +1004,20 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, ch
     }
   
 #if 0
-    verdict = DSA_verify(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)sig, siglen, dsa_pubk);  /* PKCS#1 v2.0 */
+    verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
 #else
     if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA1))
-      verdict = DSA_verify(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)sig, siglen, dsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA224))
-      verdict = DSA_verify(NID_sha224, (unsigned char*)sha, 28, (unsigned char*)sig, siglen, dsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = DSA_verify(NID_sha224, mdbuf, 28, (unsigned char*)sig, siglen, dsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA256))
-      verdict = DSA_verify(NID_sha256, (unsigned char*)sha, 32, (unsigned char*)sig, siglen, dsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = DSA_verify(NID_sha256, mdbuf, 32, (unsigned char*)sig, siglen, dsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA384))
-      verdict = DSA_verify(NID_sha384, (unsigned char*)sha, 48, (unsigned char*)sig, siglen, dsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = DSA_verify(NID_sha384, mdbuf, 48, (unsigned char*)sig, siglen, dsa_pubk);
     else if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA512))
-      verdict = DSA_verify(NID_sha512, (unsigned char*)sha, 64, (unsigned char*)sig, siglen, dsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = DSA_verify(NID_sha512, mdbuf, 64, (unsigned char*)sig, siglen, dsa_pubk);
     else
-      verdict = DSA_verify(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)sig, siglen, dsa_pubk);  /* PKCS#1 v2.0 */
+      verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
 #endif
 
     if (!verdict) {

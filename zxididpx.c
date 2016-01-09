@@ -138,7 +138,7 @@ int zxid_idp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct z
       refs.id = body->LogoutResponse->ID;
       refs.canon = zx_EASY_ENC_SO_sp_LogoutResponse(cf->ctx, body->LogoutResponse);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert idp slo")) {
-	body->LogoutResponse->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	body->LogoutResponse->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&body->LogoutResponse->gg, &body->LogoutResponse->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);
@@ -155,7 +155,7 @@ int zxid_idp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct z
       refs.id = res->ID;
       refs.canon = zx_EASY_ENC_SO_sp_ManageNameIDResponse(cf->ctx, res);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert idp mni")) {
-	res->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	res->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&res->gg, &res->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);

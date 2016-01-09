@@ -292,7 +292,7 @@ static struct zx_sp_Response_s* zxid_az_soap(zxid_conf* cf, zxid_cgi* cgi, zxid_
       refs.id = body->xac_Request->ID;
       refs.canon = zx_EASY_ENC_SO_xac_Request(cf->ctx, body->xac_Request);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert az xac-soap")) {
-	body->xac_Request->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	body->xac_Request->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid(&body->xac_Request->gg, &body->xac_Request->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);
@@ -306,7 +306,7 @@ static struct zx_sp_Response_s* zxid_az_soap(zxid_conf* cf, zxid_cgi* cgi, zxid_
       refs.canon = zx_easy_enc_elem_sig(cf, &body->xaspcd1_XACMLAuthzDecisionQuery->gg);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert az cd1")) {
 	body->xaspcd1_XACMLAuthzDecisionQuery->Signature
-	  = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&body->xaspcd1_XACMLAuthzDecisionQuery->gg, &body->xaspcd1_XACMLAuthzDecisionQuery->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);
@@ -319,7 +319,7 @@ static struct zx_sp_Response_s* zxid_az_soap(zxid_conf* cf, zxid_cgi* cgi, zxid_
       refs.canon = zx_easy_enc_elem_sig(cf, &body->XACMLAuthzDecisionQuery->gg);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert az")) {
 	body->XACMLAuthzDecisionQuery->Signature
-	  = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&body->XACMLAuthzDecisionQuery->gg, &body->XACMLAuthzDecisionQuery->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);

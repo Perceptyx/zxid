@@ -362,7 +362,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
       refs.id = &body->LogoutResponse->ID->g;
       refs.canon = zx_easy_enc_elem_sig(cf, &body->LogoutResponse->gg);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert slor")) {
-	body->LogoutResponse->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	body->LogoutResponse->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&body->LogoutResponse->gg,&body->LogoutResponse->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);
@@ -378,7 +378,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
       refs.id = &body->ManageNameIDResponse->ID->g;
       refs.canon = zx_easy_enc_elem_sig(cf, &body->ManageNameIDResponse->gg);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert mnir")) {
-	body->ManageNameIDResponse->Signature = zxsig_sign(cf->ctx, 1, &refs,sign_cert,sign_pkey);
+	body->ManageNameIDResponse->Signature = zxsig_sign(cf->ctx, 1, &refs,sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&body->ManageNameIDResponse->gg, &body->ManageNameIDResponse->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);
@@ -401,7 +401,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
 	refs.id = res->ID;
 	refs.canon = zx_EASY_ENC_SO_as_SASLResponse(cf->ctx, res);
 	if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert asr")) {
-	  res->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  res->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	  zx_add_kid(&res->gg, &res->gg);
 	}
 	zx_str_free(cf->ctx, refs.canon);
@@ -421,7 +421,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
 	refs.id = &body->Response->ID->g;
 	refs.canon = zx_easy_enc_elem_sig(cf, &body->Response->gg);
 	if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert azr")) {
-	  body->Response->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  body->Response->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	  zx_add_kid_after_sa_Issuer(&body->Response->gg, &body->Response->Signature->gg);
 	}
 	zx_str_free(cf->ctx, refs.canon);
@@ -437,7 +437,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
 	refs.id = &body->Response->ID->g;
 	refs.canon = zx_easy_enc_elem_sig(cf, &body->Response->gg);
 	if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert azr")) {
-	  body->Response->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  body->Response->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	  zx_add_kid_after_sa_Issuer(&body->Response->gg, &body->Response->Signature->gg);
 	}
 	zx_str_free(cf->ctx, refs.canon);
@@ -462,7 +462,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
 	refs.id = &body->NameIDMappingResponse->ID->g;
 	refs.canon = zx_easy_enc_elem_sig(cf, &body->NameIDMappingResponse->gg);
 	if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert mnir")) {
-	  body->NameIDMappingResponse->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  body->NameIDMappingResponse->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	  zx_add_kid_after_sa_Issuer(&body->NameIDMappingResponse->gg, &body->NameIDMappingResponse->Signature->gg);
 	}
 	zx_str_free(cf->ctx, refs.canon);
@@ -484,7 +484,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
 	refs.id = di_resp->ID;
 	refs.canon = zx_EASY_ENC_SO_e_Body(cf->ctx, body);
 	if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert dir")) {
-	  res->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  res->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	  zx_add_kid_after_sa_Issuer(&res->gg, &res->Signature->gg);
 	}
 	zx_str_free(cf->ctx, refs.canon);

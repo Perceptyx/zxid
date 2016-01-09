@@ -54,7 +54,7 @@ int zxid_anoint_a7n(zxid_conf* cf, int sign, zxid_a7n* a7n, struct zx_str* issue
     refs.id = &a7n->ID->g;
     refs.canon = zx_easy_enc_elem_sig(cf, &a7n->gg);
     if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey,"use sign cert anoint a7n")) {
-      a7n->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+      a7n->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
       zx_add_kid_after_sa_Issuer(&a7n->gg, &a7n->Signature->gg);
     }
     zx_str_free(cf->ctx, refs.canon);
@@ -122,7 +122,7 @@ struct zx_str* zxid_anoint_sso_resp(zxid_conf* cf, int sign, struct zx_sp_Respon
     refs.id = &resp->ID->g;
     refs.canon = zx_easy_enc_elem_sig(cf, &resp->gg);
     if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert,&sign_pkey,"use sign cert anoint resp")) {
-      resp->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+      resp->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
       zx_add_kid_after_sa_Issuer(&resp->gg, &resp->Signature->gg);
     }
     zx_str_free(cf->ctx, refs.canon);
@@ -768,7 +768,7 @@ struct zx_str* zxid_idp_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct 
       refs.id = &a7n->ID->g;
       refs.canon = zx_easy_enc_elem_sig(cf, &a7n->gg);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert paos")) {
-	a7n->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	a7n->Signature = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&a7n->gg, &a7n->Signature->gg);
       }
     }

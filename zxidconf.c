@@ -1,5 +1,5 @@
 /* zxidconf.c  -  Handwritten functions for parsing ZXID configuration file
- * Copyright (c) 2012-2015 Synergetics (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2016 Synergetics (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -32,6 +32,7 @@
  * 11.4.2015,  added UNIX_GRP_AZ_MAP --Sampo
  * 18.12.2015, applied patch from soconnor, perceptyx, including detection of
  *             signature algorithm from certificate. --Sampo
+ * 8.1.2016,   added configuration options for signature and digest algorithms --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -1315,6 +1316,9 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->mgmt_footer       = ZXID_MGMT_FOOTER;
   cf->mgmt_end          = ZXID_MGMT_END;
   
+  cf->xmldsig_sig_meth  = ZXID_XMLDSIG_SIG_METH;
+  cf->xmldsig_digest_algo = ZXID_XMLDSIG_DIGEST_ALGO;
+
   LOCK_INIT(cf->mx);
   LOCK_INIT(cf->curl_mx);
   if (!zxid_ent_cache_mx_init) {
@@ -2007,6 +2011,8 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
       goto badcf;
     case 'X':  /* XASP_VERS */
       if (!strcmp(n, "XASP_VERS"))      { cf->xasp_vers = v; break; }
+      if (!strcmp(n, "XMLDSIG_SIG_METH")) { cf->xmldsig_sig_meth = v; break; }
+      if (!strcmp(n, "XMLDSIG_DIGEST_ALGO")) { cf->xmldsig_digest_algo = v; break; }
       goto badcf;
     default:
     badcf:
@@ -2335,6 +2341,9 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 "SHOW_TECH=%d\n"
 "WD=%s\n"
 
+"XMLDSIG_SIG_METH=%s\n"
+"XMLDSIG_DIGEST_ALGO=%s\n"
+
 "IDP_LIST_METH=%d\n"
 "IDP_SEL_PAGE=%s\n"
 "IDP_SEL_TEMPL_FILE=%s\n"
@@ -2539,6 +2548,8 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 cf->bare_url_entityid,
 		 cf->show_tech,
 		 STRNULLCHK(cf->wd),
+		 STRNULLCHK(cf->xmldsig_sig_meth),
+		 STRNULLCHK(cf->xmldsig_digest_algo),
 
 		 cf->idp_list_meth,
 		 STRNULLCHK(cf->idp_sel_page),

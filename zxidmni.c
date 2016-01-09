@@ -56,7 +56,7 @@ int zxid_sp_mni_soap(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx_str*
       refs.canon = zx_easy_enc_elem_sig(cf, &body->ManageNameIDRequest->gg);
       if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "use sign cert mni")) {
 	body->ManageNameIDRequest->Signature
-	  = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey);
+	  = zxsig_sign(cf->ctx, 1, &refs, sign_cert, sign_pkey, cf->xmldsig_sig_meth, cf->xmldsig_digest_algo);
 	zx_add_kid_after_sa_Issuer(&body->ManageNameIDRequest->gg, &body->ManageNameIDRequest->Signature->gg);
       }
       zx_str_free(cf->ctx, refs.canon);

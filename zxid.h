@@ -368,6 +368,9 @@ struct zxid_conf {
   char  md_authority_ena;
   char  backwards_compat_ena; /* Enable CBC (instead of GCM) and PKCS#1 v1.5 padding, both of which are vulnearable and can compromise modern crypto through Backwards Compatibility Attacks. */
 
+  char* xmldsig_sig_meth;
+  char* xmldsig_digest_algo;
+
 #ifdef USE_CURL
   CURL* curl;
 #endif
@@ -799,7 +802,7 @@ struct zxsig_ref {
 #define ZXSIG_AUDIENCE   9  /* V Assertion has wrong audience. */
 
 #ifdef USE_OPENSSL
-ZXID_DECL struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* sref, X509* cert, EVP_PKEY* priv_key);
+ZXID_DECL struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* sref, X509* cert, EVP_PKEY* priv_key, const char* sig_meth_spec, const char* digest_spec);
 ZXID_DECL int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, int n, struct zxsig_ref* refs);
 ZXID_DECL int zxsig_data(struct zx_ctx* c, int len, const char* d, char** sig, EVP_PKEY* priv_key, const char* lk, const char* md_alg);
 ZXID_DECL int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, char* lk);
