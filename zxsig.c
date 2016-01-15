@@ -49,7 +49,8 @@ ZXID_DECL struct zx_ds_KeyInfo_s* zxid_key_info(zxid_conf* cf, struct zx_elem_s*
 /*(-) Heuristic guesser for extracting hash algorithm name
  * Input is an algorithm URL like "http://www.w3.org/2001/04/xmldsig-more%23rsa-sha384"
  * or "http://www.w3.org/2000/09/xmldsig#sha1" or an OpenSSL algorithm
- * string like "sha384WithRSAEncryption" or "dsa_with_SHA256" */
+ * string like "sha384WithRSAEncryption" or "dsa_with_SHA256".
+ * If dsp is nonnull, it is populated with the corresponding digest URL. */
 
 static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
 {
@@ -65,7 +66,7 @@ static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
 }
 
 /*(-) Heuristic to construct SIG_ALGO URL string based on chosen digest and algo pr private key */
-static const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* dig_alg)
+const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* dig_alg)
 {
   switch (EVP_PKEY_type(priv_key->type)) {
   case EVP_PKEY_RSA:
@@ -107,7 +108,50 @@ static const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const c
   return "#digerr";
 }
 
-#if 1
+/*(-) Heuristic to construct SIG_ALGO URL string based on chosen digest and algo pr private key */
+const char* zxsig_choose_xmldsig_sig_meth_urlenc(EVP_PKEY* priv_key, const char* dig_alg)
+{
+  switch (EVP_PKEY_type(priv_key->type)) {
+  case EVP_PKEY_RSA:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_RSA_SHA1_URLENC;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_RSA_SHA224_URLENC;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_RSA_SHA256_URLENC;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_RSA_SHA384_URLENC;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_RSA_SHA512_URLENC;
+    break;
+  case EVP_PKEY_DSA:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_DSA_SHA1_URLENC;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_DSA_SHA224_URLENC;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_DSA_SHA256_URLENC;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_DSA_SHA384_URLENC;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_DSA_SHA512_URLENC;
+    break;
+  case EVP_PKEY_EC:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_ECDSA_SHA1_URLENC;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_ECDSA_SHA224_URLENC;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_ECDSA_SHA256_URLENC;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_ECDSA_SHA384_URLENC;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_ECDSA_SHA512_URLENC;
+    break;
+#if 0
+    /* *** can not find documentation for these */
+  case EVP_PKEY_DH:
+    if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_DH_SHA1_URLENC;
+    if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_DH_SHA224_URLENC;
+    if (!strcmp(dig_alg, "SHA256")) return SIG_ALGO_DH_SHA256_URLENC;
+    if (!strcmp(dig_alg, "SHA384")) return SIG_ALGO_DH_SHA384_URLENC;
+    if (!strcmp(dig_alg, "SHA512")) return SIG_ALGO_DH_SHA512_URLENC;
+    break;
+#endif
+  default:
+    ERR("Unknown private key type=%x", EVP_PKEY_type(priv_key->type));
+    return "#pkerr";
+  }
+  ERR("Unknown digest algo(%s)", STRNULLCHKQ(dig_alg));
+  return "#digerr";
+}
+
+#if 0
 /* *** these are no longer needed as selection is handled by configuration system */
 const char* zxid_get_cert_signature_algo_url(X509* cert)
 {
@@ -221,7 +265,6 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
   RSA* rsa;
   DSA* dsa;
   EC_KEY* ec;
-  DH* dh;
   struct zx_str* ss;
   struct zx_str* b64;
   struct zx_ds_Reference_s* ref;
@@ -373,6 +416,7 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
     }
 #endif
     break;
+
   case EVP_PKEY_DSA:
     dsa = EVP_PKEY_get1_DSA(priv_key);
     siglen = DSA_size(dsa);
@@ -397,15 +441,17 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
     }
 #endif
     break;
+
   case EVP_PKEY_EC:
     ec = EVP_PKEY_get1_EC_KEY(priv_key);
     siglen = ECDSA_size(ec);
     sigu = ZX_ALLOC(c, siglen);
     if (!ECDSA_sign(EVP_MD_type(evp_sig_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sigu, (unsigned int*)&siglen, ec)) goto ecerr;
     break;
+
 #if 0
   case EVP_PKEY_DH:
-    dh = EVP_PKEY_get1_DH(priv_key);
+    DH* dh = EVP_PKEY_get1_DH(priv_key);
     siglen = DH_size(dh);
     sigu = ZX_ALLOC(c, siglen);
     if (!DH_sign(EVP_MD_type(evp_sig_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sigu, (unsigned int*)&siglen, dh)) goto ecerr;
@@ -438,11 +484,13 @@ ecerr:
   zx_report_openssl_err("signing error");
   ZX_FREE(c, sigu);
   return 0;
+#if 0
 dherr:
   ERR("DH_sign() failed. Bad certificate or private key? %p", dh);
   zx_report_openssl_err("signing error");
   ZX_FREE(c, sigu);
   return 0;
+#endif
 }
 
 /*() CRNL->NL canonicalization is specified in xml-c14n */
@@ -800,7 +848,7 @@ int zx_report_openssl_err(const char* logkey)
  *            be allocated, will be returned via this parameter.
  * priv_key:: Private key used for signing.
  * lk::       Log key. Used to make logs and error messages more meaningful.
- * md_alg::   Message digest algorithm used for signature (assymmetric algorithm is autodetected from the private key)
+ * md_alg::   Message digest algorithm used for signature, such as "SHA1" or "SHA256" 
  * return::   -1 on failure. Upon success the length of the raw signature data. */
 
 /* Called by:  zxbus_mint_receipt, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxlog_write_line x2 */
@@ -808,31 +856,39 @@ int zx_report_openssl_err(const char* logkey)
 {
   RSA* rsa;
   DSA* dsa;
-  char sha[64];  /* 160 bits for sha1, 64 bytes for sha512 */
-  memset(sha, 0, sizeof(sha));
-#if 0
-  SHA1((unsigned char*)data, len, (unsigned char*)sha);
+  //DH* dh;
+  EC_KEY* ec;
+  const EVP_MD* evp_digest;
+  int mdlen;
+  unsigned char mdbuf[EVP_MAX_MD_SIZE];  /* 160 bits for sha1, 64 bytes for sha512 */
+  memset(mdbuf, 0, sizeof(mdbuf));
+#if 1
+  //SHA1((unsigned char*)data, len, mdbuf);
+  if (!md_alg || (md_alg[0]=='0'&&!md_alg[1]))
+    md_alg = "SHA1";
+  evp_digest = EVP_get_digestbyname(md_alg);
+  mdlen = zx_raw_raw_digest2(c, (char*)mdbuf, evp_digest, len, data, 0,0);
 #else
   if (!md_alg || !strcmp(md_alg, SIG_ALGO_RSA_SHA1))
-    SHA1((unsigned char*)data, len, (unsigned char*)sha);
+    SHA1((unsigned char*)data, len, mdbuf);
   else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA224))
-    SHA224((unsigned char*)data, len, (unsigned char*)sha);
+    SHA224((unsigned char*)data, len, mdbuf);
   else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA256))
-    SHA256((unsigned char*)data, len, (unsigned char*)sha);
+    SHA256((unsigned char*)data, len, mdbuf);
   else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA384))
-    SHA384((unsigned char*)data, len, (unsigned char*)sha);
+    SHA384((unsigned char*)data, len, mdbuf);
   else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA512))
-    SHA512((unsigned char*)data, len, (unsigned char*)sha);
+    SHA512((unsigned char*)data, len, mdbuf);
   else {
     ERR("%s: Unknown message digest algorithm specification (%s). Using SHA1 instead.", lk, md_alg);
     return -1;
-    SHA1((unsigned char*)data, len, (unsigned char*)sha);
+    SHA1((unsigned char*)data, len, mdbuf);
   }
 #endif
 
   DD("%s: data(%.*s)", lk, len, data);
   DD("%s: data above %d", lk, hexdump("data: ", data, data+len, 4096));
-  DD("%s: sha1 above %d", lk, hexdump("sha1: ", sha1, sha+64, 64));
+  DD("%s: digest above %d", lk, hexdump("digest: ", mdbuf, mdbuf+64, 64));
 
   if (!priv_key) {
     ERR(priv_key_missing_msg, geteuid(), getegid());
@@ -844,37 +900,40 @@ int zx_report_openssl_err(const char* logkey)
     rsa = EVP_PKEY_get1_RSA(priv_key);
     len = RSA_size(rsa);
     *sig = ZX_ALLOC(c, len);
-#if 0
-    if (RSA_sign(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */
+#if 1
+    //if (RSA_sign(NID_sha1, mdbuf, 20, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */      return len;
+    if (RSA_sign(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)*sig, (unsigned int*)&len, rsa)) {
+      D("data = %s, SHA1 sig = %s, siglen = %d", data, *sig, len);
       return len;
+    }
 #else
     if (!md_alg || !strcmp(md_alg, SIG_ALGO_RSA_SHA1)) {
-      if (RSA_sign(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
+      if (RSA_sign(NID_sha1, mdbuf, 20, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
         D("data = %s, SHA1 sig = %s, siglen = %d", data, *sig, len);
         return len;
       }
     } else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA224)) {
-      if (RSA_sign(NID_sha224, (unsigned char*)sha, 28, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
+      if (RSA_sign(NID_sha224, mdbuf, 28, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
         D("data = %s, SHA224 sig = %s, siglen = %d", data, *sig, len);
         return len;
       }
     } else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA256)) {
-      if (RSA_sign(NID_sha256, (unsigned char*)sha, 32, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
+      if (RSA_sign(NID_sha256, mdbuf, 32, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
         D("data = %s, SHA256 sig = %s, siglen = %d", data, *sig, len);
         return len;
       }
     } else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA384)) {
-      if (RSA_sign(NID_sha384, (unsigned char*)sha, 48, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
+      if (RSA_sign(NID_sha384, mdbuf, 48, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
         D("data = %s, SHA384 sig = %s, siglen = %d", data, *sig, len);
         return len;
       }
     } else if (!strcmp(md_alg, SIG_ALGO_RSA_SHA512)) {
-      if (RSA_sign(NID_sha512, (unsigned char*)sha, 64, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
+      if (RSA_sign(NID_sha512, mdbuf, 64, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
         D("data = %s, SHA512 sig = %s, siglen = %d", data, *sig, len);
         return len;
       }
     } else {
-      if (RSA_sign(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
+      if (RSA_sign(NID_sha1, mdbuf, 20, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */ {
         D("data = %s, default SHA1 sig = %s, siglen = %d", data, *sig, len);
         return len;
       }
@@ -883,37 +942,62 @@ int zx_report_openssl_err(const char* logkey)
     ERR("%s: signing data failed. Perhaps you have bad, or no, RSA private key(%p) len=%d data=%p", lk, rsa, len, data);
     zx_report_openssl_err(lk);
     return -1;
+
   case EVP_PKEY_DSA:
     dsa = EVP_PKEY_get1_DSA(priv_key);
     len = DSA_size(dsa);
     *sig = ZX_ALLOC(c, len);
-#if 0
-    if (DSA_sign(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
+#if 1
+    //if (DSA_sign(NID_sha1, mdbuf, 20, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */  return len;
+    if (DSA_sign(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)*sig, (unsigned int*)&len, dsa))
       return len;
 #else
     if (!md_alg || !strcmp(md_alg, SIG_ALGO_DSA_SHA1)) {
-      if (DSA_sign(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
+      if (DSA_sign(NID_sha1, mdbuf, 20, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
         return len;
     } else if (!strcmp(md_alg, SIG_ALGO_DSA_SHA224)) {
-      if (DSA_sign(NID_sha224, (unsigned char*)sha, 28, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
+      if (DSA_sign(NID_sha224, mdbuf, 28, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
         return len;
     } else if (!strcmp(md_alg, SIG_ALGO_DSA_SHA256)) {
-      if (DSA_sign(NID_sha256, (unsigned char*)sha, 32, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
+      if (DSA_sign(NID_sha256, mdbuf, 32, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
         return len;
     } else if (!strcmp(md_alg, SIG_ALGO_DSA_SHA384)) {
-      if (DSA_sign(NID_sha384, (unsigned char*)sha, 48, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
+      if (DSA_sign(NID_sha384, mdbuf, 48, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
         return len;
     } else if (!strcmp(md_alg, SIG_ALGO_DSA_SHA512)) {
-      if (DSA_sign(NID_sha512, (unsigned char*)sha, 64, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
+      if (DSA_sign(NID_sha512, mdbuf, 64, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
         return len;
     } else {
-      if (DSA_sign(NID_sha1, (unsigned char*)sha, 20, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
+      if (DSA_sign(NID_sha1, mdbuf, 20, (unsigned char*)*sig, (unsigned int*)&len, dsa))  /* PKCS#1 v2.0 */
         return len;
     }
 #endif
     ERR("%s: signing data failed. Perhaps you have bad, or no, DSA private key(%p) len=%d data=%p", lk, dsa, len, data);
     zx_report_openssl_err(lk);
     return -1;
+
+  case EVP_PKEY_EC:
+    ec = EVP_PKEY_get1_EC_KEY(priv_key);
+    len = ECDSA_size(ec);
+    *sig = ZX_ALLOC(c, len);
+    if (!ECDSA_sign(EVP_MD_type(evp_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)*sig, (unsigned int*)&len, ec))
+      return len;
+    ERR("%s: signing data failed. Perhaps you have bad, or no, ECDSA private key(%p) len=%d data=%p", lk, ec, len, data);
+    zx_report_openssl_err(lk);
+    return -1;
+
+#if 0
+  case EVP_PKEY_DH:
+    DH* dh = EVP_PKEY_get1_DH(priv_key);
+    siglen = DH_size(dh);
+    *sig = ZX_ALLOC(c, len);
+    if (!DH_sign(EVP_MD_type(evp_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)*sig, (unsigned int*)&len, dh))
+      return len;
+    ERR("%s: signing data failed. Perhaps you have bad, or no, DH private key(%p) len=%d data=%p", lk, dh, len, data);
+    zx_report_openssl_err(lk);
+    return -1;
+#endif
+
   default:
     ERR("%s: Unknown private key type 0x%x. Wrong or corrupt private key?", lk, priv_key->type);
     return -1;
@@ -928,28 +1012,32 @@ int zx_report_openssl_err(const char* logkey)
  * sig::      Raw binary signature data
  * cert::     Certificate used for signing
  * lk::       Log key. Used to make logs and error messages more meaningful
+ * mdalg::    Signature hashing algorithm, detected at higher level
  * return::   ZX_SIG value. 0 (ZXSIG_OK) means success. Other values mean failure of some sort. */
 
 /* Called by:  main, zxbus_verify_receipt, zxid_decode_redir_or_post, zxlog_zsig_verify_print */
-int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, char* lk)
+int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, const char* lk, const char* mdalg)
 {
   int verdict;
+  const EVP_MD* evp_digest;
   EVP_PKEY* evp_pubk;
   struct rsa_st* rsa_pubk;
   struct dsa_st* dsa_pubk;
-  unsigned char mdbuf[EVP_MAX_MD_SIZE];   /* 160 bits for sha1, 64 bytes for sha512 */
-#if 0
-  SHA1((unsigned char*)data, len, mdbuf);
+  char mdbuf[EVP_MAX_MD_SIZE];   /* 160 bits for sha1, 64 bytes for sha512 */
+  int mdlen;
+#if 1
+  //SHA1((unsigned char*)data, len, mdbuf);
+  //const char* sig_alg = zxid_get_cert_signature_algo_url(cert);
+  evp_digest = EVP_get_digestbyname(mdalg);
+  mdlen = zx_raw_raw_digest2(0, mdbuf, evp_digest, len, data, 0,0);
 #else
-  const char* sig_alg = zxid_get_cert_signature_algo_url(cert);
-
   memset(mdbuf, 0, EVP_MAX_MD_SIZE);
-  if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))         SHA1((unsigned char*)data, len, mdbuf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA224))  SHA224((unsigned char*)data, len, mdbuf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA256))  SHA256((unsigned char*)data, len, mdbuf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA384))  SHA384((unsigned char*)data, len, mdbuf);
-  else if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA512))  SHA512((unsigned char*)data, len, mdbuf);
-  else SHA1((unsigned char*)data, len, mdbuf);
+  if (!strcmp(mdalg, "SHA1"))        { SHA1((unsigned char*)data, len, mdbuf); nid = NID_sha1; }
+  else if (!strcmp(mdalg, "SHA224")) { SHA224((unsigned char*)data, len, mdbuf); nid = NID_sha224; }
+  else if (!strcmp(mdalg, "SHA256")) { SHA256((unsigned char*)data, len, mdbuf); nid = NID_sha256; }
+  else if (!strcmp(mdalg, "SHA384")) { SHA384((unsigned char*)data, len, mdbuf); nid = NID_sha384; }
+  else if (!strcmp(mdalg, "SHA512")) { SHA512((unsigned char*)data, len, mdbuf); nid = NID_sha512; }
+  else { SHA1((unsigned char*)data, len, mdbuf); nid = NID_sha1; }
 #endif
   DD("%s: vfy data above %d", lk, hexdump("data: ", data, data+len, 8192));
   DD("%s: vfy sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 8192));
@@ -970,8 +1058,8 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, ch
       return ZXSIG_BAD_CERT;
     }
  
-#if 0
-    verdict = RSA_verify(NID_sha1, mdbuf1, 20, (unsigned char*)sig, siglen, rsa_pubk);
+#if 1
+    verdict = RSA_verify(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)sig, siglen, rsa_pubk);
 #else
     if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))
       verdict = RSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, rsa_pubk);
@@ -1003,8 +1091,9 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, ch
       return ZXSIG_BAD_CERT;
     }
   
-#if 0
-    verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
+#if 1
+    verdict = DSA_verify(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)sig, siglen, dsa_pubk);
+    //verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
 #else
     if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA1))
       verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);

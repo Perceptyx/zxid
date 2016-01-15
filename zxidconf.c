@@ -1318,6 +1318,8 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   
   cf->xmldsig_sig_meth  = ZXID_XMLDSIG_SIG_METH;
   cf->xmldsig_digest_algo = ZXID_XMLDSIG_DIGEST_ALGO;
+  cf->samlsig_digest_algo = ZXID_SAMLSIG_DIGEST_ALGO;
+  cf->blobsig_digest_algo = ZXID_BLOBSIG_DIGEST_ALGO;
 
   LOCK_INIT(cf->mx);
   LOCK_INIT(cf->curl_mx);
@@ -1777,6 +1779,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
       if (!strcmp(n, "BUS_URL"))         { cf->bus_url = zxid_load_bus_url(cf, cf->bus_url, v);   break; }
       if (!strcmp(n, "BUS_PW"))          { cf->bus_pw = v; break; }
       if (!strcmp(n, "BACKWARDS_COMPAT_ENA")) { SCAN_INT(v, cf->backwards_compat_ena); break; }
+      if (!strcmp(n, "BLOBSIG_DIGEST_ALGO")) { cf->blobsig_digest_algo = v; break; }
       goto badcf;
     case 'C':  /* CDC_URL, CDC_CHOICE */
       if (!strcmp(n, "CPATH"))           goto path;
@@ -1972,6 +1975,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
       if (!strcmp(n, "STATE"))          { cf->state = v; break; }
       if (!strcmp(n, "SSO_PAT"))        { cf->sso_pat = v; break; }
       if (!strcmp(n, "SOAP_ACTION_HDR")) { cf->soap_action_hdr = v; break; }
+      if (!strcmp(n, "SAMLSIG_DIGEST_ALGO")) { cf->samlsig_digest_algo = v; break; }
       goto badcf;
     case 'T':  /* TIMEOUT_FATAL */
       if (!strcmp(n, "TIMEOUT_FATAL"))  { SCAN_INT(v, cf->timeout_fatal); break; }
@@ -2343,6 +2347,8 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 
 "XMLDSIG_SIG_METH=%s\n"
 "XMLDSIG_DIGEST_ALGO=%s\n"
+"SAMLSIG_DIGEST_ALGO=%s\n"
+"BLOBSIG_DIGEST_ALGO=%s\n"
 
 "IDP_LIST_METH=%d\n"
 "IDP_SEL_PAGE=%s\n"
@@ -2550,6 +2556,8 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 STRNULLCHK(cf->wd),
 		 STRNULLCHK(cf->xmldsig_sig_meth),
 		 STRNULLCHK(cf->xmldsig_digest_algo),
+		 STRNULLCHK(cf->samlsig_digest_algo),
+		 STRNULLCHK(cf->blobsig_digest_algo),
 
 		 cf->idp_list_meth,
 		 STRNULLCHK(cf->idp_sel_page),

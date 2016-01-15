@@ -74,6 +74,7 @@ struct zx_root_s* zxid_decode_redir_or_post(zxid_conf* cf, zxid_cgi* cgi, zxid_s
   struct zx_str id_ss;
   char id_buf[28];
   char sigbuf[1024];  /* 192 is large enough for 1024bit RSA keys, target 4096 bit RSA keys */
+  const char* mdalg;
   int simplesig = 0;
   int msglen, len;
   char* p;
@@ -227,10 +228,16 @@ log_msg:
       (   strstr(cgi->sigalg, "rsa-sha1")   || strstr(cgi->sigalg, "rsa-sha512")
        || strstr(cgi->sigalg, "rsa-sha256") || strstr(cgi->sigalg, "dsa-sha1")
        || strstr(cgi->sigalg, "dsa-sha512") || strstr(cgi->sigalg, "dsa-sha256"))) {
+
+    if (strstr(cgi->sigalg, "sha1")) mdalg = "SHA1";
+    else if (strstr(cgi->sigalg, "sha256")) mdalg = "SHA256";
+    else if (strstr(cgi->sigalg, "sha512")) mdalg = "SHA512";
+    else { mdalg="SHA1"; ERR("Unrecognized mdalg(%s)", cgi->sigalg); }
+    
     ses->sigres = zxsig_verify_data(ss->len  /* Adjust for Signature= which we log */
 				    - (sizeof("&Signature=")-1 + strlen(cgi->sig)),
 				    ss->s, p2-sigbuf, sigbuf,
-				    meta->sign_cert, "Simple or Redir SigVfy");
+				    meta->sign_cert, "Simple or Redir SigVfy", mdalg);
     zxid_sigres_map(ses->sigres, &cgi->sigval, &cgi->sigmsg);
   } else {
     ERR("Unsupported or bad signature algorithm(%s).", STRNULLCHK(cgi->sigalg));

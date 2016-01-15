@@ -308,7 +308,6 @@ static void test_receipt(int* argc, char*** argv, char*** env)
   exit(0);
 }
 
-/* Called by:  main x3 */
 
 /* Called by:  main x3 */
 static void zxlog_zsig_verify_print(zxid_conf* cf, int len, char* buf, char* se, char* p)
@@ -332,7 +331,7 @@ static void zxlog_zsig_verify_print(zxid_conf* cf, int len, char* buf, char* se,
       ERR("RSA sig claimed by no sig found. %d", siglen);
       break;
     }
-    verdict = zxsig_verify_data(len-(p-buf), p, siglen, sig, log_verify_cert, "log vfy");
+    verdict = zxsig_verify_data(len-(p-buf), p, siglen, sig, log_verify_cert, "log vfy", 0);
     if (verdict) {
       printf("RSA signature FAIL. Log file may have been tampered - or bad certificate.\n");
     } else {
@@ -401,7 +400,7 @@ int main(int argc, char** argv, char** env)
       case 'R':
 	pp = unbase64_raw(buf, p, buf, zx_std_index_64);  /* In place, overwrite. */
 	++p;
-	ver = zxsig_verify_data(len-(p-buf), p, pp-buf, buf, log_verify_cert, "log vfy");
+	ver = zxsig_verify_data(len-(p-buf), p, pp-buf, buf, log_verify_cert, "log vfy", "SHA1");
 	if (ver) {
 	  printf("RSA signature FAIL. Log file may have been tampered - or bad certificate.\n");
 	} else {

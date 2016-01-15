@@ -1415,6 +1415,26 @@
  */
 #define ZXID_XMLDSIG_DIGEST_ALGO DIGEST_ALGO
 
+/*(c) Digest algorithm to use when generating SAML blob (not XMLDSIG) signatures
+ * Blob signatures occur in SAML2 messages where XML signature
+ * is not used, e.g. redirect bindings and POST bindings.
+ * Where XMLDSIG is used by SAML, XMLDSIG_SIG_METH and XMLDSIG_DIGEST_ALGO
+ * configuration options are used.
+ * The string, such as "SHA1" or "SHA256" should be understood
+ * by OpenSSL EVP_get_digestbyname(3) API. If passed as 0 or "0"
+ * the default hash algorithm is used ("SHA1" as of 2015).
+ */
+#define ZXID_SAMLSIG_DIGEST_ALGO "SHA1"
+
+/*(c) Digest algorithm to use when generating blob (not XMLDSIG or SAML) signatures
+ * Blob signatures occur in several places where XML signature
+ * is not used. For example when performing signed logging or audit bus operations.
+ * The string, such as "SHA1" or "SHA256" should be understood
+ * by OpenSSL EVP_get_digestbyname(3) API. If passed as 0 or "0"
+ * the default hash algorithm is used ("SHA256" as of 2015).
+ */
+#define ZXID_BLOBSIG_DIGEST_ALGO "SHA256"
+
 /* ----------------------------------------------------------------------------- */
 /*(c) Change current working directory
  * Apache httpd sometimes changes working directory unpredictably

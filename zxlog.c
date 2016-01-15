@@ -123,7 +123,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
       UNLOCK(cf->mx, "logsign wrln");      
       if (!log_sign_pkey)
 	break;
-      len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc log line", 0);
+      len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc log line", cf->blobsig_digest_algo);
       break;
     case 0x06:      /* Dx DSA-SHA1 signature */
       ERR("DSA-SHA1 sig not implemented in encrypted mode. Use RSA-SHA1 or none. %x", encflags);
@@ -222,7 +222,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
     UNLOCK(cf->mx, "logsign wrln");
     if (!log_sign_pkey)
       break;
-    zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
+    zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", cf->blobsig_digest_algo);
     len = SIMPLE_BASE64_LEN(zlen) + 4;
     sig = ZX_ALLOC(cf->ctx, len);
     strcpy(sig, "RP ");
@@ -909,7 +909,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
     if (!cf->sign_pkey)
       break;
 
-    zlen = zxsig_data(cf->ctx, len, buf, &zbuf, cf->sign_pkey, "receipt", 0);
+    zlen = zxsig_data(cf->ctx, len, buf, &zbuf, cf->sign_pkey, "receipt", cf->blobsig_digest_algo);
 
     if (errmac_debug>2) HEXDUMP("zbuf:", zbuf, zbuf+zlen, 4096);
     len = 3+ZXLOG_TIME_SIZ+1+mid_len+1+SIMPLE_BASE64_LEN(zlen)+1;
@@ -1028,7 +1028,7 @@ int zxbus_verify_receipt(zxid_conf* cf, const char* eid, int sigbuf_len, char* s
     D("sigbuf(%.*s) len=%d sigbuf=%p lim=%p", (int)(sigbuf_len-(p-sigbuf)), p, (int)(sigbuf_len-(p-sigbuf)), p, sigbuf+sigbuf_len);
     p = unbase64_raw(p, sigbuf+sigbuf_len, sig, zx_std_index_64);  /* In place, overwrite. */
 
-    ver = zxsig_verify_data(len, buf, p-sig, sig, meta->sign_cert, "rcpt vfy");
+    ver = zxsig_verify_data(len, buf, p-sig, sig, meta->sign_cert, "rcpt vfy", cf->blobsig_digest_algo);
 
     if (ver)
       D("ver=%d buf(%.*s) len=%d", ver, len, buf, len);

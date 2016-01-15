@@ -71,6 +71,7 @@ int zx_EVP_CIPHER_block_size(const EVP_CIPHER* cipher) { return EVP_CIPHER_block
 
 /*() Get certificate signature algorithm string. This reads the
  * signature algorithm from certificate itself.
+ * Returns something like "SHA1" or "SHA256" or "" on error.
  */
 
 /* Called by:  */
@@ -85,13 +86,14 @@ const char* zxid_get_cert_signature_algo(X509* cert)
  * is placed in buffer md, which must already be of length sufficient for
  * the digest. md will not be nul terminated (and will usually have binary
  * data). Possible algos: "SHA1", "SHA256", "SHA512", etc.
+ * zx_raw_raw_digest() expects an algorithm object instead of a string.
  * Returns 0 on failure or length of the digest on success.  */
 
 int zx_raw_raw_digest2(struct zx_ctx* c, char* md, const EVP_MD* evp_digest, int len, const char* s, int len2, const char* s2)
 {
   char* where = "a";
   EVP_MD_CTX* mdctx;
-  int mdlen;
+  unsigned int mdlen;
   mdctx = EVP_MD_CTX_create();
     
   if (!EVP_DigestInit_ex(mdctx, evp_digest, 0 /* engine */)) {
@@ -128,11 +130,9 @@ int zx_raw_raw_digest2(struct zx_ctx* c, char* md, const EVP_MD* evp_digest, int
 
 int zx_raw_digest2(struct zx_ctx* c, char* md, const char* algo, int len, const char* s, int len2, const char* s2)
 {
-  char* where = "start";
   const EVP_MD* evp_digest;
-  EVP_MD_CTX* mdctx;
-  int mdlen;
   OpenSSL_add_all_digests();
+  evp_digest = EVP_get_digestbyname(algo);
   return zx_raw_raw_digest2(c, md, evp_digest, len, s, len2, s2);
 }
 

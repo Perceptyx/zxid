@@ -193,8 +193,10 @@ struct zx_attr_s* zxid_date_time_attr(zxid_conf* cf, struct zx_elem_s* father, i
 /* Called by:  zxid_idp_sso x3 */
 struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* payload, char* relay_state, int sign, struct zx_str* action_url)
 {
+  const char* sig_alg_url;
+  const char* sig_alg_urlenc;
+  const char* mdalg;
   X509* sign_cert;
-  char* sig_alg;
   EVP_PKEY* sign_pkey;
   struct zx_str id_str;
   struct zx_str* logpath;
@@ -243,26 +245,22 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
       p += rs_len;
     }
 
-#if 0    
-    memcpy(p, "&SigAlg=" SIG_ALGO, sizeof("&SigAlg=" SIG_ALGO)-1);
-    p += sizeof("&SigAlg=" SIG_ALGO)-1;
-    if (zxid_lazy_load_sign_cert_and_pkey(cf, 0, &sign_pkey, "SAML2 post"))
-      zlen = zxsig_data(cf->ctx, p-url, url, &zbuf, sign_pkey, "SAML2 post", 0);
-#else
     if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "SAML2 post")) {
-      sig_alg = zxid_get_cert_signature_algo_url(sign_cert);
+      mdalg = cf->samlsig_digest_algo;
+      if (!mdalg || (mdalg[0]=='0'&&!mdalg[1]))
+	mdalg = zxid_get_cert_signature_algo(sign_cert);
+      sig_alg_urlenc = zxsig_choose_xmldsig_sig_meth_urlenc(sign_pkey, mdalg);
       memcpy(p, "&SigAlg=", sizeof("&SigAlg=")-1);
       p+=sizeof("&SigAlg=")-1;
-      memcpy(p, sig_alg, strlen(sig_alg));
-      p+=strlen(sig_alg);
-      zlen = zxsig_data(cf->ctx, p-url, url, &zbuf, sign_pkey, "SAML2 post", sig_alg);
+      memcpy(p, sig_alg_urlenc, strlen(sig_alg_urlenc));
+      p+=strlen(sig_alg_urlenc);
+      zlen = zxsig_data(cf->ctx, p-url, url, &zbuf, sign_pkey, "SAML2 post", mdalg);
       if (zlen == -1)
 	return 0;
     } else {
       ERR("Simple Signing requested, but private key could not be loaded. Fail. %d", 0);
       return 0;
     }
-#endif
 
     memcpy(p, ETSIGNATURE_EQ, sizeof(ETSIGNATURE_EQ)-1);
     p += sizeof(ETSIGNATURE_EQ)-1;
@@ -312,7 +310,8 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
     cgi.rs = zx_alloc_sprintf(cf->ctx, 0, "<input type=hidden name=RelayState value=\"%s\">", relay_state);
   }
   if (sign) {
-    cgi.sig = zx_alloc_sprintf(cf->ctx, 0, "<input type=hidden name=SigAlg value=\"%s\"><input type=hidden name=Signature value=\"%s\">", sig_alg, sigbuf);
+    sig_alg_url = zxsig_choose_xmldsig_sig_meth_url(sign_pkey, mdalg);
+    cgi.sig = zx_alloc_sprintf(cf->ctx, 0, "<input type=hidden name=SigAlg value=\"%s\"><input type=hidden name=Signature value=\"%s\">", sig_alg_url, sigbuf);
   }
   payload = zxid_template_page_cf(cf, &cgi, cf->post_templ_file, cf->post_templ, 64*1024, 0);
   ZX_FREE(cf->ctx, url);
@@ -339,8 +338,8 @@ struct zx_str zxstr_unknown = {0,0,sizeof("UNKNOWN")-1, "UNKNOWN"};
 /* Called by:  zxid_saml2_redir, zxid_saml2_redir_url, zxid_saml2_resp_redir */
 struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* pay_load, char* relay_state)
 {
-  X509* sign_cert;
   char* sig_alg_urlenc;
+  X509* sign_cert;
   EVP_PKEY* sign_pkey;
   struct zx_str* logpath;
   struct zx_str* ss;
@@ -349,6 +348,7 @@ struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* p
   char* url;
   char* sig;
   char* p;
+  const char* mdalg;
   int zlen, len, slen, field_len, rs_len;
   field_len = strlen(field);
   rs_len = relay_state?strlen(relay_state):0;
@@ -391,13 +391,15 @@ struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* p
     zlen = zxsig_data(cf->ctx, len, url, &zbuf, sign_pkey, "SAML2 redir", 0);
 #else
   if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "SAML2 redir")) {
-    char* sig_alg = zxid_get_cert_signature_algo_url(sign_cert);
-    sig_alg_urlenc = zxid_get_cert_signature_algo_urlenc(sign_cert);
+    mdalg = cf->samlsig_digest_algo;
+    if (!mdalg || (mdalg[0]=='0'&&!mdalg[1]))
+      mdalg = zxid_get_cert_signature_algo(sign_cert);
+    sig_alg_urlenc = zxsig_choose_xmldsig_sig_meth_urlenc(sign_pkey, mdalg);
     memcpy(url+len, "&SigAlg=", sizeof("&SigAlg=")-1);
     len+=sizeof("&SigAlg=")-1;
     memcpy(url+len, sig_alg_urlenc, strlen(sig_alg_urlenc));
     len+=strlen(sig_alg_urlenc);
-    zlen = zxsig_data(cf->ctx, len, url, &zbuf, sign_pkey, "SAML2 redir", sig_alg);
+    zlen = zxsig_data(cf->ctx, len, url, &zbuf, sign_pkey, "SAML2 redir", mdalg);
     if (zlen == -1)
       return 0;
   } else {
