@@ -1,10 +1,10 @@
 Content-Type: text/html
-Content-Length: 1767
+Content-Length: 1692
 
 <title>ZXID SP SSO: Choose IdP</title>
 <link type="text/css" rel=stylesheet href="idpsel.css"><body bgcolor=white>
 <h1 class=zxtop>ZXID SP Federated SSO (user NOT logged in, no session)</h1>
-<form method=get action="http://sidemo:8084/zxidhlo">
+<form method=get action="https://yourhost.example.com:8443/protected/saml">
 <div class=zxerr></div><div class=zxmsg></div><div class=zxdbg></div>
 
 <h3>Login Using New IdP</h3>
@@ -15,10 +15,9 @@ well known location method. You will need to ask the adminstrator of
 the IdP to tell you what the EntityID is.</i>
 <p>IdP URL <input name=e size=60><input type=submit name=l0 value=" Login "><br>
 
-Entity ID of this SP (click on the link to fetch the SP metadata): <a href="http://sidemo:8084/zxidhlo?o=B">http://sidemo:8084/zxidhlo?o=B</a>
+Entity ID of this SP (click on the link to fetch the SP metadata): <a href="https://yourhost.example.com:8443/protected/saml?o=B">https://yourhost.example.com:8443/protected/saml?o=B</a>
 
 <p><select name=d>
-<option class=zxidplistopt value="http://idp.tas3.pt:8081/zxididp?o=B"> Syn Test IdP (http://idp.tas3.pt:8081/zxididp?o=B) 
 </select><input type=submit id=zxidplistlogin class=zxidplistbut name="l0" value=" Login "><br>
 
 
@@ -32,7 +31,7 @@ Entity ID of this SP (click on the link to fetch the SP metadata): <a href="http
 </select><br>
 
 <!-- ZXID built-in defaults, see zxidconf.h and zxid-conf.pd for explanation -->
-<input type=hidden name=fr value="">
+<input type=hidden name=fr value="?o=E">
 <input type=hidden name=fq value="">
 <input type=hidden name=fy value="">
 <input type=hidden name=fa value="">
@@ -40,4 +39,4 @@ Entity ID of this SP (click on the link to fetch the SP metadata): <a href="http
 <input type=hidden name=fp value=0>
 <input type=hidden name=ff value=0>
 </form>
-<div class=zxbot><a class=zx href="http://zxid.org/">zxid.org</a>, 1.15 1382893016 libe2eta ix86-32 (sampo@synergetics.be)</div>
+<div class=zxbot><a class=zx href="http://zxid.org/">zxid.org</a>, 1.42 1452811319 libzxid (zxid.org)</div>

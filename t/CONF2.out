@@ -1,25 +1,26 @@
 Content-Type: text/html
-Content-Length: 13622
+Content-Length: 14354
 
-<title>Conf for http://sidemo:8084/zxidhlo</title><body bgcolor=white><h1>Conf for http://sidemo:8084/zxidhlo?o=B</h1><p>Please see config file in /var/zxid/zxid.conf, and documentation in zxid-conf.pd and zxidconf.h
+<title>Conf for https://yourhost.example.com:8443/protected/saml</title><body bgcolor=white><h1>Conf for https://yourhost.example.com:8443/protected/saml?o=B</h1><p>Please see config file in /var/zxid/zxid.conf, and documentation in zxid-conf.pd and zxidconf.h
 <p>[ <a href="?o=B">Metadata</a> | <a href="?o=c">CARML</a> | <a href="?o=d">This Conf Dump</a> ]
-<p>Version: R1.15 (1382893016)
-<pre>PATH=/var/zxid/
-URL=http://sidemo:8084/zxidhlo
+<p>Version: R1.42 (1452811319)
+<pre>DEBUG=0x0
+CPATH=/var/zxid/
+BURL=https://yourhost.example.com:8443/protected/saml
 AFFILIATION=
-NICE_NAME=antin testi
-BUTTON_URL=
+NICE_NAME=Configuration NICE_NAME: Set this to describe your site to humans, see /var/zxid/zxid.conf
+BUTTON_URL=https://example.com/YOUR_BRAND_saml2_icon_150x60.png
 PREF_BUTTON_SIZE=150x60
 ORG_NAME=Unspecified ORG_NAME conf variable
 LOCALITY=Lisboa
 STATE=Lisboa
 COUNTRY=PT
-CONTACT_ORG=
-CONTACT_NAME=
-CONTACT_EMAIL=
-CONTACT_TEL=
-FEDUSERNAME_SUFFIX=sidemo
-#ZXID_CONF_FILE=1 (compile)
+CONTACT_ORG=Your organization
+CONTACT_NAME=Your Name
+CONTACT_EMAIL=your@email.com
+CONTACT_TEL= 351918731007
+FEDUSERNAME_SUFFIX=yourhost.example.com
+#ZXID_CONF_FILE_ENA=1 (compile)
 #ZXID_CONF_FLAG=1 (compile)
 NON_STANDARD_ENTITYID=
 REDIRECT_HACK_IMPOSED_URL=
@@ -27,7 +28,13 @@ REDIRECT_HACK_ZXID_URL=
 REDIRECT_HACK_ZXID_QS=
 DEFAULTQS=
 WSP_PAT=*.wsp
-SSO_PAT=*
+UMA_PAT=*/uma/*
+SSO_PAT=**
+WSC_SOAP_CONTENT_TYPE=Content-Type: text/xml
+WSC_TO_HDR=#url
+WSC_REPLYTO_HDR=
+WSC_ACTION_HDR=#body1stns
+SOAP_ACTION_HDR=#same
 CDC_URL=
 CDC_CHOICE=4
 LOAD_COT_CACHE=
@@ -35,6 +42,7 @@ MD_FETCH=1
 MD_POPULATE_CACHE=1
 MD_CACHE_FIRST=1
 MD_CACHE_LAST=1
+MD_AUTHORITY=
 AUTO_CERT=1
 AUTHN_REQ_SIGN=1
 WANT_AUTHN_REQ_SIGNED=1
@@ -70,9 +78,12 @@ IDP_ENA=0
 IDP_PXY_ENA=0
 IMPS_ENA=0
 AS_ENA=0
+MD_AUTHORITY_ENA=1
+BACKWARDS_COMPAT_ENA=0
 PDP_ENA=1
 CPN_ENA=0
 AZ_OPT=0
+AZ_FAIL_MODE=0
 #ZXID_MAX_BUF=1024 (compile)
 LOG_ERR=1
 LOG_ACT=1
@@ -103,7 +114,12 @@ AFTER_SLOP=7300
 TIMESKEW=0
 A7NTTL=3600
 ANON_OK=
-ISSUE_AUTHNCTX_PW=urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
+OPTIONAL_LOGIN_PAT=
+ISSUE_AUTHNCTX=  none,
+  weak,
+  urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport,
+  yubikey,
+  pin-yubikey
 IDP_PREF_ACS_BINDING=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
 MANDATORY_ATTR=zxidvers,zxidloa
 PDP_URL=
@@ -114,6 +130,10 @@ MOD_SAML_ATTR_PREFIX=SAML_
 BARE_URL_ENTITYID=0
 SHOW_TECH=0
 WD=
+XMLDSIG_SIG_METH=
+XMLDSIG_DIGEST_ALGO=http://www.w3.org/2000/09/xmldsig#sha1
+SAMLSIG_DIGEST_ALGO=SHA1
+BLOBSIG_DIGEST_ALGO=SHA256
 IDP_LIST_METH=0
 IDP_SEL_PAGE=
 IDP_SEL_TEMPL_FILE=idpsel.html
@@ -130,8 +150,8 @@ ERR_PAGE=
 ERR_TEMPL_FILE=err.html
 </pre><textarea cols=100 rows=7>ERR_TEMPL=<title>ZXID: Error</title><link type="text/css" rel=stylesheet href="an.css"><body bgcolor=white><form method=get action="!!URL"><h1 class=zxtop>ZXID Error Message</h1><div class=zxerr>!!ERR</div><div class=zxmsg>!!MSG</div><div class=zxdbg>!!DBG</div><input type=hidden name=zxapp value="!!ZXAPP"></form><div class=zxbot>!!VERSION (builtin)</div>
 </textarea><pre>
-NEW_USER_PAGE=
-RECOVER_PASSWD=
+NEW_USER_PAGE=zxidnewuser.pl
+RECOVER_PASSWD=zxidrecoverpw.pl
 ATSEL_PAGE=
 </pre><textarea cols=100 rows=15>MGMT_START=<title>ZXID SP Mgmt</title><link type="text/css" rel=stylesheet href="idpsel.css"><body bgcolor=white><h1 class=zxtop>ZXID SP Management (user logged in, session active)</h1>
 
@@ -275,4 +295,6 @@ LOCALPDP_IDPNID_DENY=
   denynid
 WSC_LOCALPDP_OBL_PLEDGE=
 WSP_LOCALPDP_OBL_EMIT=
+UNIX_GRP_AZ_MAP=
+
 </pre>

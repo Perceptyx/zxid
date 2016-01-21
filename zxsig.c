@@ -1059,7 +1059,7 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
     }
  
 #if 1
-    verdict = RSA_verify(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)sig, siglen, rsa_pubk);
+    verdict = RSA_verify(EVP_MD_type(evp_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sig, siglen, rsa_pubk);
 #else
     if (!strcmp(sig_alg, SIG_ALGO_RSA_SHA1))
       verdict = RSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, rsa_pubk);
@@ -1092,7 +1092,7 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
     }
   
 #if 1
-    verdict = DSA_verify(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)sig, siglen, dsa_pubk);
+    verdict = DSA_verify(EVP_MD_type(evp_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sig, siglen, dsa_pubk);
     //verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
 #else
     if (!strcmp(sig_alg, SIG_ALGO_DSA_SHA1))

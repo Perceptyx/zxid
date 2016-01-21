@@ -1,4 +1,4 @@
-zxcall  -  Web Service Client tool R1.15
+zxcall  -  Web Service Client tool R1.42
 SAML 2.0 and ID-WSF 2.0 are standards for federated identity and web services.
 Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
 NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0
@@ -11,7 +11,7 @@ Usage: zxcall [options] -s SESID -t SVCTYPE <soap_req_body.xml >soap_resp.xml
        zxcall [options] -a IDP USER:PW   # Authentication only
        zxcall [options] -s SESID -im EID # Identity Mapping to EID
        zxcall [options] -s SESID -l      # List session cache
-  -c CONF          Optional configuration string (default -c PATH=/var/zxid/)
+  -c CONF          Optional configuration string (default -c CPATH=/var/zxid/)
                    Most of the configuration is read from /var/zxid/zxid.conf
   -s SESID         Session ID referring to a directory in /var/zxid/ses
                    Use zxidhlo to do SSO and then cut and paste from there.
@@ -19,7 +19,7 @@ Usage: zxcall [options] -s SESID -t SVCTYPE <soap_req_body.xml >soap_resp.xml
                    create session. IDP is IdP's Entity ID. This is alternative to -s
   -t SVCTYPE       Service Type URI. Used for discovery. Mandatory (omitting -t
                    causes authorization only mode, provided that -az was specified).
-  -u URL           Optional endpoint URL or ProviderID. Discovery must match this.
+  -u EPURL         Optional endpoint URL or ProviderID. Discovery must match this.
   -di DISCOOPTS    Optional discovery options. Query string format.
   -din N           Discovery index (default: 1=pick first).
   -az AZCREDS      Optional authorization credentials. Query string format.

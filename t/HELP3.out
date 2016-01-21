@@ -1,29 +1,32 @@
-zxcot  -  Circle-of-Trust and metadata management tool R1.15
-Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
+zxcot  -  Circle-of-Trust and metadata management tool R1.42
+Copyright (c) 2012-2013 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
 Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
 NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0
 See http://www.apache.org/licenses/LICENSE-2.0
 Send well researched bug reports to the author. Home: http://zxid.org
 
-Usage: zxcot [options] [dir]         # Gives listing of metadata
-       zxcot -a [options] [dir] <meta.xml
-       zxcot -b [options] [dir] <epr.xml
-       curl https://site.com/metadata.xml | zxcot -a [options] [dir]
-       zxcot -g https://site.com/metadata.xml [options] [dir]
-       zxcot -m [options] >meta.xml  # Generate our own metadata
+Usage: zxcot [options] [cotdir]         # Gives listing of metadata
+       zxcot -c CPATH=/var/zxid/ -dirs  # Creates directory hierarchy
+       zxcot -a [options] [cotdir] <meta.xml  # Import metadata
+       zxcot -b [options] [dimddir] <epr.xml  # Register EPR
+       curl https://site.com/metadata.xml | zxcot -a [options] [cotdir]
+       zxcot -g https://site.com/metadata.xml [options] [cotdir]
+       zxcot -m [options] >meta.xml     # Generate our own metadata
        zxcot -p https://site.com/metadata.xml
   [dir]            CoT directory. Default /var/zxid/cot
-  -c CONF          Optional configuration string (default -c PATH=/var/zxid/)
+  -c CONF          Optional configuration string (default -c CPATH=/var/zxid/)
                    Most of the configuration is read from /var/zxid/zxid.conf
                    N.B. If VURL and/or VPATH are used, you should set
                    environment variables that affect virtualization, e.g.
                      HTTP_HOST=example.com:8443 SERVER_PORT=8443 SCRIPT_NAME=zxidhlo zxcot -m
   -ci              IdP conf, synonym for -c IDP_ENA=1
-  -a               Add metadata from stdin
+  -dirs            Create configuration directory hierarchy
+  -a               Add (someone else's) metadata from stdin
   -b               Register Web Service, add Service EPR from stdin
   -bs              Register Web Service and Bootstrap, add Service EPR from stdin
   -e endpoint abstract entid servicetype   Construct and dump EPR to stdout.
-  -g URL           Do HTTP(S) GET to URL and add as metadata (if compiled w/libcurl)
+  -g URL           Do HTTP(S) GET to URL (aka WKL) and add as metadata (if compiled w/libcurl)
+  -sign            Sign imported metadata (used with -a or -g). Used for Metadata Authority.
   -n               Dryrun. Do not actually add the metadata. Instead print it to stdout.
   -s               Swap columns, for easier sorting by URL
   -m               Output metadata of this installation (our own metadata). Caveat: If your
@@ -37,5 +40,6 @@ Usage: zxcot [options] [dir]         # Gives listing of metadata
   -h               This help message
   --               End of options
 
+HTTP_HOST=idp.cloud-identity.eu SCRIPT_NAME=/idp e2etacot -c 'CPATH=/d/relifex/e2eta/' -m
 zxcot -e http://idp.tas3.pt:8081/zxididp?o=S 'TAS3 Default Discovery Service (ID-WSF 2.0)' http://idp.tas3.pt:8081/zxididp?o=B urn:liberty:disco:2006-08 | zxcot -b
 

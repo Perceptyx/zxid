@@ -1,11 +1,11 @@
 Content-Type: text/html
-Content-Length: 1627
+Content-Length: 1672
 
 <title>ZXID IdP: Authentication</title>
 <link type="text/css" rel=stylesheet href="an.css"><body bgcolor=white>
-<form method=get action="http://sidemo:8084/zxidhlo">
+<form method=get action="https://yourhost.example.com:8443/protected/saml">
 <h1 class=zxtop>ZXID IdP Authentication for Federated SSO</h1>
-<p>Entity ID of this IdP (click for the IdP metadata): <a href="http://sidemo:8084/zxidhlo?o=B">http://sidemo:8084/zxidhlo?o=B</a><br>
+<p>Entity ID of this IdP (click for the IdP metadata): <a href="https://yourhost.example.com:8443/protected/saml?o=B">https://yourhost.example.com:8443/protected/saml?o=B</a><br>
 <p>Login requested by --No SP could be determined-- (<a href=""></a>)
 <div class=zxerr>Malformed or nonexistant Authentication Request</div><div class=zxmsg></div><div class=zxdbg></div>
 User NOT logged in, no session.
@@ -18,4 +18,4 @@ User NOT logged in, no session.
 <input type=hidden name=fq value=""><input type=hidden name=fy value=""><input type=hidden name=fa value=""><input type=hidden name=fm value=""><input type=hidden name=fp value=0><input type=hidden name=ff value=0><!-- ZXID built-in defaults, see AN_TEMPL zxidconf.h-->
 <input type=hidden name=ar value="">
 <input type=hidden name=zxapp value="">
-</form><div class=zxbot><a href="http://zxid.org/">zxid.org</a>, 1.15 1382893016 libe2eta ix86-32 (sampo@synergetics.be)</div>
+</form><div class=zxbot><a href="http://zxid.org/">zxid.org</a>, 1.42 1452811319 libzxid (zxid.org)</div>

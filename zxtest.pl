@@ -1251,8 +1251,6 @@ CMD('CONF3', 'zxidhlo o=c dump carml',       "QUERY_STRING=o=c ./zxidhlo");
 CMD('CONF4', 'zxidhlo o=B dump metadata',    "QUERY_STRING=o=B ./zxidhlo");
 CMD('CONF5', 'zxididp o=B dump metadata',    "QUERY_STRING=o=B ./zxididp");
 
-CMD('META1', 'Java LEAF Meta', "curl 'http://sp.tas3.pt:8080/zxidservlet/wspleaf?o=B'");
-
 CMD('HLO1', 'zxidhlo o=M LECP check',        "QUERY_STRING=o=M ./zxidhlo");
 CMD('HLO2', 'zxidhlo o=C CDC',               "QUERY_STRING=o=C ./zxidhlo");
 CMD('HLO3', 'zxidhlo o=E idp select page',   "QUERY_STRING=o=E ./zxidhlo");
@@ -1268,14 +1266,23 @@ CMD('IDP3', 'zxididp o=N new user fail', "QUERY_STRING=o=N ./zxididp");
 CMD('IDP4', 'zxididp o=W pwreset fail',  "QUERY_STRING=o=W ./zxididp");
 CMD('IDP5', 'zxididp o=S SASL Req',  "QUERY_STRING=o=S CONTENT_LENGTH=222 ./zxididp <t/sasl_req.xml");
 
+system 'rm -rf /var/zxid/uid/tastest';  # Delete user so we can test again
+CMD('PW0', 'zxpasswd list user fail',   "./zxpasswd -l tastest",1024);  # no user
+CMD('PW01', 'zxpasswd new user',    "echo tas123 | ./zxpasswd -v -new tastest");
 CMD('PW1', 'zxpasswd list user',   "./zxpasswd -l tastest");
 CMD('PW2', 'zxpasswd pw an ok',    "echo tas123 | ./zxpasswd -v -a tastest");
 CMD('PW3', 'zxpasswd pw an fail',  "echo tas124 | ./zxpasswd -v -a tastest",1792);
 
-system 'rm -rf /var/zxid/idpuid/pwtest';  # Delete user so we can test again
-CMD('PW4', 'zxpasswd create user', "echo tas125 | ./zxpasswd -t y -at 'cn: pw test user\$o: test corp' -c pwtest");
-CMD('PW5', 'zxpasswd change pw',   "echo tas126 | ./zxpasswd -t y pwtest");
+system 'rm -rf /var/zxid/uid/pwtest';  # Delete user so we can test again
+CMD('PW4', 'zxpasswd create user', "echo tas125 | ./zxpasswd -t y -at 'cn: pw test user\$o: test corp' -new pwtest");
+CMD('PW5', 'zxpasswd change pw y',   "echo tas126 | ./zxpasswd -t y pwtest");
 CMD('PW6', 'zxpasswd list user',   "./zxpasswd -l pwtest");
+CMD('PW7', 'zxpasswd change pw plain',   "echo tas126 | ./zxpasswd -t 0 pwtest");
+CMD('PW8', 'zxpasswd plain an ok',   "echo tas126 | ./zxpasswd -v -a pwtest");
+CMD('PW9', 'zxpasswd plain an fail', "echo tas127 | ./zxpasswd -v -a pwtest",1792);
+
+# ./zxid_httpd -p 8081 -c 'zxid*' &
+CMD('META1', 'Java LEAF Meta', "curl 'http://sp.tas3.pt:8080/zxidservlet/wspleaf?o=B'");
 
 CMD('COT1', 'zxcot list',          "./zxcot");
 CMD('COT2', 'zxcot list swap',     "./zxcot -s");
@@ -1287,7 +1294,7 @@ CMD('COT7', 'zxcot my meta add',   "./zxcot -m | ./zxcot -a");
 CMD('COT8', 'zxcot gen epr',       "./zxcot -e http://localhost:1234/ testabstract http://localhost:1234/?o=B x-impossible");
 CMD('COT9', 'zxcot gen epr add',   "./zxcot -e http://localhost:1234/ testabstract http://localhost:1234/?o=B x-impossible | ./zxcot -b -bs");
 CMD('COT10', 'zxcot my meta',      "./zxcot -p http://localhost:1234/?o=B");
-CMD('COT11', 'zxcot list s2',      "./zxcot -s /var/zxid/idpcot");
+CMD('COT11', 'zxcot list s2',      "./zxcot -s /var/zxid/cot");
 
 CMD('LOG1', 'zxlogview list',      "./zxlogview /var/zxid/pem/logsign-nopw-cert.pem /var/zxid/pem/logenc-nopw-cert.pem <t/act");
 CMD('LOG2', 'zxlogview test',      "./zxlogview -t /var/zxid/pem/logsign-nopw-cert.pem /var/zxid/pem/logenc-nopw-cert.pem");

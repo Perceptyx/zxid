@@ -1142,6 +1142,7 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->wsp_pat       = ZXID_WSP_PAT;
   cf->uma_pat       = ZXID_UMA_PAT;
   cf->sso_pat       = ZXID_SSO_PAT;
+  cf->cdc_url       = ZXID_CDC_URL;
   cf->cdc_choice    = ZXID_CDC_CHOICE;
   cf->authn_req_sign = ZXID_AUTHN_REQ_SIGN;
   cf->want_sso_a7n_signed = ZXID_WANT_SSO_A7N_SIGNED;
@@ -2231,7 +2232,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 "CONTACT_EMAIL=%s\n"
 "CONTACT_TEL=%s\n"
 "FEDUSERNAME_SUFFIX=%s\n"
-"#ZXID_CONF_FILE=%d (compile)\n"
+"#ZXID_CONF_FILE_ENA=%d (compile)\n"
 "#ZXID_CONF_FLAG=%d (compile)\n"
 "NON_STANDARD_ENTITYID=%s\n"
 "REDIRECT_HACK_IMPOSED_URL=%s\n"
@@ -2442,7 +2443,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 STRNULLCHK(cf->contact_email),
 		 STRNULLCHK(cf->contact_tel),
 		 STRNULLCHK(cf->fedusername_suffix),
-		 ZXID_CONF_FILE,
+		 ZXID_CONF_FILE_ENA,
 		 ZXID_CONF_FLAG,
 		 STRNULLCHK(cf->non_standard_entityid),
 		 STRNULLCHK(cf->redirect_hack_imposed_url),

@@ -1,6 +1,1 @@
-http://?o=B
-http://sp.tas3.pt:8082/zxidhlo?o=B
-https://sp.employeedata.eu:8444/e2eTA/sso?o=B
-http://idp.tas3.pt:8081/zxididp?o=B
-https://sp.citizendata.eu:8445/protected/saml?o=B
-http://sidemo:8084/zxidhlo?o=B
+https://yourhost.example.com:8443/protected/saml?o=B

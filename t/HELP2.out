@@ -1,5 +1,5 @@
-zxpasswd  -  Password creation and user management tool R1.15
-Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
+zxpasswd  -  Password creation and user management tool R1.42
+Copyright (c) 2012-2015 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
 Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
 NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0
 See http://www.apache.org/licenses/LICENSE-2.0
@@ -16,6 +16,8 @@ Usage: zxpasswd [options] user [udir] <passwd      # Set user's password
   -a               Authenticate as user. exit(2) value 0 means success
   -l               List user info. If no user is specified, lists all users.
   -t N             Choose password hash type: 0=plain, 1=MD5 (default), y=yubikey
+  -p               The password is considered as PIN and written in .pin
+  -basic uid:pw    Print HTTP Basic Authenication blob, i.e. URI encoded base64 over uid:pw
   -v               Verbose messages.
   -q               Be extra quiet.
   -d               Turn on debugging.

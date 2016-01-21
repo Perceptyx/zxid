@@ -1228,7 +1228,7 @@ static char* zxid_simple_idp_new_user(zxid_conf* cf, zxid_cgi* cgi, int* res_len
 
   if (cf->new_user_page && cf->new_user_page[0]) {
     p = zx_alloc_sprintf(cf->ctx, 0, "ar=%s&zxrfr=F%s%s%s%s&zxidpurl=%s",
-		 cgi->ssoreq,
+		 STRNULLCHK(cgi->ssoreq),
 		 cgi->zxapp && cgi->zxapp[0] ? "&zxapp=" : "", cgi->zxapp ? cgi->zxapp : "",
 		 cgi->err && cgi->err[0] ? "&err=" : "", cgi->err ? cgi->err : "",
 		 cf->burl);
@@ -1254,7 +1254,7 @@ static char* zxid_simple_idp_recover_password(zxid_conf* cf, zxid_cgi* cgi, int*
 
   if (cf->recover_passwd && cf->recover_passwd[0]) {
     p = zx_alloc_sprintf(cf->ctx, 0, "ar=%s&zxrfr=F%s%s%s%s&zxidpurl=%s",
-		 cgi->ssoreq,
+		 STRNULLCHK(cgi->ssoreq),
 		 cgi->zxapp && cgi->zxapp[0] ? "&zxapp=" : "", cgi->zxapp ? cgi->zxapp : "",
 		 cgi->err && cgi->err[0] ? "&err=" : "", cgi->err ? cgi->err : "",
 		 cf->burl);
@@ -1753,10 +1753,14 @@ char* zxid_simple_cf_ses(zxid_conf* cf, int qs_len, char* qs, zxid_ses* ses, int
     }
   }
   UNLOCK(cf->mx, "simple ipport");
+
+  cgi.uri_path = getenv("SCRIPT_NAME");
+  cgi.qs = qs;  /* save orig for use in zxid_sso_set_relay_state_to_return_to_this_url() */
   
   if (!qs) {
-    qs = getenv("QUERY_STRING");
+    cgi.qs = qs = getenv("QUERY_STRING");
     if (qs) {
+      qs = zx_dup_cstr(cf->ctx, qs);
       D("QUERY_STRING(%s) %s %d", STRNULLCHK(qs), ZXID_REL, errmac_debug);
       zxid_parse_cgi(cf, &cgi, qs);
       if (ONE_OF_8(cgi.op, 'H', 'J', 'P', 'R', 'S', 'T', 'Y', 'Z')) {
@@ -1831,15 +1835,14 @@ char* zxid_simple_cf_ses(zxid_conf* cf, int qs_len, char* qs, zxid_ses* ses, int
       exit(1);
     }
     D("QUERY_STRING(%s) %s", STRNULLCHK(qs), ZXID_REL);
+    if (qs)
+      qs = zx_dup_cstr(cf->ctx, qs);
     zxid_parse_cgi(cf, &cgi, qs);
   }
   
   if (!cgi.op && !cf->bare_url_entityid)
     cgi.op = 'M';  /* By default, if no ses, check CDC and offer SSO */
   
-  cgi.uri_path = getenv("SCRIPT_NAME");
-  cgi.qs = qs;
-
   if (!cgi.sid && cf->ses_cookie_name && *cf->ses_cookie_name)
     zxid_get_sid_from_cookie(cf, &cgi, getenv("HTTP_COOKIE"));
 
@@ -1855,6 +1858,8 @@ char* zxid_simple_cf_ses(zxid_conf* cf, int qs_len, char* qs, zxid_ses* ses, int
   res = zxid_simple_no_ses_cf(cf, &cgi, ses, res_len, auto_flags);
 
 done:
+  if (qs)
+    ZX_FREE(cf->ctx, qs);
   if (buf)
     ZX_FREE(cf->ctx, buf);
   return res;

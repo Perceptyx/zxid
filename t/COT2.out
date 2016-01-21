@@ -1,6 +1,1 @@
-http://?o=B                                        /var/zxid/cot/G2JpTSX_dbdJ7frhYNpKWGiMdTs Syn Test SP
-http://sp.tas3.pt:8082/zxidhlo?o=B                 /var/zxid/cot/rUPLhvYy_-J1NrzJcGSHyNElaxQ Syn Test SP
-https://sp.employeedata.eu:8444/e2eTA/sso?o=B      /var/zxid/cot/n1GTPbQfxkLs5HgjYvUfVVTobJM Employee Data Demo SP
-http://idp.tas3.pt:8081/zxididp?o=B                /var/zxid/cot/xsKJr3DL7sUPDdbdqgC2H_eP-UM Syn Test IdP
-https://sp.citizendata.eu:8445/protected/saml?o=B  /var/zxid/cot/wBSg8UMFBbbKx2hXJobTX1JCuFE Citizen Data Demo SP
-http://sidemo:8084/zxidhlo?o=B                     /var/zxid/cot/TO0G_103gISOGB0pXmMECyMxT9A antin testi
+https://yourhost.example.com:8443/protected/saml?o=B /var/zxid/cot/BFIueOtvZx5unOXq8TaBOEDv1kM Configuration NICE_NAME: Set this to describe your site to humans, see /var/zxid/zxid.conf

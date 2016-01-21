@@ -938,7 +938,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
   return sigbuf;
 }
 
-/*() Verify a receipt signature.
+/*() Verify a zxbus receipt signature.
  *
  * cf::         ZXID configuration object, used for memory allocation and CoT mgmt
  * eid::        EntityID of the receipt issuing party, used to lookup metadata
@@ -948,7 +948,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
  * mid::        Message ID
  * dest_len::   Length of destination (-1 to use strlen(dest))
  * dest::       Destination channel for the receipt
- * deid_len::   Length of entity id (-1 to use strlen(eid))
+ * deid_len::   Length of destination entity id (-1 to use strlen(eid))
  * deid::       Entity ID of receiving party
  * body_len::   Length of data pertaining to receipt (-1 to use strlen(body))
  * body::       Data pertaining to receipt

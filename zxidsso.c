@@ -155,7 +155,7 @@ char* zxid_saml2_map_authn_ctx(char* c)
 
 /*() cgi->rs will be copied to ses->rs and from there in ab_pep to resource-id.
  * We compress and safe_base64 encode it to protect any URL special characters. */
-
+/* Called by:  zxid_start_sso_url, zxid_simple_show_idp_sel */
 void zxid_sso_set_relay_state_to_return_to_this_url(zxid_conf* cf, zxid_cgi* cgi)
 {
   struct zx_str* ss;

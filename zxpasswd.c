@@ -249,7 +249,7 @@ static int list_user(char* userdir, char* udir)
   DIR* dir;
   dir = opendir(userdir);
   if (!dir) {
-    perror("opendir for /var/zxid/idpuid/USER userdir (or other if configured)");
+    perror("opendir for /var/zxid/uid/USER userdir (or other if configured)");
     D("failed path(%s)", userdir);
     return 4;
   }
@@ -575,7 +575,7 @@ Personalizing yubikeys 2009: get and compile libyubikey-1.5 and ykpers-1.0
 ykpersonalize -y -v -ofixed=refucenikj -a6012cad434c66ab87d43d4babe463231
 ykdebug 6012cad434c66ab87d43d4babe463231 refucenikjdbrgulutnjhurchlkcckdkergfitcebf
 
-Here -ofixed specifies the "username" for purposes of /var/zxid/idpuid and
+Here -ofixed specifies the "username" for purposes of /var/zxid/uid and
 -a specifies the AES128 key that will be put in .pw file as follows:
 
 y5e0w.RTowQpk

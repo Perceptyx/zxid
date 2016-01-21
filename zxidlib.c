@@ -338,7 +338,6 @@ struct zx_str zxstr_unknown = {0,0,sizeof("UNKNOWN")-1, "UNKNOWN"};
 /* Called by:  zxid_saml2_redir, zxid_saml2_redir_url, zxid_saml2_resp_redir */
 struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* pay_load, char* relay_state)
 {
-  char* sig_alg_urlenc;
   X509* sign_cert;
   EVP_PKEY* sign_pkey;
   struct zx_str* logpath;
@@ -348,6 +347,7 @@ struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* p
   char* url;
   char* sig;
   char* p;
+  const char* sig_alg_urlenc;
   const char* mdalg;
   int zlen, len, slen, field_len, rs_len;
   field_len = strlen(field);

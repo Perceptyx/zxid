@@ -1531,20 +1531,20 @@
 #define ZXID_IDP_LIST_BRAND   2
 
 /*(c) Create New User Page
- * If user clicks "Create New User" he is redirected to this page.
+ * If user clicks "Create New User" (o=N) he is redirected to this page.
  * E.g. "zxidnewuser.pl"
  *
  * Does not affect metadata. */
 
-#define ZXID_NEW_USER_PAGE 0
+#define ZXID_NEW_USER_PAGE "zxidnewuser.pl"
 
 /*(c) Recover Password Page
- * If user clicks on recover password, redirect to this page.
+ * If user clicks on recover password link (o=W), redirect to this page.
  * E.g. "zxidrecoverpw.pl"
  *
  * Does not affect metadata. */
 
-#define ZXID_RECOVER_PASSWD 0
+#define ZXID_RECOVER_PASSWD "zxidrecoverpw.pl"
 
 /*(c) Attribute selection page
  * If attribute selection is desired during SSO, redirect to this page.
