@@ -279,30 +279,38 @@ static void test_receipt(int* argc, char*** argv, char*** env)
 
   eid = zxid_my_ent_id_cstr(cf);
 
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test13");
+  cf->bus_rcpt = 5;  /* RSA+SHA */
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test13");
   printf("13 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test13"));
-  //exit(0);
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "", -1, "d", -1, "", -1, "");
+
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "", -1, "", -1, "", -1, "");
   printf("14 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "", -1, "", -1, "", -1, ""));
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t15");
+
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t15");
   printf("15 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t15"));
   sigbuf[3] = '0';
   printf("15fail expected vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t15"));
 
-  cf->bus_rcpt = 3;
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test16");
+  cf->bus_rcpt = 3; /* SHA */
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test16");
   printf("16 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test16"));
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "");
+  sigbuf[3] = '0';
+  printf("16fail expected vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test16"));
+
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "");
   printf("17 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, ""));
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t18");
+
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t18");
   printf("18 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t18"));
 
-  cf->bus_rcpt = 1;
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test19");
+  cf->bus_rcpt = 1; /* Plain */
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test19");
   printf("19 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "test19"));
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "");
+
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "");
   printf("20 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, ""));
-  zxbus_mint_receipt(cf, sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t21");
+
+  zxbus_mint_receipt(cf,                  sizeof(sigbuf), sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t21");
   printf("21 vfy=%d\n", zxbus_verify_receipt(cf, eid, -1, sigbuf, -1, "mid1", -1, "default", -1, "eid1", -1, "t21"));
 
   exit(0);
@@ -326,7 +334,8 @@ static void zxlog_zsig_verify_print(zxid_conf* cf, int len, char* buf, char* se,
       break;
     }
     break;
-  case 'R':
+  case 'R': /* RSA detected from key */
+  case 'D': /* DSA detected from key */
     if (!siglen) {
       ERR("RSA sig claimed by no sig found. %d", siglen);
       break;
@@ -338,7 +347,6 @@ static void zxlog_zsig_verify_print(zxid_conf* cf, int len, char* buf, char* se,
       printf("RSA signature OK\n");
     }
     break;
-  case 'D':  ERR("Unimplemented sign %c", se[1]); break;
   case 'S':
     if (siglen != 20) {
       ERR("Wrong sha1 length in input %d", siglen);
@@ -397,7 +405,8 @@ int main(int argc, char** argv, char** env)
       switch (se[0]) {
       case 'P':  /* No sig */
 	break;
-      case 'R':
+      case 'R': /* RSA detected from key */
+      case 'D': /* DSA detected from key */
 	pp = unbase64_raw(buf, p, buf, zx_std_index_64);  /* In place, overwrite. */
 	++p;
 	ver = zxsig_verify_data(len-(p-buf), p, pp-buf, buf, log_verify_cert, "log vfy", "SHA1");
@@ -407,7 +416,6 @@ int main(int argc, char** argv, char** env)
 	  printf("RSA signature OK\n");
 	}
 	break;
-      case 'D':  ERR("Unimplemented sign %c", se[1]); break;
       case 'S':
 	unbase64_raw(buf, p, buf, zx_std_index_64);  /* In place, overwrite. */
 	++p;

@@ -946,7 +946,9 @@
 #define ZXID_BUS_PW 0
 
 /*(c) How Audit Bus receipts are issued
- * 0x00 = no receipt, 0x01 = plain, 0x05 = RSA-SHA1.
+ * 0x00 = no receipt, 0x01 = plain, 0x03 SHA, 0x05 = RSA-SHA.
+ * In 0x05 case the actual signing algorithm depends on key type of sign_key (see metadata)
+ * and the ZXID_BLOGSIG_DIGEST_ALGO setting.
  *
  * Does not affect metadata. */
 #define ZXBUS_RCPT 0x05

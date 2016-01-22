@@ -1,1 +1,2 @@
 https://yourhost.example.com:8443/protected/saml?o=B /var/zxid/cot/BFIueOtvZx5unOXq8TaBOEDv1kM Configuration NICE_NAME: Set this to describe your site to humans, see /var/zxid/zxid.conf
+stomp://localhost:2229/                            /var/zxid/cot/X7dtHUDQrwidpjW-jgZWfNANzJ0 Configuration NICE_NAME: Set this to describe your site to humans, see /var/zxid/bus/zxid.conf

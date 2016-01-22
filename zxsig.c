@@ -886,9 +886,9 @@ int zx_report_openssl_err(const char* logkey)
   }
 #endif
 
-  DD("%s: data(%.*s)", lk, len, data);
-  DD("%s: data above %d", lk, hexdump("data: ", data, data+len, 4096));
-  DD("%s: digest above %d", lk, hexdump("digest: ", mdbuf, mdbuf+64, 64));
+  D("%s: len=%d data(%.*s)", lk, len, len, data);
+  D("%s: data above %d", lk, hexdump("data: ", data, data+len, 4096));
+  D("%s: digest above %d", lk, hexdump("digest: ", mdbuf, mdbuf+mdlen, 64));
 
   if (!priv_key) {
     ERR(priv_key_missing_msg, geteuid(), getegid());
@@ -900,10 +900,13 @@ int zx_report_openssl_err(const char* logkey)
     rsa = EVP_PKEY_get1_RSA(priv_key);
     len = RSA_size(rsa);
     *sig = ZX_ALLOC(c, len);
+    D("RSA mdalg(%s) nid=%d sha1_nid=%d mdlen=%d siglen=%d", STRNULLCHKD(md_alg), EVP_MD_type(evp_digest), NID_sha1, mdlen, len);
 #if 1
     //if (RSA_sign(NID_sha1, mdbuf, 20, (unsigned char*)*sig, (unsigned int*)&len, rsa))  /* PKCS#1 v2.0 */      return len;
     if (RSA_sign(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)*sig, (unsigned int*)&len, rsa)) {
-      D("data = %s, SHA1 sig = %s, siglen = %d", data, *sig, len);
+      DD("data = %s, SHA1 sig = %s, siglen = %d", data, *sig, len);
+      D("RSA siglen = %d", len);
+      D("%s: sig above %d", lk, hexdump("sig: ", *sig, *sig+len, 1024));
       return len;
     }
 #else
@@ -1013,7 +1016,7 @@ int zx_report_openssl_err(const char* logkey)
  * cert::     Certificate used for signing
  * lk::       Log key. Used to make logs and error messages more meaningful
  * mdalg::    Signature hashing algorithm, detected at higher level
- * return::   ZX_SIG value. 0 (ZXSIG_OK) means success. Other values mean failure of some sort. */
+ * return::   ZXSIG value. 0 (ZXSIG_OK) means success. Other values mean failure of some sort. */
 
 /* Called by:  main, zxbus_verify_receipt, zxid_decode_redir_or_post, zxlog_zsig_verify_print */
 int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, const char* lk, const char* mdalg)
@@ -1039,9 +1042,9 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
   else if (!strcmp(mdalg, "SHA512")) { SHA512((unsigned char*)data, len, mdbuf); nid = NID_sha512; }
   else { SHA1((unsigned char*)data, len, mdbuf); nid = NID_sha1; }
 #endif
-  DD("%s: vfy data above %d", lk, hexdump("data: ", data, data+len, 8192));
-  DD("%s: vfy sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 8192));
-  DD("%s: vfy sha1 above %d", lk, hexdump("md: ", mdbuf, mdbuf+64, 64));
+  D("%s: vfy data len=%d above %d", lk, len, hexdump("data: ", data, data+len, 8192));
+  D("%s: vfy sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 8192));
+  D("%s: vfy md above %d", lk, hexdump("md: ", mdbuf, mdbuf+64, 64));
   
   evp_pubk = X509_get_pubkey(cert);
   if (!evp_pubk) {
@@ -1057,7 +1060,7 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
       zx_report_openssl_err("zxsig rsa vfy rsa get_pub rsa");
       return ZXSIG_BAD_CERT;
     }
- 
+    D("RSA mdalg(%s) nid=%d sha1_nid=%d mdlen=%d siglen=%d", STRNULLCHKD(mdalg), EVP_MD_type(evp_digest), NID_sha1, mdlen, siglen);
 #if 1
     verdict = RSA_verify(EVP_MD_type(evp_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sig, siglen, rsa_pubk);
 #else
@@ -1077,12 +1080,13 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
     if (!verdict) {
       ERR("RSA signature verify in %s data failed. Perhaps you have bad or no certificate(%p) len=%d data=%p siglen=%d sig=%p", lk, cert, len, data, siglen, sig);
       zx_report_openssl_err(lk);
-      D("RSA_vfy(%s) sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 4096));
+      D("RSA_vfy(%s) bad sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 4096));
       return ZXSIG_VFY_FAIL;
     } else {
       D("RSA verify OK %d", verdict);
       return 0;
     }
+
   case EVP_PKEY_DSA:
     dsa_pubk = EVP_PKEY_get1_DSA(evp_pubk);
     if (!dsa_pubk) {
@@ -1090,7 +1094,7 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
       zx_report_openssl_err("zxsig dsa vfy dsa get_pub dsa");
       return ZXSIG_BAD_CERT;
     }
-  
+    D("DSA mdalg(%s) nid=%d sha1_nid=%d mdlen=%d siglen=%d", STRNULLCHKD(mdalg), EVP_MD_type(evp_digest), NID_sha1, mdlen, siglen);  
 #if 1
     verdict = DSA_verify(EVP_MD_type(evp_digest), (unsigned char*)mdbuf, mdlen, (unsigned char*)sig, siglen, dsa_pubk);
     //verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
@@ -1108,7 +1112,6 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
     else
       verdict = DSA_verify(NID_sha1, mdbuf, 20, (unsigned char*)sig, siglen, dsa_pubk);
 #endif
-
     if (!verdict) {
       ERR("DSA signature verify in %s data failed. Perhaps you have bad or no certificate(%p) len=%d data=%p siglen=%d sig=%p", lk, cert, len, data, siglen, sig);
       zx_report_openssl_err(lk);

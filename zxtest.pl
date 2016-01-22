@@ -400,6 +400,8 @@ sub send_req {
     my $curl = $curlP;
     $curl->setopt(CURLOPT_FOLLOWLOCATION, 1);
     $curl->setopt(CURLOPT_MAXREDIRS, 5);
+    #$curl->setopt(CURLOPT_SSL_VERIFYHOST, 2);  # 2=verify (default, 0=disable check
+    $curl->setopt(CURLOPT_SSL_VERIFYPEER, 0);  # 1=verify (default, 0=disable check
     $curl->setopt(CURLOPT_UNRESTRICTED_AUTH, 1);
     #$curl->setopt(CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     #$curl->setopt(CURLOPT_USERPWD, "sampo:12345678");  # ***
@@ -430,6 +432,8 @@ sub send_req_post_soap {
     my $curl = $curlP;
     $curl->setopt(CURLOPT_FOLLOWLOCATION, 1);
     $curl->setopt(CURLOPT_MAXREDIRS, 5);
+    #$curl->setopt(CURLOPT_SSL_VERIFYHOST, 2);  # 2=verify (default, 0=disable check
+    $curl->setopt(CURLOPT_SSL_VERIFYPEER, 0);  # 1=verify (default, 0=disable check
     $curl->setopt(CURLOPT_UNRESTRICTED_AUTH, 1);
     #$curl->setopt(CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     #$curl->setopt(CURLOPT_USERPWD, "sampo:12345678");  # ***
@@ -466,6 +470,8 @@ sub send_http {
     #my $curl = new WWW::Curl::Easy;   # see 1st arg
     $curl->setopt(CURLOPT_FOLLOWLOCATION, 1);
     $curl->setopt(CURLOPT_MAXREDIRS, 5);
+    #$curl->setopt(CURLOPT_SSL_VERIFYHOST, 2);  # 2=verify (default, 0=disable check
+    $curl->setopt(CURLOPT_SSL_VERIFYPEER, 0);  # 1=verify (default, 0=disable check
     $curl->setopt(CURLOPT_UNRESTRICTED_AUTH, 1);
     $curl->setopt(CURLOPT_COOKIEFILE, ''); # Empty file enables cookie tracking
     $curl->setopt(CURLOPT_WRITEFUNCTION, \&resp_cb);
@@ -491,6 +497,8 @@ sub send_http_post {
     #my $curl = new WWW::Curl::Easy;  # see 1st arg
     $curl->setopt(CURLOPT_FOLLOWLOCATION, 1);
     $curl->setopt(CURLOPT_MAXREDIRS, 5);
+    #$curl->setopt(CURLOPT_SSL_VERIFYHOST, 2);  # 2=verify (default, 0=disable check
+    $curl->setopt(CURLOPT_SSL_VERIFYPEER, 0);  # 1=verify (default, 0=disable check
     $curl->setopt(CURLOPT_UNRESTRICTED_AUTH, 1);
     $curl->setopt(CURLOPT_COOKIEFILE, ''); # Empty file enables cookie tracking
     $curl->setopt(CURLOPT_WRITEFUNCTION, \&resp_cb);
@@ -528,7 +536,7 @@ sub wait_response {
 	my $active_transfers = $curlm->perform;
 	if ($active_transfers == $active_handles) {
 	    #warn "  url($easy_url{$curl_id})";
-	    select(undef, undef, undef, 0.1);
+	    select(undef, undef, undef, 0.1);   # transfers incomplete, wait a little and try again
 	    next;
 	}
 	warn "  url($easy_url{$tcid}) at=$active_transfers ah=$active_handles" if $trace;
@@ -546,7 +554,7 @@ sub wait_response {
 	    }
 	    #warn "HTTP complete $id URL($easy_url{$id})";
 	    $qs = cgidec $qs{$id};
-	    $rsp = decode_utf8($resp{$id});
+	    $rsp = decode_utf8($resp{$id});  # http response
 	    delete $resp{$id};
 	    #warn "resp($rsp) id=$id latency=$latency ($send_ts{$id})" if $wstrace>1;
 	    warn "resp($rsp) id=$id qsid($qs{$id}) latency=$latency\n\n" if $wstrace>1 && $$qs{'id'} ne 'intupd';
@@ -611,12 +619,12 @@ sub wait_response {
 		    $laststatus = 'OK';
 		}
 	    } elsif ($cmd{$id} eq 'AR') {
-		# Extract from the POST binding  page from fields to pass on
+		# Extract from the POST binding page form fields to pass on
 		($AR) = $rsp =~ /<input name="ar" value="(.*?)"/;
 		$laststatus = 'OK';
 		$lasterror = "len=".length($rsp);
 	    } elsif ($cmd{$id} eq 'SP') {
-		# Extract from the POST binding  page from fields to pass on
+		# Extract from the POST binding page form fields to pass on
 		($SAMLResponse) = $rsp =~ /<input name="SAMLResponse" value="(.*?)"/;
 		$laststatus = 'OK';
 		$lasterror = "len=".length($rsp);
@@ -1296,6 +1304,10 @@ CMD('COT9', 'zxcot gen epr add',   "./zxcot -e http://localhost:1234/ testabstra
 CMD('COT10', 'zxcot my meta',      "./zxcot -p http://localhost:1234/?o=B");
 CMD('COT11', 'zxcot list s2',      "./zxcot -s /var/zxid/cot");
 
+# ~/zxid/zxcot -c CPATH=/var/zxid/bus/ -dirs
+# ~/zxid/zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ~/zxid/zxcot -a
+# ~/zxid/zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ~/zxid/zxcot -c CPATH=/var/zxid/bus/ -a
+
 CMD('LOG1', 'zxlogview list',      "./zxlogview /var/zxid/pem/logsign-nopw-cert.pem /var/zxid/pem/logenc-nopw-cert.pem <t/act");
 CMD('LOG2', 'zxlogview test',      "./zxlogview -t /var/zxid/pem/logsign-nopw-cert.pem /var/zxid/pem/logenc-nopw-cert.pem");
 CMD('LOG3', 'zxlogview receipt',   "./zxlogview -t1");
@@ -1306,12 +1318,12 @@ CMD('SMIME2', 'smime key gen joe', "echo 'commonName=Joe Smith|emailAddress=joe\
 CMD('SMIME3', 'smime ca',          "./smime -ca tmp/capriv_ss.pem passwd 1 <tmp/req.pem >tmp/cert.pem; wc -l tmp/cert.pem");
 CMD('SMIME4', 'smime code sig',    "./smime -ds tmp/priv_ss.pem passwd <t/XML1.out >tmp/XML1.sig; wc -l tmp/XML1.sig");
 CMD('SMIME5', 'smime code vfy',    "cat tmp/priv_ss.pem tmp/XML1.sig |./smime -dv t/XML1.out");
-CMD('SMIME6', 'smime sig',         "echo foo|./smime -mime text/plain|./smime -s tmp/priv_ss.pem passwd >tmp/foo.p7m; wc -l tmp/foo.p7m");
-CMD('SMIME7', 'smime clear sig',   "echo foo|./smime -mime text/plain|./smime -cs tmp/priv_ss.pem passwd >tmp/foo.clear.smime; wc -l tmp/foo.clear.smime");
-CMD('SMIME8', 'smime pubenc',      "echo foo|./smime -mime text/plain|./smime -e tmp/priv_ss.pem|wc -l");
+CMD('SMIME6', 'smime sig',          "echo foo|./smime -mime text/plain|./smime -s tmp/priv_ss.pem passwd >tmp/foo.p7m; wc -l tmp/foo.p7m");
+CMD('SMIME7', 'smime clear sig',    "echo foo|./smime -mime text/plain|./smime -cs tmp/priv_ss.pem passwd >tmp/foo.clear.smime; wc -l tmp/foo.clear.smime");
+CMD('SMIME8', 'smime pubenc',       "echo foo|./smime -mime text/plain|./smime -e tmp/priv_ss.pem|wc -l");
 CMD('SMIME8b', 'smime pubencdec',   "echo foo|./smime -mime text/plain|./smime -e tmp/priv_ss.pem|./smime -d tmp/priv_ss.pem passwd");
-CMD('SMIME9', 'smime sigenc',      "echo foo|./smime -mime text/plain|./smime -cs tmp/priv_ss.pem passwd|./smime -e tmp/priv_ss.pem");
-CMD('SMIME10', 'smime encsig',     "echo foo|./smime -mime text/plain|./smime -e tmp/priv_ss.pem|./smime -cs tmp/priv_ss.pem passwd");
+CMD('SMIME9', 'smime sigenc',       "echo foo|./smime -mime text/plain|./smime -cs tmp/priv_ss.pem passwd|./smime -e tmp/priv_ss.pem");
+CMD('SMIME10', 'smime encsig',      "echo foo|./smime -mime text/plain|./smime -e tmp/priv_ss.pem|./smime -cs tmp/priv_ss.pem passwd");
 CMD('SMIME11', 'smime multi sigenc', "echo bar|./smime -m image/gif t/XML1.out|./smime -cs tmp/priv_ss.pem passwd|./smime -e tmp/priv_ss.pem");
 CMD('SMIME12', 'smime query sig',   "./smime -qs <tmp/foo.p7m");
 CMD('SMIME13', 'smime verify',      "./smime -v tmp/priv_ss.pem <tmp/foo.p7m");
@@ -1324,14 +1336,14 @@ CMD('SMIME19', 'smime pkcs12 imp',  "./smime -p12-pem pw-for-p12 passwd <tmp/me.
 CMD('SMIME20', 'smime query req',   "./smime -qr <tmp/req.pem");
 CMD('SMIME21', 'smime covimp',      "echo foo|./smime -base64|./smime -cat|./smime -unbase64");
 
-CMD('SIG1',  'sig vry shib resp',  "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <cal-private/shib-resp.xml");
-CMD('SIG2',  'sig vry shib post',  "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <cal-private/shib-resp.qs");
+#CMD('SIG1',  'sig vry shib resp',  "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <cal-private/shib-resp.xml");
+#CMD('SIG2',  'sig vry shib post',  "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <cal-private/shib-resp.qs");
 
 CMD('SIG3',  'sig vry zxid resp',  "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <t/anrs1.xml");
 CMD('SIG4',  'sig vry zxid post',  "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <t/anrs1.post");
 
-CMD('SIG5',  'sig vry sm resp',    "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <t/siteminder-resp.xml");
-CMD('SIG6',  'sig vry sm post',    "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <t/siteminder-resp.b64");
+#CMD('SIG5',  'sig vry sm resp',    "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <t/siteminder-resp.xml");
+#CMD('SIG6',  'sig vry sm post',    "./zxdecode -v -s -c AUDIENCE_FATAL=0 -c TIMEOUT_FATAL=0 -c DUP_A7N_FATAL=0 -c DUP_MSG_FATAL=0 <t/siteminder-resp.b64");
 
 CMD('SIG7',  '* sig vry shib resp undecl prefix deep', "./zxdecode -v -s -s <t/shib-a7n2.xml");  # fail due to inclusive ns prefix that is declared only deep in the document
 CMD('SIG8',  '* sig vry ping resp', "./zxdecode -v -s -s <t/ping-resp.xml");  # Ping miscanonicalizes. Fail due to lack of InclusiveNamespace/@PrefixList="xs" (and declares namespace deep in the document)
@@ -1457,12 +1469,27 @@ CMD('ZXC-WS10', 'AS + WSF call hr-xml mod', "./zxcall -d -a http://idp.tas3.pt:8
 
 ### Simulated browsing tests (a bit fragile)
 
-tA('ST','LOGIN-IDP1', 'IdP Login screen',  'http://idp.tas3.pt:8081/zxididp?o=F');
-tA('ST','LOGIN-IDP2', 'IdP Give password', 'http://idp.tas3.pt:8081/zxididp?au=&alp=+Login+&au=test&ap=foo&fc=1&fn=prstnt&fq=&fy=&fa=&fm=&fp=0&ff=0&ar=&zxapp=');
-tA('ST','LOGIN-IDP3', 'IdP Local Logout',  'http://idp.tas3.pt:8081/zxididp?gl=+Local+Logout+');
+#$idpurl='http://idp.tas3.pt:8081/zxididp';
 
-tA('ST','SSOHLO1', 'IdP selection screen', 'http://sp1.zxidsp.org:8081/zxidhlo?o=E');
-tA('AR','SSOHLO2', 'Selected IdP', 'http://sp1.zxidsp.org:8081/zxidhlo?e=&l0http%3A%2F%2Fidp.tas3.pt%3A8081%2Fzxididp=+Login+with+TAS3+Demo+IdP+%28http%3A%2F%2Fidp.tas3.pt%3A8081%2Fzxididp%29+&fc=1&fn=prstnt&fr=&fq=&fy=&fa=&fm=&fp=0&ff=0');
+# sudo ./zxid_httpd -S /var/zxid/pem/enc-nopw-cert.pem -u sampo -c 'zxid*' &
+#$idpurl='https://yourhost.example.com/zxididp';
+#$spurl='https://yourhost.example.com/zxidhlo';
+
+# ./zxid_httpd -S /var/zxid/pem/enc-nopw-cert.pem -p 8443 -u sampo -c 'zxid*' &
+$idpurl='https://yourhost.example.com:8443/zxididp';
+$spurl='https://yourhost.example.com:8443/zxidhlo';
+
+CMD('META2', 'IdP meta', "curl -k $idpurl?o=B");
+CMD('META3', 'SP meta',  "curl -k $spurl?o=B");
+CMD('META4', 'IdP conf', "curl -k $idpurl?o=d");
+CMD('META5', 'SP conf',  "curl -k $spurl?o=d");
+
+tA('ST','LOGIN-IDP1', 'IdP Login screen',  "$idpurl?o=F");
+tA('ST','LOGIN-IDP2', 'IdP Give password', "$idpurl?au=&alp=+Login+&au=test&ap=foo&fc=1&fn=prstnt&fq=&fy=&fa=&fm=&fp=0&ff=0&ar=&zxapp=");
+tA('ST','LOGIN-IDP3', 'IdP Local Logout',  "$idpurl?gl=+Local+Logout+");
+
+tA('ST','SSOHLO1', 'IdP selection screen', "$spurl?o=E");
+tA('AR','SSOHLO2', 'Selected IdP', "$spurl?e=&l0http%3A%2F%2Fidp.tas3.pt%3A8081%2Fzxididp=+Login+with+TAS3+Demo+IdP+%28http%3A%2F%2Fidp.tas3.pt%3A8081%2Fzxididp%29+&fc=1&fn=prstnt&fr=&fq=&fy=&fa=&fm=&fp=0&ff=0");
 
 tA('SP','SSOHLO3', 'Login to IdP', 'http://idp.tas3.pt:8081/zxididp?au=&alp=+Login+&au=test&ap=foo&fc=1&fn=prstnt&fq=&fy=&fa=&fm=&fp=0&ff=0&ar=$AR&zxapp=');
 

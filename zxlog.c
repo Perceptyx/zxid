@@ -888,22 +888,20 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
   sigbuf[3+ZXLOG_TIME_SIZ+1+mid_len] = 0;
   
   switch (cf->bus_rcpt & 0x06) {
-  case 0x02:   /* SP plain sha1 */
+  case 0x02:   /* SP plain sha */
     if (sigbuf_len < 3+ZXLOG_TIME_SIZ+1+mid_len+1+27+1) { ERR("Too small sigbuf %d", sigbuf_len); break; }
+    D("sha len=%d input(%.*s)", len, len, buf);
     sigbuf[3+ZXLOG_TIME_SIZ+1+mid_len] = ' ';
     sha1_safe_base64(sigbuf+3+ZXLOG_TIME_SIZ+1+mid_len+1, len, buf);
     sigbuf[3+ZXLOG_TIME_SIZ+1+mid_len+1+27] = 0;
     sigbuf[0] = 'S';
     break;
-  case 0x04:   /* RP RSA-SHA1 signature */
+  case 0x04:   /* RP RSA-SHA signature (detected from key) */
+  case 0x06:   /* RP DSA-SHA signature (detected from key) */
     LOCK(cf->mx, "mint_receipt");      
-#if 0
-    if (!cf->log_sign_pkey)
-      cf->log_sign_pkey = zxid_read_private_key(cf, "logsign-nopw-cert.pem");
-#else
+    /* The sign_pkey is used instead of log_sign_pkey because metadata is used to distribute it. */
     if (!cf->sign_pkey)
       cf->sign_pkey = zxid_read_private_key(cf, "sign-nopw-cert.pem");
-#endif
     UNLOCK(cf->mx, "mint_receipt");
     DD("sign_pkey=%p buf(%.*s) len=%d buf(%s)", cf->sign_pkey, len, buf, len, buf);
     if (!cf->sign_pkey)
@@ -917,10 +915,12 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
     sigbuf[3+ZXLOG_TIME_SIZ+1+mid_len] = ' ';
     p = base64_fancy_raw(zbuf, zlen, sigbuf+3+ZXLOG_TIME_SIZ+1+mid_len+1, safe_basis_64, 1<<31, 0, 0, '.');
     *p = 0;
-    sigbuf[0] = 'R';
-    break;
-  case 0x06:   /* DP DSA-SHA1 signature */
-    ERR("DSA-SHA1 signature not implemented %x", cf->bus_rcpt);
+    switch (EVP_PKEY_type(cf->sign_pkey->type)) {
+    case EVP_PKEY_RSA: sigbuf[0] = 'R'; break;
+    case EVP_PKEY_DSA: sigbuf[0] = 'D'; break;
+    case EVP_PKEY_EC:  sigbuf[0] = 'C'; break;
+    default: sigbuf[0] = 'E'; ERR("Unknown pkey type=%d", EVP_PKEY_type(cf->sign_pkey->type));
+    }
     break;
   case 0:      /* Plain logging, no signing, no encryption. */
     sigbuf[0] = 'P';
@@ -957,10 +957,11 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
 /* Called by:  stomp_got_ack, test_receipt x10, zxbus_send_cmdf */
 int zxbus_verify_receipt(zxid_conf* cf, const char* eid, int sigbuf_len, char* sigbuf, int mid_len, const char* mid, int dest_len, const char* dest, int deid_len, const char* deid, int body_len, const char* body)
 {
-  int ver = -1, len, zlen;
+  int ver = -4, len, zlen;
   char* p;
   char* buf;
   char sig[1024];
+  char sha1[20];
   zxid_entity* meta;
 
   if (sigbuf_len == -1)
@@ -1013,26 +1014,49 @@ int zxbus_verify_receipt(zxid_conf* cf, const char* eid, int sigbuf_len, char* s
 
   switch (sigbuf[0]) {
   case 'R':
+  case 'D':
+  case 'C':
     meta = zxid_get_ent(cf, eid);
     if (!meta) {
       ERR("Unable to find metadata for eid(%s) in verify receipt", eid);
-      return -1;
+      ver = -2;
+      break;
     }
     //D("check_private_key(%d)",X509_check_private_key(meta->sign_cert, cf->sign_pkey));
     if (SIMPLE_BASE64_PESSIMISTIC_DECODE_LEN(sigbuf_len) > sizeof(sig)) {
       ERR("Available signature decoding buffer is too short len=%d, need=%d", (int)sizeof(sig), SIMPLE_BASE64_PESSIMISTIC_DECODE_LEN(sigbuf_len));
-      return -1;
+      ver = -3;
+      break;
     }
     p = sigbuf+3+ZXLOG_TIME_SIZ+1+mid_len+1;
     DD("zx-rcpt-sig(%.*s) sigbuf_len=%d", sigbuf_len, sigbuf, sigbuf_len);
     D("sigbuf(%.*s) len=%d sigbuf=%p lim=%p", (int)(sigbuf_len-(p-sigbuf)), p, (int)(sigbuf_len-(p-sigbuf)), p, sigbuf+sigbuf_len);
-    p = unbase64_raw(p, sigbuf+sigbuf_len, sig, zx_std_index_64);  /* In place, overwrite. */
+    p = unbase64_raw(p, sigbuf+sigbuf_len, sig, zx_std_index_64);
 
     ver = zxsig_verify_data(len, buf, p-sig, sig, meta->sign_cert, "rcpt vfy", cf->blobsig_digest_algo);
 
     if (ver)
       D("ver=%d buf(%.*s) len=%d", ver, len, buf, len);
     break;
+  case 'S':
+    if (SIMPLE_BASE64_PESSIMISTIC_DECODE_LEN(sigbuf_len) > sizeof(sig)) {
+      ERR("Available signature decoding buffer is too short len=%d, need=%d", (int)sizeof(sig), SIMPLE_BASE64_PESSIMISTIC_DECODE_LEN(sigbuf_len));
+      ver = -3;
+      break;
+    }
+    p = sigbuf+3+ZXLOG_TIME_SIZ+1+mid_len+1;
+    unbase64_raw(p, sigbuf+sigbuf_len, sig, zx_std_index_64);
+    SHA1((unsigned char*)buf, len, (unsigned char*)sha1);
+    ver = memcmp(sig, sha1, 20);  /* 0 on success */
+    if (ver) {
+      ERR("SHA1 mismatch in receipt %d",ver);
+      D("sha len=%d input(%.*s)", len, len, buf);
+      D("sigbuf(%.*s) len=%d sigbuf=%p lim=%p", (int)(sigbuf_len-(p-sigbuf)), p, (int)(sigbuf_len-(p-sigbuf)), p, sigbuf+sigbuf_len);
+      D("old sha1 %d", hexdmp("old sha1",sig,20,20));
+      D("new sha1 %d", hexdmp("new sha1",sha1,20,20));
+    }
+    break;
+  case 'P': D("P: no sig to check %d",0); ver = 0; break;
   default:
     ERR("Unsupported receipt signature algo(%c) sig(%.*s)", sigbuf[0], sigbuf_len, sigbuf);
   }
@@ -1042,7 +1066,7 @@ int zxbus_verify_receipt(zxid_conf* cf, const char* eid, int sigbuf_len, char* s
 
 int zxbus_persist_flag = 1;
 
-/*() Attempt to presist a message.
+/*() Attempt to persist a message.
  * Persisting involves synchronous write and an atomic filesystem rename
  * operation, ala Maildir. The persisted message is a file that contains
  * the entire STOMP 1.1 PDU including headers and body. Filename is the sha1

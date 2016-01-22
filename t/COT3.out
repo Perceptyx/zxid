@@ -1,1 +1,2 @@
 https://yourhost.example.com:8443/protected/saml?o=B
+stomp://localhost:2229/
