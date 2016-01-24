@@ -443,12 +443,11 @@ sub send_req_post_soap {
     $curl->setopt(CURLOPT_WRITEFUNCTION, \&resp_cb);
     $curl->setopt(CURLOPT_FILE, $curl_id);
     $resp{$curl_id} = '';
-    $curl->setopt(CURLOPT_HTTPPOST, 1);   # SOAP Post
 
     #$curl->setopt(CURLOPT_POSTFIELDS, qq(<?xml version="1.0" encoding="utf-8"?><soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope"><soap12:Body>$body</soap12:Body></soap12:Envelope>));
     # Curl will reference mem so make sure it will not be garbage collected until the handle is
     $easy_post{$curl_id} = qq(<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>$body</soap:Body></soap:Envelope>);
-    $curl->setopt(CURLOPT_POSTFIELDS, $easy_post{$curl_id});
+    $curl->setopt(CURLOPT_POSTFIELDS, $easy_post{$curl_id});  # implies CURLOPT_POST
 
     #my @hdr = ("Content-Type: application/soap+xml","User-Agent: wrevd-0.2");
     my @hdr = ("Content-Type: text/xml","User-Agent: wrevd-0.2-$rev",'SOAPAction: "http://timebi.com/UpdatePositions"');
@@ -512,9 +511,8 @@ sub send_http_post {
     #}
 
     $resp{$curl_id} = '';
-    $curl->setopt(CURLOPT_HTTPPOST, 1);
     $easy_post{$curl_id} = $body;
-    $curl->setopt(CURLOPT_POSTFIELDS, $easy_post{$curl_id});
+    $curl->setopt(CURLOPT_POSTFIELDS, $easy_post{$curl_id});  # implies CURLOPT_POST
     my @hdr = ("User-Agent: wrevd-0.2-$rev");
     $curl->setopt(CURLOPT_HTTPHEADER, \@hdr);
     $easy_url{$curl_id} = $url;  # Curl will reference mem so make sure it will not be garbage collected until the handle is
@@ -1491,14 +1489,14 @@ tA('ST','LOGIN-IDP3', 'IdP Local Logout',  "$idpurl?gl=+Local+Logout+");
 tA('ST','SSOHLO1', 'IdP selection screen', "$spurl?o=E");
 tA('AR','SSOHLO2', 'Selected IdP', "$spurl?e=&l0http%3A%2F%2Fidp.tas3.pt%3A8081%2Fzxididp=+Login+with+TAS3+Demo+IdP+%28http%3A%2F%2Fidp.tas3.pt%3A8081%2Fzxididp%29+&fc=1&fn=prstnt&fr=&fq=&fy=&fa=&fm=&fp=0&ff=0");
 
-tA('SP','SSOHLO3', 'Login to IdP', 'http://idp.tas3.pt:8081/zxididp?au=&alp=+Login+&au=test&ap=foo&fc=1&fn=prstnt&fq=&fy=&fa=&fm=&fp=0&ff=0&ar=$AR&zxapp=');
+tA('SP','SSOHLO3', 'Login to IdP', "$idpurl?au=&alp=+Login+&au=test&ap=foo&fc=1&fn=prstnt&fq=&fy=&fa=&fm=&fp=0&ff=0&ar=$AR&zxapp=");
 
-pA('ST','SSOHLO4', 'POST to SP', 'http://sp1.zxidsp.org:8081/zxidhlo?o=P', "SAMLResponse=$SAMLResponse");
-tA('ST','SSOHLO5', 'SP SOAP Az',      'http://sp1.zxidsp.org:8081/zxidhlo?gv=1');
-tA('ST','SSOHLO6', 'SP SOAP defed',   'http://sp1.zxidsp.org:8081/zxidhlo?gu=1');
-tA('ST','SSOHLO7', 'SP SOAP defed',   'http://sp1.zxidsp.org:8081/zxidhlo?gt=1');
-tA('ST','SSOHLO8', 'SP SOAP logout',  'http://sp1.zxidsp.org:8081/zxidhlo?gs=1');
-tA('ST','SSOHLO9', 'SP local logout', 'http://sp1.zxidsp.org:8081/zxidhlo?gl=+Local+Logout+');
+pA('ST','SSOHLO4', 'POST to SP',      "$spurl?o=P", "SAMLResponse=$SAMLResponse");
+tA('ST','SSOHLO5', 'SP SOAP Az',      "$spurl?gv=1");
+tA('ST','SSOHLO6', 'SP SOAP defed',   "$spurl?gu=1");
+tA('ST','SSOHLO7', 'SP SOAP defed',   "$spurl?gt=1");
+tA('ST','SSOHLO8', 'SP SOAP logout',  "$spurl?gs=1");
+tA('ST','SSOHLO9', 'SP local logout', "$spurl?gl=+Local+Logout+");
 
 #tA('ST','javaexit', 'http://sp1.zxidsp.org:8080/appdemo?exit');
 
@@ -1526,26 +1524,37 @@ CMD('OAZ-DCR1', 'Dynamic CLient Registration', "./zxumacall -u 'http://sp.tas3.p
 ###
 
 # N.B. Although the nonSSL port should be 2228, we use 2229 so we can use same metadata
-$busd_conf = "PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/";
-$bus_cli_conf = "PATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buscli.zxid.org/";
-$bus_list_conf = "PATH=/var/zxid/buslist/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buslist.zxid.org/";
-$bus_list2_conf = "PATH=/var/zxid/buslist2/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buslist2.zxid.org/";
+$busd_conf = "CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/";
+$bus_cli_conf = "CPATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buscli.zxid.org/";
+$bus_cli_conf_badpw = "CPATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw124&BURL=https://buscli.zxid.org/";
+$bus_list_conf = "CPATH=/var/zxid/buslist/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist.zxid.org/";
+$bus_list2_conf = "CPATH=/var/zxid/buslist2/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist2.zxid.org/";
 
 # For SSL tests it is important to NOT supply BUS_PW so that ClientTLS takes precedence.
-$bussd_conf = "PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomps://localhost:2229/";
-$buss_cli_conf = "PATH=/var/zxid/buscli/&BUS_URL=stomps://localhost:2229/&URL=https://buscli.zxid.org/";
-$buss_list_conf = "PATH=/var/zxid/buslist/&BUS_URL=stomps://localhost:2229/&URL=https://buslist.zxid.org/";
-$buss_list2_conf = "PATH=/var/zxid/buslist2/&BUS_URL=stomps://localhost:2229/&URL=https://buslist2.zxid.org/";
+$bussd_conf = "CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomps://localhost:2229/";
+$buss_cli_conf = "CPATH=/var/zxid/buscli/&BUS_URL=stomps://localhost:2229/&BURL=https://buscli.zxid.org/";
+$buss_list_conf = "CPATH=/var/zxid/buslist/&BUS_URL=stomps://localhost:2229/&BURL=https://buslist.zxid.org/";
+$buss_list2_conf = "CPATH=/var/zxid/buslist2/&BUS_URL=stomps://localhost:2229/&BURL=https://buslist2.zxid.org/";
 
 # Metadata exchange
-# ./zxcot -c 'PATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buscli.zxid.org/' -m | ./zxcot -c 'PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -a
-# ./zxcot -c 'PATH=/var/zxid/buslist/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buslist.zxid.org/' -m | ./zxcot -c 'PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -a
-# ./zxcot -c "PATH=/var/zxid/buslist2/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buslist2.zxid.org/" -m | ./zxcot -c 'PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -a
+#./zxcot -c 'CPATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buscli.zxid.org/' -dirs
+#./zxcot -c 'CPATH=/var/zxid/buslist/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist.zxid.org/' -dirs
+#./zxcot -c 'CPATH=/var/zxid/buslist2/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist2.zxid.org/' -dirs
 
-# ./zxcot -c 'PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ./zxcot -c 'PATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buscli.zxid.org/' -a
-# ./zxcot -c 'PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ./zxcot -c 'PATH=/var/zxid/buslist/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buslist.zxid.org/' -a
-# ./zxcot -c 'PATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ./zxcot -c 'PATH=/var/zxid/buslist2/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&URL=https://buslist2.zxid.org/' -a
+# Metadata from clients to server
+# ./zxcot -c 'CPATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buscli.zxid.org/' -m | ./zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -a
+# ./zxcot -c 'CPATH=/var/zxid/buslist/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist.zxid.org/' -m | ./zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -a
+# ./zxcot -c "CPATH=/var/zxid/buslist2/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist2.zxid.org/" -m | ./zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -a
 
+# Metadata from server to clients
+# ./zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ./zxcot -c 'CPATH=/var/zxid/buscli/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buscli.zxid.org/' -a
+# ./zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ./zxcot -c 'CPATH=/var/zxid/buslist/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist.zxid.org/' -a
+# ./zxcot -c 'CPATH=/var/zxid/bus/&NON_STANDARD_ENTITYID=stomp://localhost:2229/' -m | ./zxcot -c 'CPATH=/var/zxid/buslist2/&BUS_URL=stomp://localhost:2229/&BUS_PW=pw123&BURL=https://buslist2.zxid.org/' -a
+
+# Provision bus users
+# echo -n 'pw123' | ./zxpasswd -new 2E_uLovDu748vn9dWEM6tqVzqUQ /var/zxid/bus/uid/  # buslist
+# echo -n 'pw123' | ./zxpasswd -new YJCLRHKIxyjlbnwT3bJrjgphlDA /var/zxid/bus/uid/  # buslist2
+# echo -n 'pw123' | ./zxpasswd -new RjZmauuglW8TSTZjfGQ5zldszZM /var/zxid/bus/uid/  # buscli
 
 # To create bus users, you should follow these steps
 # 0. Create dir: ./zxmkdirs.sh /var/zxid/buslist2/
@@ -1567,6 +1576,7 @@ CMD('ZXBUS02', 'Fail connect list',  "./zxbuslist -d -d -c '$bus_list_conf'", 25
 tst_nl();
 DAEMON('ZXBUS10', 'zxbusd 1', 2229, "./zxbusd -pid tmp/ZXBUS10.pid -c '$busd_conf' -d -d -nthr 1 -nfd 11 -npdu 500 -p stomp:0.0.0.0:2229");
 DAEMON('ZXBUS10b', 'zxbuslist 1', -1, "./zxbuslist -pid tmp/ZXBUS10b.pid -d -d -c '$bus_list_conf'");
+CMD('ZXBUS11a', 'Bad pw', "./zxbustailf -d -d -c '$bus_cli_conf_badpw' -e 'foo bar'");
 CMD('ZXBUS11', 'One shot', "./zxbustailf -d -d -c '$bus_cli_conf' -e 'foo bar'");
 STILL('ZXBUS10b', 'zxbuslist 1 still there');
 CMD('ZXBUS12', 'zero len', "./zxbustailf -d -d -c '$bus_cli_conf' -e ''");

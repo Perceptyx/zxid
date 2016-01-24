@@ -48,7 +48,7 @@
 extern int verbose;  /* defined in option parsing in zxbusd.c */
 extern char* zxbus_path;
 
-/*() Allocate an entity
+/*() Allocate a bus entity
  * locking:: must be called inside shf->ent_mut
  * return:: pointer to hi_ent on success, 0 on failure */
 
@@ -68,7 +68,14 @@ struct hi_ent* zxbus_new_ent(struct hiios* shf, int len, const char* eid)
   return ent;
 }
 
-/*() Load an entity (and check that it exists)
+/*() Allocate a bus entity (and check that it exists)
+ * The bus entities are special users in /var/zxid/bus/uid/
+ * hierarchy. The user name is the succinct id formed
+ * by sha1-base64 of the Entity ID. New bus entities can be provisioned
+ * using the zxpasswd(1) tool, e.g.
+ *
+ *   echo -n 'pw123' | ./zxpasswd -new 2E_uLovDu748vn9dWEM6tqVzqUQ /var/zxid/bus/uid/
+ *
  * locking:: must be called inside shf->ent_mut
  * return:: pointer to hi_ent on success, 0 on failure */
 

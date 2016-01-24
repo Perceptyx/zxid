@@ -1,5 +1,5 @@
 /* zxidsimp.c  -  Handwritten zxid_simple() API
- * Copyright (c) 2012-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -112,7 +112,7 @@ int zxid_conf_to_cf_len(zxid_conf* cf, int conf_len, const char* conf)
     }
 
     buf = getenv(ZXID_ENV_PREFIX "PRE_CONF");
-    D("Check " ZXID_ENV_PREFIX "PRE_CONF(%s)", buf);
+    D("Check " ZXID_ENV_PREFIX "PRE_CONF(%s)", STRNULLCHKD(buf));
     if (buf) {
       /* Copy the conf string because we are going to modify it in place. */
       D("Applying " ZXID_ENV_PREFIX "PRE_CONF(%s)", buf);

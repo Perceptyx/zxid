@@ -179,7 +179,7 @@ int zx_yubikey_authn(const char* cpath, char* uid, const char* passw, const char
  * by default using /var/zxid/uid/UID/.pw file. When filesystem
  * backend is used, for safety reasons the uid (user) component can
  * not have certain characters, such as slash (/) or sequences like "..".
- * See also: zxpasswd.c
+ * See also: zxpasswd.c (user provisioning tool)
  *
  * return:: 0 on failure, 1 or larger on success depending on authentication quality  */
 
