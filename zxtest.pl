@@ -1576,7 +1576,7 @@ CMD('ZXBUS02', 'Fail connect list',  "./zxbuslist -d -d -c '$bus_list_conf'", 25
 tst_nl();
 DAEMON('ZXBUS10', 'zxbusd 1', 2229, "./zxbusd -pid tmp/ZXBUS10.pid -c '$busd_conf' -d -d -nthr 1 -nfd 11 -npdu 500 -p stomp:0.0.0.0:2229");
 DAEMON('ZXBUS10b', 'zxbuslist 1', -1, "./zxbuslist -pid tmp/ZXBUS10b.pid -d -d -c '$bus_list_conf'");
-CMD('ZXBUS11a', 'Bad pw', "./zxbustailf -d -d -c '$bus_cli_conf_badpw' -e 'foo bar'");
+CMD('ZXBUS11a', 'Bad pw', "./zxbustailf -d -d -c '$bus_cli_conf_badpw' -e 'foo bar'", 256);
 CMD('ZXBUS11', 'One shot', "./zxbustailf -d -d -c '$bus_cli_conf' -e 'foo bar'");
 STILL('ZXBUS10b', 'zxbuslist 1 still there');
 CMD('ZXBUS12', 'zero len', "./zxbustailf -d -d -c '$bus_cli_conf' -e ''");

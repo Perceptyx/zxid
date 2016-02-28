@@ -1,5 +1,5 @@
-/* zxidwspdemo.java  -  Demonstrate server side of handling a web service call
- * Copyright (c) 2012 Synergetics (sampo@synergetics.be), All Rights Reserved.
+/* zxidwspdemo.java  -  Demonstrate server side of handling a web service call (middle)
+ * Copyright (c) 2012-2016 Synergetics (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -10,7 +10,8 @@
  * $Id: zxidappdemo.java,v 1.3 2009-11-20 20:27:13 sampo Exp $
  * 16.10.2009, created --Sampo
  * 16.2.2010, fixed virtual hosting --Sampo
- * 7.2.2012, new virtual hosting with <init-param> supplied config --Sampo
+ * 7.2.2012,  new virtual hosting with <init-param> supplied config --Sampo
+ * 19.2.2016, improved visualization of the Az steps --Sampo
  *
  * See also: zxid-java.pd, zxidappdemo.java for client side
  *
@@ -126,6 +127,7 @@ public class zxidwspdemo extends HttpServlet {
 	}
 	String ldif = zxidjni.ses_to_ldif(cf, ses);
 	System.err.print("\n===== Doing work for user nid("+nid+").\nAttribute dump: "+ldif+"\n");
+	ldif = "<img src=\"green-check-20x20.png\">WSP2 Authorized by PDP (B).<br>\n"+ldif+"<img src=\"green-check-20x20.png\">WSP3 Authorized by PDP (B).<br>\n";
 
 	// Perform a application dependent authorization step and ship the response
 
@@ -140,13 +142,17 @@ public class zxidwspdemo extends HttpServlet {
 	    String recurse = "";
 	    if (buf.indexOf("STOP") == -1) {
 		// "http://sp.tas3.pt:8080/zxidservlet/wspleaf?o=B"
+	ldif = "<img src=\"green-check-20x20.png\">WSP2 Authorized by PDP (B).<br>\n"+ldif+"<img src=\"green-check-20x20.png\">WSP3 Authorized by PDP (B).<br>\n";
 	        recurse = zxidjni.call(cf, ses, "x-recurs", null, null, "Resource=leaf", "<recursing>STOP</recursing>");
 	        //recurse = zxidjni.call(cf, ses, "urn:x-foobar", "http://sp.tas3.pt:8080/zxidservlet/wspdemo?o=B", null, null, "<recursing>STOP</recursing>");
 		System.err.print("Recursive out("+recurse+")\n");
 		recurse = zxidjni.extract_body(cf, recurse);
+		recurse += "<img src=\"green-check-20x20.png\">WSC4 Authorized by PDP (B).<br>\n"+ldif+"<img src=\"green-check-20x20.png\">WSP3 Authorized by PDP (B).<br>\n";
 	    } else {
 		System.err.print("Recursive STOP\n");		
 	    }
+
+	ldif = "<img src=\"green-check-20x20.png\">WSP2 Authorized by PDP (B).<br>\n"+ldif+"<img src=\"green-check-20x20.png\">WSP3 Authorized by PDP (B).<br>\n";
 	    
 	    ret = zxidjni.wsp_decorate(cf, ses, "Resource=demo",
 				       "<barfoo>"

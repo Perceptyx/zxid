@@ -1,6 +1,6 @@
 /* app_demo.java  -  Demonstrate detecting missing session and redirection to zxidsrvlet
  * Adapted from  zxidappdemo.java
- * Copyright (c) 2011-2012 Synergetics (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2011-2016 Synergetics (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2010 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -10,7 +10,9 @@
  * Licensed under Apache License 2.0, see file COPYING.
  * $Id: zxidappdemo.java,v 1.4 2009-11-29 12:23:06 sampo Exp $
  * 16.10.2009, created --Sampo
- * 6.2.2012, added use of ZXIDConf <init-param> --Sampo
+ * 6.2.2012,  added use of ZXIDConf <init-param> --Sampo
+ * 21.9.2013, added PTM support --Sampo
+ * 19.2.2016, adapted to new Relife conventions --Sampo
  *
  * This servlet plays the role of "payload" servlet in ZXID SSO servlet
  * integration demonstration. It illustrates the steps
@@ -58,6 +60,7 @@ public class app_demo extends HttpServlet {
         do {
             sb.append(buf, 0, got);
             got = in.read(buf);
+	    System.err.print("ReadAll("+path+") got="+got+" buf(" + buf + ")\n");
         } while (got >= 0);
 	in.close();
         return sb.toString();
@@ -75,8 +78,8 @@ public class app_demo extends HttpServlet {
 	try {
 	    ptm = ReadAll("ptm-include.html");  // in /var/lib/tomcat6/, restart tomcat for update
 	} catch(IOException e) {
-	    System.err.print("File not found(ptm-include.html)\n");
-	    System.err.print("Working Directory(" + System.getProperty("user.dir") + ")\n");
+	    // Seems this gets read in context of tomcat install directory, e.g. /var/lib/tomcat6
+	    System.err.print("File not found(ptm-include.html), working Directory(" + System.getProperty("user.dir") + ")\n");
 	}
     }
     
@@ -112,27 +115,27 @@ public class app_demo extends HttpServlet {
 	out.print("<table align=right><tr><td>");
 	//out.print("<a href=\"http://www.tas3.eu/\"><img src=\"tas3-logo.jpg\" height=64 border=0></a>");
 	//out.print("<a href=\"http://zxid.org/\"><img src=\"logo-zxid-128x128.png\" height=64 border=0></a>");
-	out.print("<a href=\"http://synergetics.be/\"><img src=\"synlogo_s.jpg\" height=67 border=0></a><br>");
 	out.print(ptm);
 	//out.print("<iframe id=localnav class=nav src=\"/nav.html\"><a href=\"https://idp.i-dent.eu/nav.html\">Navigation iFrame</a></iframe><br>");
-	out.print("<br><iframe id=idpnav class=nav width=300 height=300 src=\"https://idp.i-dent.eu/nav.html\"><a href=\"https://idp.i-dent.eu/nav.html\">Navigation iFrame from IdP</a></iframe><br>");
+	out.print("<br><iframe id=idpnav class=nav width=220 height=100 src=\"https://idp.i-dent.eu/nav.html\"><a href=\"https://idp.i-dent.eu/nav.html\">Navigation iFrame from IdP</a></iframe><br>");
 	out.print("</td></tr></table>");
-	out.print("<h1>end2end Trust Assurance Demo App Protected Content</h1>\n");
+	out.print("<a href=\"http://synergetics.be/\"><img src=\"synlogo_s.jpg\" height=67 border=0></a><br>");
+	out.print("<h1>Demo Web GUI/Portal Protected Content</h1>\n");
+	out.print("<i>Relife end2end Trust Assurance Technical Demo</i><br>\n");
 	//out.print("<h1>ZXID Demo App Protected Content</h1> at " + fullURL + "\n");
 
 	// Render logout buttons (optional)
-
-	out.print("[<a href=\"sso?gl=1&s="+sid+"\">Local Logout</a> | <a href=\"sso?gr=1&s="+sid+"\">Single Logout</a>]\n");
+	//out.print("[<a href=\"sso?gl=1&s="+sid+"\">Local Logout</a> | <a href=\"sso?gr=1&s="+sid+"\">Single Logout</a>]\n");
 
 	// The SSO servlet will have done one iteration of authorization. The following
 	// serves to illustrate, how to explicitly call a PDP from your code.
 
 	System.err.print("----- about to az\n");
 	if (zxidjni.az_cf(cf, "Action=Show&Resource=app_demo", sid) == null) {
-	    out.print("<p><b>Denied.</b> Normally page would not be shown, but we show the session attributes for debugging purposes.\n");
+	    out.print("<p><img src=\"red-x-20x20.png\"><b>Denied by PDP (A).</b> Normally page would not be shown, but we show the session attributes for demo and debugging purposes.\n");
 	    //res.setStatus(302, "Denied");
 	} else {
-	    out.print("<p>Authorized.\n");
+	    out.print("<p><img src=\"green-check-20x20.png\">SSO Authorized by PDP (A).\n");
 	}
 
 	out.print("<table align=right><tr><td>");
@@ -141,7 +144,7 @@ public class app_demo extends HttpServlet {
 
 	// Render protected content page (your application starts working)
 
-	out.print("<h4>HttpSession dump:</h4>");
+	out.print("<h4>1. Web GUI HttpSession dump:</h4>");
 	Enumeration val_names = ses.getAttributeNames();
 	while (val_names.hasMoreElements()) {
 	    String name = (String)val_names.nextElement();
@@ -149,7 +152,7 @@ public class app_demo extends HttpServlet {
 		|| name.equals("role")
 		|| name.equals("o")
 		|| name.equals("ou")
-		|| name.equals("idpnid")
+		|| name.equals("fedusername")
 		|| name.equals("nidfmt")
 		|| name.equals("affid")
 		|| name.equals("eid")
@@ -161,14 +164,13 @@ public class app_demo extends HttpServlet {
 	    }
 	}
 	out.print("<p>");
-	out.print("[ <a href=\"?idhrxml\">tas3_call(idhrxml)</a>");
-	out.print(" | <a href=\"?x-foobar\">Recursive Echo</a>");
-	out.print(" | <a href=\"?leaf\">Leaf Echo</a>");
+	out.print("[ <a href=\"?x-foobar\">Recursive Echo</a>");
+	out.print(" | <a href=\"?leaf\">Leaf PDS Echo</a>");
 	out.print(" | <a href=\"?multidi\">Multi discovery</a>");
 	out.print(" | <a href=\"?multi\">Multi discovery and call</a>");
 	out.print(" | <a href=\"?all\">All</a>");
 	out.print(" | <a href=\"?exit\">Exit Java</a>");
-	out.print("]<p>");
+	out.print(" | <a href=\"?idhrxml\">tas3_call(idhrxml)</a> ]<p>");
 
 	// Demo web service call to zxidhrxmlwsp
 
@@ -177,7 +179,9 @@ public class app_demo extends HttpServlet {
 	
 	System.err.print("----- dispatch qs="+qs+"\n");
 	if (qs.equals("idhrxml") || qs.equals("all")) {
-	    out.print("<p>Output from idhrxml web service call sid("+sid+"):<br>\n<textarea cols=80 rows=20>");
+	    out.print("<h3>2. Output from idhrxml web service call sid("+sid+")<h3>\n");
+	    out.print("<img src=\"green-check-20x20.png\">WSC1 Authorized by PDP (A).<br>\n");
+	    out.print("<textarea cols=80 rows=20>");
 	    ret = zxidjni.call(cf, zxses,
 			       zxidjni.zx_xmlns_idhrxml,
 			       "http://sp.tas3.pt:8081/zxidhrxmlwsp?o=B",
@@ -191,13 +195,14 @@ public class app_demo extends HttpServlet {
 
 	    ret = zxidjni.extract_body(cf, ret);
 	    out.print(ret);
-	    out.print("</textarea>");
+	    out.print("</textarea><br>");
+	    out.print("<img src=\"green-check-20x20.png\">WSC4 Response Authorized by PDP (A).<br>\n");
 	}
 	
 	// Demo another web service call, this time the service by zxidwspdemo.java
 
 	if (qs.equals("x-foobar") || qs.equals("all")) {
-	    out.print("<p>Output from recursive web service call:<br>\n");
+	    out.print("<h3>2. Output from recursive web service call</h3>\n");
 	    ret = zxidjni.call(cf, zxses, "urn:x-foobar",
 			       //"http://sp.tas3.pt:8080/zxidservlet/wspdemo?o=B",
 			       "https://sp.employeedata.eu:8444/e2eTA/wspdemo?o=B",
@@ -211,19 +216,21 @@ public class app_demo extends HttpServlet {
 		out.print(ret);
 		out.print("</textarea>\n");
 	    } else {
-		out.print("<p>Output from Leaf web services call (relayed by middle call):<br>\n");
+		out.print("<img src=\"green-check-20x20.png\">WSC1 Authorized by PDP (A).<br>\n");
+		out.print("<h4>2.1 Output from Leaf PDS web services call (relayed by middle call)<h4>\n");
 		hilite_fields(out, ret, 1);
-		out.print("<p>Output from Middle web services call:<br>\n");
+		out.print("<h4>2.2 Output from Middle web services call<h4>\n");
 		hilite_fields(out, ret, 2);
 		if (true || verbose) {
 		    out.print("<textarea cols=80 rows=20>");
 		    out.print(ret);
 		    out.print("</textarea>\n");
 		}
+		out.print("<img src=\"green-check-20x20.png\">WSC4 Response Authorized by PDP (A).<br>\n");
 	    }
 	}
 	
-	// Demo another web service call, this time the service by zxidwspleaf.java
+	// Demo LEAF web service call, this time the service by zxidwspleaf.java
 
 	if (qs.equals("leaf") || qs.equals("all")) {
 	    System.err.print("--- Leaf call\n");
@@ -239,13 +246,15 @@ public class app_demo extends HttpServlet {
 		out.print("</textarea>\n");
 		System.err.print("^^^ leaf err done\n");
 	    } else {
-		out.print("<p>Output from Leaf web services call:<br>\n");
+		out.print("<h3>2. Output from Leaf PDS web services call</h3>\n");
+		out.print("<img src=\"green-check-20x20.png\">WSC1 Authorized by PDP (A).<br>\n");
 		hilite_fields(out, ret, 1);
 		if (true || verbose) {
 		    out.print("<textarea cols=80 rows=20>");
 		    out.print(ret);
 		    out.print("</textarea>\n");
 		}
+		out.print("<img src=\"green-check-20x20.png\">WSC4 Response Authorized by PDP (A).<br>\n");
 		System.err.print("^^^ leaf done\n");
 	    }
 	}
@@ -346,17 +355,10 @@ public class app_demo extends HttpServlet {
     {
 	int i;
 	try {
-	    Matcher matcher = idpnid_pat.matcher(ret);
+	    Matcher matcher = fedusername_pat.matcher(ret);
 	    for (i = n; i > 0; --i)
 		matcher.find();
 	    out.print("<b>fedusername</b>: " + matcher.group(1) + "<br>\n");
-	} catch(IllegalStateException e) { }
-
-	try {
-	    Matcher matcher = idpnid_pat.matcher(ret);
-	    for (i = n; i > 0; --i)
-		matcher.find();
-	    out.print("<b>idpnid</b>: " + matcher.group(1) + "<br>\n");
 	} catch(IllegalStateException e) { }
 
 	try {

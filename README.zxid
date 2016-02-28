@@ -138,7 +138,7 @@ Goals of ZXID project include
   - Discovery WSC (done)
   - Discovery WSP (done)
   - ID-DAP WSC (done)
-  - ID-DAP WSP (alpha)
+  - ID-DAP WSP (done)
 
 <<table: ZXID Platform Support
 Platform        Native     Cross Compile    Notes

@@ -1,6 +1,6 @@
 INSTALL.zxid
 ============
-$Id: INSTALL.zxid,v 1.5 2009-10-16 13:36:33 sampo Exp $
+$Id: INSTALL.zxid,v 1.42 2016-02-27 13:36:33 sampo Exp $
 
 Quick
 -----
@@ -37,9 +37,9 @@ Compilation from Source
 
 Download and extract the source
 
-  wget http:/zxid.org/zxid-0.83.tgz   # Check for newer version, please
-  tar xvzf zxid-0.83.tgz
-  cd zxid-0.83
+  wget http:/zxid.org/zxid-1.42.tgz   # Check for newer version, please
+  tar xvzf zxid-1.42.tgz
+  cd zxid-1.42
 
 Compile all packages (C, perl, php, Java, and apache httpd interfaces)
 
@@ -54,7 +54,7 @@ Compile all packages (C, perl, php, Java, and apache httpd interfaces)
   # If errors, see section "Compilation Problems", below, and zxid-faq.pd
 
   make install
-  ln -s /var/zxid/0.83 /var/zxid/std   # Change to match actual release
+  ln -s /var/zxid/1.42 /var/zxid/std   # Change to match actual release
   export PATH=/var/zxid/std/bin:$PATH
 
 Move to section "Configuration and Canned Demo", below.
@@ -70,17 +70,17 @@ For canned demo you need an IdP and a SP. Here's how:
 
   export PATH=/var/zxid/std/bin:$PATH   # if not already done
 
-  zxmkdirs.sh                # For the SP
+  zxcot -dirs                # For the SP
   echo NICE_NAME=Your SP Branding             >/var/zxid/zxid.conf
   echo ORG_NAME=Your Organization             >>/var/zxid/zxid.conf
   echo ORG_URL=http://your.org/               >>/var/zxid/zxid.conf
   echo URL=http://sp1.zxidsp.org:8443/zxidhlo >>/var/zxid/zxid.conf
 
-  zxmkdirs.sh /var/zxid/idp  # For the IdP
-  echo NICE_NAME=Your IdP Branding            >/var/zxid/idpzxid.conf
-  echo ORG_NAME=Your IdP Organization         >>/var/zxid/idpzxid.conf
-  echo ORG_URL=http://youridp.org/            >>/var/zxid/idpzxid.conf
-  echo URL=http://idp1.zxid.org:8443/zxididp  >>/var/zxid/idpzxid.conf
+  zxcot -dirs /var/zxid/idp/  # For the IdP
+  echo NICE_NAME=Your IdP Branding            >/var/zxid/idp/zxid.conf
+  echo ORG_NAME=Your IdP Organization         >>/var/zxid/idp/zxid.conf
+  echo ORG_URL=http://youridp.org/            >>/var/zxid/idp/zxid.conf
+  echo URL=http://idp1.zxid.org:8443/zxididp  >>/var/zxid/idp/zxid.conf
 
 In the above, the configuration files for SP and IdP were created. Some
 configuration options are actually set in the source code of the respective
@@ -122,7 +122,7 @@ See also: zxid-faq.pd  (*** also in zxid-faq.pd)
   files) and missing libraries.
 
 * If the checks fail, you need to adjust the -I and -L flags in Makefile
-  variables CDIR and LIBS (around line 123)
+  variables CINC and LIBS (around lines 136 and 149).
 
 * Else you can create localconf.mk file (recommended), that will be
   included by the main Makefile, and put your modifications there.
@@ -148,6 +148,10 @@ See also: zxid-faq.pd  (*** also in zxid-faq.pd)
   careful about which one you use.
 
 * ZXID dependency libraries are libcurl, openssl (libssl, libcrypto), and zlib
+
+  If the prerequisite libaries - libz, libssl, libcrypto, and libcurl
+  - are genuinely missing, you should either compile them yourself, or
+  install dev packages of those libraries from your distribution.
 
 * Usually you can use the versions that are supplied with your distribution.
   However in this case you MUST install also the headers. Usually these

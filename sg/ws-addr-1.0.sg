@@ -2,7 +2,8 @@
 # Slightly edited, 5.9.2006, Sampo Kellomaki (sampo@iki.fi)
 # 6.2.2007, Added Discovery specifics to the Metadata --Sampo
 # 7.12.2013, added rankKey extension to EPR MD to facilitate sorting di results --Sampo
-# $Id: ws-addr-1.0.sg,v 1.9 2007-09-30 05:10:03 sampo Exp $
+# 11.2.2016, added <tas3:AltAddress> element --Sampo
+# $Id: ws-addr-1.0.sg,v 1.11 2016-02-11 05:10:03 sampo Exp $
 
 target(a, http://www.w3.org/2005/08/addressing)
 #t arget(a, http://schemas.xmlsoap.org/ws/2004/08/addressing)  # used by WS Federation?
@@ -26,8 +27,9 @@ EndpointReference	 -> %a:EndpointReferenceType
   a:Address	 -> %a:AttributedURIType
   a:ReferenceParameters?
   a:Metadata?
+  tas3:AltAddress*  # Added by Sampo
   @notOnOrAfter?  -> %xs:dateTime # Added by Sampo
-  &@a:hdrs                # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   any*  ns(##other)  processContents(lax)
   @any
   ;
@@ -36,7 +38,7 @@ ReferenceParameters	 -> %a:ReferenceParametersType
 %ReferenceParametersType:
   b:TargetIdentity*
   any*  processContents(lax)
-  &@a:hdrs        # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   @any
   ;
 
@@ -58,7 +60,7 @@ MessageID	 -> %a:AttributedURIType
 RelatesTo	 -> %a:RelatesToType
 %RelatesToType:	 base(xs:anyURI)
   @RelationshipType?	 -> %a:RelationshipTypeOpenEnum  # default (http://www.w3.org/2005/08/addressing/reply)
-  &@a:hdrs        # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   @any
   ;
 
@@ -72,7 +74,7 @@ To	 -> %a:AttributedURIType
 Action	 -> %a:AttributedURIType
 
 %AttributedURIType:	 base(xs:anyURI)
-  &@a:hdrs        # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   @any
   ;
 
@@ -86,14 +88,14 @@ Action	 -> %a:AttributedURIType
 RetryAfter	 -> %a:AttributedUnsignedLongType
 
 %AttributedUnsignedLongType:	 base(xs:unsignedLong)
-  &@a:hdrs        # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   @any
   ;
 
 ProblemHeaderQName -> %a:AttributedQNameType
 
 %AttributedQNameType:	 base(xs:QName)
-  &@a:hdrs        # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   @any
   ;
 
@@ -101,7 +103,7 @@ ProblemHeader	 -> %a:AttributedAnyType
 
 %AttributedAnyType:
   any*  processContents(lax)
-  &@a:hdrs        # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   @any
   ;
 
@@ -111,7 +113,7 @@ ProblemAction	 -> %a:ProblemActionType
 %ProblemActionType:
   a:Action?
   a:SoapAction? -> %xs:anyURI
-  &@a:hdrs        # Added by Sampo
+  &@a:hdrs          # Added by Sampo
   @any
   ;
 

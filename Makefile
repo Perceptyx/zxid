@@ -726,7 +726,7 @@ default: seehelp precheck $(DEFAULT_EXE)
 
 all: default precheck_apache samlmod phpzxid javazxid apachezxid $(ALL_EXE)
 
-all_minus_perl: default precheck_apache apachezxid phpzxid javazxid $(ALL_EXE)
+all_minus_perl: default precheck_apache apachezxid phpzxid javazxid app_demo.class $(ALL_EXE)
 
 zxbus:  zxbusd zxbustailf zxbuslist
 

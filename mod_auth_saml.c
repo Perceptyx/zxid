@@ -699,7 +699,7 @@ static void reghk(apr_pool_t* p) {
  * E.g: LoadModule auth_saml_module modules/mod_auth_saml.so
  * See httpd-2.2/include/http_config.h for module_struct.
  * Lucky for 2.2 vs. 2.4 compat, m->module_index and other fields up to
- * m->magic are on sample palaces on both. */
+ * m->magic are on sample places on both. */
 
 module AP_MODULE_DECLARE_DATA auth_saml_module = {
   STANDARD20_MODULE_STUFF,
