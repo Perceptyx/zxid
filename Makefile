@@ -156,7 +156,7 @@ LIBS+= -lcurl -lssl -lcrypto -lz $(POSTLIBS)
 ### Where commands for build are found (override for cross compiler or Windows)
 
 #CC=ccache gcc
-CC?=gcc
+CC=gcc
 # If you want to override LD setting you must supply LD_ALT on command line or use localconf.mk
 LD_ALT?=$(CC)
 LD=$(LD_ALT)
