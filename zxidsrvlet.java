@@ -1,5 +1,5 @@
-/* zxidsrvlet.java  -  SAML SSO Java/Tomcat servlet script that calls libzxid using JNI
- * Copyright (c) 2012 Synergetics (sampo@synergetics.be), All Rights Reserved.
+/* zxidsrvlet.java  -  SAML SSO Java/Tomcat servlet that calls libzxid using JNI
+ * Copyright (c) 2012,2016 Synergetics (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -12,6 +12,7 @@
  * 16.10.2009, refined from zxidhlo example to truly useful servlet that populates session --Sampo
  * 6.2.2012,   added use of ZXIDConf <init-param> --Sampo
  * 17.10.2012, added passing ZXID cookies --Sampo
+ * 11.3.2016,  debugged passing cookies --Sampo
  *
  * See also: README-zxid section 10 "zxid_simple() API"
  * http://www.easywms.com/easywms/?q=en/read-parameters-web-xml-servlet-release-work-programmer
@@ -24,7 +25,7 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 
 public class zxidsrvlet extends HttpServlet {
-    //static final String conf = "URL=http://sp1.zxidsp.org:8080/sso&PATH=/var/zxid/";
+    //static final String conf = "BURL=http://sp1.zxidsp.org:8080/sso&CPATH=/var/zxid/";
     static zxidjava.zxid_conf cf;
     static { System.loadLibrary("zxidjni"); }
     
@@ -41,6 +42,7 @@ public class zxidsrvlet extends HttpServlet {
 	int eq = setcookie.indexOf('=');
 	int semi = setcookie.indexOf(';', eq+1);
 	if (eq != -1 && semi != -1) {
+	    System.err.print("SSO servlet setting cookie("+setcookie.substring(0, eq)+") val("+setcookie.substring(eq+1, semi)+")\n");
 	    Cookie cookie = new Cookie(setcookie.substring(0, eq),
 				       setcookie.substring(eq+1, semi));
 	    eq = setcookie.indexOf("path=", semi);
@@ -60,17 +62,17 @@ public class zxidsrvlet extends HttpServlet {
     public void do_zxid(HttpServletRequest req, HttpServletResponse res, String qs)
 	throws ServletException, IOException
     {
-	// CONFIG: You must have created /var/zxid directory hierarchy. See `make dir'
-	// CONFIG: To set config string, edit web.xml (hope you know where it is) and
-	// add to your servlets sections like
+	// CONFIG: You must have created /var/zxid directory hierarchy. See `zxidcot -dirs'
+	// CONFIG: To set config string, edit WEB-INF/web.xml (hope you know where it is) and
+	// add to your servlet sections like
         //  <servlet>
 	//    <servlet-name>zxidsrvlet</servlet-name><servlet-class>zxidsrvlet</servlet-class>
 	//    <init-param>
-	//      <param-name>ZXIDConf</param-name><param-value>PATH=/var/zxid/</param-value>
+	//      <param-name>ZXIDConf</param-name><param-value>CPATH=/var/zxid/</param-value>
 	//    </init-param>
 	//  </servlet>
-	// CONFIG: You must edit the URL to match your domain name and port, usually you
-	// CONFIG: would create and edit /var/zxid/zxid.conf and override the URL there.
+	// CONFIG: You must edit the BURL to match your domain name and port, usually you
+	// CONFIG: would create and edit /var/zxid/zxid.conf and override the BURL there.
 	if (cf == null) {
 	    String conf = getServletConfig().getInitParameter("ZXIDConf"); 
 	    System.err.print("SSO servlet conf("+conf+")\n");

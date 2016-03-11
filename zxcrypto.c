@@ -14,6 +14,7 @@
  * 12.12.2011, added HMAC SHA-256 as needed by JWT/JWS --Sampo
  * 6.6.2015,   added aes-256-gcm --Sampo
  * 16.10.2015, upgraded sha256 support, eliminated MD5 from certs --Sampo
+ * 6.3.2016,   eliminated obsolete, commented out code --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  *
@@ -223,16 +224,12 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
     ivv = 0;
   if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("symkey ", key->s, key->len, 1024);
   
-#if 0
-  alloclen = EVP_CIPHER_block_size(evp_cipher);
-  alloclen = len + alloclen + alloclen;  /* bit pessimistic, but man EVP_CipherInit is ambiguous about the actual size needed. */
-#else
   /* 20150606, it appears aes-256-gcm reports too short block size, thus we impose a minimum. */
   alloclen = EVP_CIPHER_block_size(evp_cipher);
   D("block_size=%d", alloclen);
   alloclen = MAX(alloclen, 256);
   alloclen = len + alloclen + alloclen;  /* bit pessimistic, but man EVP_CipherInit is ambiguous about the actual size needed. */
-#endif
+  
   if (encflag)
     alloclen += iv_len;
   
@@ -263,12 +260,6 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
   
   ASSERTOPI(outlen + iv_len, <=, alloclen);
 
-#if 0  
-  if(!EVP_CipherFinal_ex(&ctx, (unsigned char*)out->s + iv_len + outlen, &tmplen)) {  /* Append final block */
-    where = "EVP_CipherFinal_ex()";
-    goto sslerr;
-  }
-#else
   /* Patch from Eric Rybski <rybskej@yahoo.com> */
   if (encflag) {
     if(!EVP_CipherFinal_ex(&ctx, (unsigned char*)out->s + iv_len + outlen, &tmplen)) { /* Append final block */
@@ -285,7 +276,6 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
       goto sslerr;
     }
   }
-#endif
   EVP_CIPHER_CTX_cleanup(&ctx);
   
   outlen += tmplen;
@@ -567,12 +557,10 @@ int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, 
   
   pkey=EVP_PKEY_new();
   DD("keygen preparing rsa key %s", lk);
-#if 0
-  rsa = RSA_generate_key(1024 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
-#else
+
   /* Crypto analysis (2015) suggests 1024bit key is too weak. */
+  //rsa = RSA_generate_key(1024 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
   rsa = RSA_generate_key(2048 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
-#endif
   DD("keygen rsa key generated %s", name);
   EVP_PKEY_assign_RSA(pkey, rsa);
 
@@ -592,24 +580,6 @@ int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, 
 
   DD("keygen populate: set version %d (real vers is one higher)", 2);
   ASN1_INTEGER_set(ri->version, 2L /* version 3 (binary value is one less) */);
-
-#if 0 /* See cn code above */
-  /* Parse domain name out of the URL: skip https:// and then scan name without port or path */
-  
-  for (p = cf->burl; !ONE_OF_2(*p, '/', 0); ++p) ;
-  if (*p != '/') goto badurl;
-  ++p;
-  if (*p != '/') {
-badurl:
-    ERR("Malformed URL: does not start by https:// or http:// -- URL(%s)", cf->burl);
-    return 0;
-  }
-  ++p;
-  for (q = cn; !ONE_OF_3(*p, ':', '/', 0) && q < cn + sizeof(cn)-1; ++q, ++p) *q = *p;
-  *q = 0;
-
-  D("keygen populate DN: cn(%s) org(%s) c(%s) url=%p cn=%p p=%p q=%p", cn, cf->org_name, cf->country, cf->burl, cn, p, q);
-#endif
 
   /* Note on string types and allowable char sets:
    * V_ASN1_PRINTABLESTRING  [A-Za-z0-9 '()+,-./:=?]   -- Any domain name, but not query string
@@ -656,13 +626,11 @@ badurl:
   /*req->req_info->req_kludge=0;    / * no asn1 kludge *** filed deleted as of 0.9.7b?!? */
   
   DD("keygen signing request %s", lk);
-#if 0
-  X509_REQ_sign(req, pkey, EVP_md5());
-#else
+
+  /*X509_REQ_sign(req, pkey, EVP_md5()); insecure by modern standards */
   /* Due to recent (2013) progress in crypto analysis, MD5 and SHA1 are considered
    * weak and support is likely to be discontinued in browsers and operating systems. */
   X509_REQ_sign(req, pkey, EVP_sha256());
-#endif
 
   /* ----- X509 create self signed certificate ----- */
   
@@ -705,11 +673,8 @@ badurl:
   X509_add_ext(x509ss, ext, -1);
   
   DD("keygen signing x509ss %s", lk);
-#if 0
-  if (!(X509_sign(x509ss, pkey, EVP_md5())))
-#else
+  /*if (!(X509_sign(x509ss, pkey, EVP_md5())))  insecure by modern standards */
   if (!(X509_sign(x509ss, pkey, EVP_sha256())))
-#endif
   {
     ERR("Failed to sign x509ss %s", lk);
     zx_report_openssl_err("X509_sign");
@@ -778,24 +743,6 @@ badurl:
   return 0;
 #endif
 }
-
-#if 0
-/* use PEM_write_X509(fp, cert) instead! */
-/* Called by: */
-void zx_print_X509(FILE* fp, X509* cert)
-{
-  int len;
-  char* p;
-  BIO* wbio_cert = BIO_new(BIO_s_mem());
-  if (!PEM_write_bio_X509(wbio_cert, peer_cert)) {
-    ERR("write_cert %p", peer_cert);
-    zx_report_openssl_err("write_cert");
-    return;
-  }
-  len = BIO_get_mem_data(wbio_cert, &p);
-  fprintf(fp, "%.*s", len, p);
-}
-#endif
 
 /*
 
@@ -923,19 +870,6 @@ int zxid_mk_at_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, zxid_n
 #endif
   X509_set_subject_name(x509ss,	subject);
   
-#if 0 /* *** schedule to remove */  
-  /* Set up V3 context struct and add certificate extensions. */
-  
-  ext = X509V3_EXT_conf_nid(0, 0, NID_basic_constraints, "CA:TRUE,pathlen:3");
-  X509_add_ext(x509ss, ext, -1);
-  
-  ext = X509V3_EXT_conf_nid(0, 0, NID_netscape_cert_type, "client,server,email,objsign,sslCA,emailCA,objCA");
-  X509_add_ext(x509ss, ext, -1);
-  
-  ext = X509V3_EXT_conf_nid(0, 0, NID_key_usage, "digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement,keyCertSign,cRLSign");
-  X509_add_ext(x509ss, ext, -1);
-#endif
-
   ext = X509V3_EXT_conf_nid(0, 0, NID_netscape_comment, "Attribute cert, see zxid.org");
   X509_add_ext(x509ss, ext, -1);
 
@@ -968,11 +902,8 @@ int zxid_mk_at_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, zxid_n
   zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "mk_at_cert");
 
   DD("keygen signing x509ss %s", lk);
-#if 0
-  if (!(X509_sign(x509ss, sign_pkey, EVP_md5())))
-#else
+  /*if (!(X509_sign(x509ss, sign_pkey, EVP_md5()))) insecure by modern standards */
   if (!(X509_sign(x509ss, sign_pkey, EVP_sha256())))
-#endif
   {
     ERR("Failed to sign x509ss %s", lk);
     zx_report_openssl_err("X509_sign");
@@ -1034,7 +965,10 @@ static void to64(char *s, unsigned long v, int n) {
  * pw:: Password in plain
  * salt:: 0-8 chars of salt. Preceding \$1\$ is automatically skipped. Salt ends in \$ or nul.
  * buf:: must be at least 120 chars
- * return:: buf, nul terminated */
+ * return:: buf, nul terminated
+ *
+ * N.B. Although MD5 is considered insecure by modern standards, we retain the functionality
+ * for sake of legacy password hashes.  */
 
 /* Called by:  authn_user, main, zx_pw_chk */
 char* zx_md5_crypt(const char* pw, const char* salt, char* buf)

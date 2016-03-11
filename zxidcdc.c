@@ -1,4 +1,5 @@
 /* zxidcdc.c  -  Handwritten functions for Common Domain Cookie handling at SP
+ * Copyright (c) 2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -11,6 +12,7 @@
  * 12.8.2006, created --Sampo
  * 16.1.2007, split from zxidlib.c --Sampo
  * 7.10.2008, added documentation --Sampo
+ * 6.3.2016,  eliminated some commented out code --Sampo
  */
 
 #include <string.h>
@@ -79,31 +81,6 @@ int zxid_cdc_check(zxid_conf* cf, zxid_cgi* cgi)
   char* p;
   char* q;
   char eid[ZXID_MAX_EID];
-#if 0
-  char* idp_eid;
-  if (!cgi->cdc) return 0;
-  for (idp_eid = strtok(cgi->cdc, " "); idp_eid; idp_eid = strtok(0, " ")) {
-    if (!(ent = zxid_get_ent(cf, idp_eid)))
-      continue;
-    switch (cf->cdc_choice) {
-    case ZXID_CDC_CHOICE_ALWAYS_FIRST:  /* Do not offer UI, always pick first on CDC list. */
-      break;
-    case ZXID_CDC_CHOICE_ALWAYS_LAST:   /* Do not offer UI, always pick last on CDC list. */
-      /* *** How to detect "lastness" in strtok() list? */
-      break;
-    case ZXID_CDC_CHOICE_ALWAYS_ONLY:   /* If CDC has only one IdP, always pick it. */
-      /* *** How to detect "onlyness" in strtok() list? */
-      break;
-    case ZXID_CDC_CHOICE_UI_PREF:       /* Offer UI with the CDC designated IdPs first. */
-      /* *** */
-      break;
-    case ZXID_CDC_CHOICE_UI_NOPREF:     /* Offer UI. Do not give preference to CDC IdPs. */
-      /* *** */
-      break;
-    default: NEVER("Bad CDC choice(%d)\n", cf->cdc_choice);
-    }
-  }
-#else
 
   for (q = cgi->cdc; q; q = p ? p+1 : 0) {
     p = strchr(q, ' ');
@@ -125,7 +102,6 @@ int zxid_cdc_check(zxid_conf* cf, zxid_cgi* cgi)
     ent->n_cdc = cgi->idp_list;
     cgi->idp_list = ent;
   }
-#endif
   return 0;
 }
 

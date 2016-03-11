@@ -1651,6 +1651,8 @@
 #define ZXID_MGMT_FOOTER  "<div class=zxbot>"
 #define ZXID_MGMT_END     "</div>"
 
+/* Special directives in configuration files */
+
 /*(c) ECHO - Print to debug out that given line in configuration has been reached.
  * Used for debugging complex sequences of VPATH and INCLUDE. */
 

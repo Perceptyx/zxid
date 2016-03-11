@@ -1,5 +1,5 @@
 /* zxcot.c  -  CoT (Circle-of-Trust) management tool: list CoT, add metadata to CoT
- * Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2016 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
@@ -9,6 +9,7 @@
  *
  * 27.8.2009, created --Sampo
  * 24.4.2012, obsoleted PATH=/var/zxid/idp. From now on, just use /var/zxid/ or VPATH --Sampo
+ * 20160306,  eliminated some commented out code --Sampo
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -454,12 +455,8 @@ static int zxid_reg_svc(zxid_conf* cf, int bs_reg, int dry_run, const char* ddim
   if (!ss)
     return 2;
   
-#if 0
-  // *** wrong
-  tt = ZX_GET_CONTENT(epr->Metadata->ProviderID);
-#else
+  //tt = ZX_GET_CONTENT(epr->Metadata->ProviderID);  *** wrong
   tt = ZX_GET_CONTENT(epr->Metadata->ServiceType);
-#endif
   got = MIN(tt->len, sizeof(path)-1);
   memcpy(path, tt?tt->s:"", got);
   path[got] = 0;

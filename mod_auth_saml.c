@@ -1,5 +1,5 @@
 /* mod_auth_saml.c  -  Handwritten functions for Apache mod_auth_saml module
- * Copyright (c) 2012-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2008-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -22,6 +22,7 @@
  * 5.3.2015,  improved Apache httpd-2.4 compatibility --Sampo
  * 9.3.2015,  refactored to isolate httpd version dependencies to httpdglue.c --Sampo
  * 20151218,  added special placeholder user "-anon-" for the 2.4 optional_login_pat case --Sampo
+ * 20160306,  eliminated some commented out code --Sampo
  *
  * To configure this module add to httpd.conf something like
  *
@@ -184,34 +185,8 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
     else if (!strcmp(at->name, "cookie"))       cookie = at->val;
     //else if (!strcmp(at->name, "rs"))         rs = at->val;
   }
-#if 0
-  /* This code moved to zxidsimp.c: zxid_show_protected_content_setcookie() */
-  if (rs && rs[0] && rs[0] != '-') {
-    /* N.B. RelayState was set by chkuid() "some other page" section by setting cgi.rs
-     * to deflated and safe base64 encoded value which was then sent to IdP as RelayState.
-     * It then came back from IdP and was decoded as one of the SSO attributes.
-     * The decoding is controlled by <<tt: rsrc$rs$unsb64-inf$$ >>  rule in OUTMAP. */
-    rs = zxid_unbase64_inflate(cf->ctx, -2, rs, 0);
-    if (!rs) {
-      ERR("Bad relaystate. Error in inflate. %d", 0);
-      return HTTP_BAD_REQUEST;
-    }
-    rs_qs = strchr(rs, '?');
-    if (rs_qs
-	?(memcmp(HRR_uri(r), rs, rs_qs-rs)||strcmp(HRR_args(r)?HRR_args(r):"",rs_qs+1))
-	:strcmp(HRR_uri(r), rs)) {  /* Different, need external or internal redirect */
-      D("redirect(%s) redir_to_content=%d", rs, cf->redir_to_content);
-      //r->uri = apr_pstrdup(r->pool, val);
-      if (cf->redir_to_content) {
-	apr_table_setn(HRR_headers_out(r), "Location", rs);
-	ret = HTTP_SEE_OTHER;
-      } else {
-	/* *** any attributes after this point may not appear in subrequest */
-	ap_internal_redirect_handler(rs, r);
-      }
-    }
-  }
-#endif
+
+  /* See zxidsimp.c: zxid_show_protected_content_setcookie() */
 
   set_cookies(cf, r, setcookie, setptmcookie);  
   if (cookie && cookie[0] != '-') {

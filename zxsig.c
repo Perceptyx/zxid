@@ -16,7 +16,8 @@
  * 1.12.2010, improved logging of canonicalizations --Sampo
  * 16.10.2015, upgraded sha256 support --Sampo
  * 18.12.2015, applied patch from soconnor, perceptyx, adding algos --Sampo
- * 7.1.2016,  made hash algorithm for generated signatures more configurable --Sampo
+ * 7.1.2016,   made hash algorithm for generated signatures more configurable --Sampo
+ * 6.3.2016,   eliminated obsolete, commented out, code --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  */
@@ -150,53 +151,6 @@ const char* zxsig_choose_xmldsig_sig_meth_urlenc(EVP_PKEY* priv_key, const char*
   ERR("Unknown digest algo(%s)", STRNULLCHKQ(dig_alg));
   return "#digerr";
 }
-
-#if 0
-/* *** these are no longer needed as selection is handled by configuration system */
-const char* zxid_get_cert_signature_algo_url(X509* cert)
-{
-    const char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                return SIG_ALGO;
-    if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1;
-    if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1;
-    if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224;
-    if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO;
-    if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256;
-    if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256;
-    if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384;
-    if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO;
-    if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512;
-    return SIG_ALGO;
-}
-
-const char* zxid_get_cert_signature_algo_urlenc(X509* cert)
-{
-    const char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                return SIG_ALGO_URLENC;
-    if (!strcmp(alg, "sha1WithRSAEncryption"))   return SIG_ALGO_RSA_SHA1_URLENC;
-    if (!strcmp(alg, "dsaWithSHA1"))             return SIG_ALGO_DSA_SHA1_URLENC;
-    if (!strcmp(alg, "sha224WithRSAEncryption")) return SIG_ALGO_RSA_SHA224_URLENC;
-    if (!strcmp(alg, "sha224WithDSAEncryption")) return SIG_ALGO_URLENC;
-    if (!strcmp(alg, "sha256WithRSAEncryption")) return SIG_ALGO_RSA_SHA256_URLENC;
-    if (!strcmp(alg, "dsa_with_SHA256"))         return SIG_ALGO_DSA_SHA256_URLENC;
-    if (!strcmp(alg, "sha384WithRSAEncryption")) return SIG_ALGO_RSA_SHA384_URLENC;
-    if (!strcmp(alg, "sha384WithDSAEncryption")) return SIG_ALGO_URLENC;
-    if (!strcmp(alg, "sha512WithRSAEncryption")) return SIG_ALGO_RSA_SHA512_URLENC;
-    return SIG_ALGO_URLENC;
-}
-
-const char* zxid_get_cert_digest_url(X509* cert)
-{
-    const char* alg = zxid_get_cert_signature_algo(cert);
-    if (!alg || !strcmp(alg, ""))                return DIGEST_ALGO;
-    if (!strcmp(alg, "sha1WithRSAEncryption"))   return DIGEST_ALGO_SHA1;
-    if (!strcmp(alg, "sha224WithRSAEncryption")) return DIGEST_ALGO_SHA224;
-    if (!strcmp(alg, "sha256WithRSAEncryption")) return DIGEST_ALGO_SHA256;
-    if (!strcmp(alg, "sha384WithRSAEncryption")) return DIGEST_ALGO_SHA384;
-    if (!strcmp(alg, "sha512WithRSAEncryption")) return DIGEST_ALGO_SHA512;
-    return DIGEST_ALGO;
-}
-#endif
 
 //static char*
 #define priv_key_missing_msg "Private key missing. Perhaps you have not installed one in the certificate file in the /var/zxid/pem directory (or other directory if configured, see previous error messages for file reading trouble)? Other reasons: permissions do not allow reading the key (current uid=%d gid=%d), the directory permissions do not allow reading, the private key file is empty, wrong format, or corrupt; or the private key is protected with a password (remove password prior to use with zxid). Can also be caused by missing certificate. See http://zxid.org/html/zxid-cot.html for further help."

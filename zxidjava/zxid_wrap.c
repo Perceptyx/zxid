@@ -28241,7 +28241,7 @@ SWIGEXPORT jint JNICALL Java_zxidjava_zxidjniJNI_ZXID_1VERSION_1get(JNIEnv *jenv
   
   (void)jenv;
   (void)jcls;
-  result = (int)(0x000142);
+  result = (int)(0x000143);
   jresult = (jint)result; 
   return jresult;
 }
@@ -28253,7 +28253,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1REL_1get(JNIEnv *jenv,
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("1.42");
+  result = (char *)("1.43");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }
@@ -28265,7 +28265,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1COMPILE_1DATE_1get(JNI
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("1455626548");
+  result = (char *)("1457517236");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }
@@ -28277,7 +28277,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1REV_1get(JNIEnv *jenv,
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("$Id: 1.41-soconnor-6-g6a74223 20160124-151915 sampo@ $");
+  result = (char *)("$Id: 1.42 20160229-002419 sampo@ $");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }

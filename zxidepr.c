@@ -269,7 +269,8 @@ void zxid_snarf_eprs_from_ses(zxid_conf* cf, zxid_ses* ses)
 	  if (av->ResourceOffering) {
 	    ++wsf11;
 	    D("Detected wsf11 resource offering. %d", wsf11);
-#if 0	    
+#if 0
+	    /* Deprecated: support for wsf11 offerings will be dropped in 2016 */
 	    ss = zx_easy_enc_elem_opt(cf, &av->ResourceOffering->gg);
 	    zxid_epr_path(cf, ZXID_SES_DIR, ses->sid, path, sizeof(path),
 			  ZX_GET_CONTENT(av->EndpointReference->Metadata->ServiceType), ss);
@@ -289,6 +290,7 @@ void zxid_snarf_eprs_from_ses(zxid_conf* cf, zxid_ses* ses)
     }
   }
 #if 0
+  /* Deprecated: support for saml 1.2 assertions will be dropped in 2016 */
   if (ses->a7n12) {
     for (as = ses->a7n->AttributeStatement; as;
 	 as = (struct zx_sa11_AttributeStatement_s*)as->gg.g.n) {

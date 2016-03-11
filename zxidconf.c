@@ -33,6 +33,7 @@
  * 18.12.2015, applied patch from soconnor, perceptyx, including detection of
  *             signature algorithm from certificate. --Sampo
  * 8.1.2016,   added configuration options for signature and digest algorithms --Sampo
+ * 6.3.2016,   eliminated obsolete, commented out, code --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -64,28 +65,6 @@
 #include <openssl/rand.h>
 #include <openssl/x509.h>
 #include <openssl/rsa.h>
-
-#if 0
-/*(-) Compute raw SHA1 digest hash over contents of a file.
- *
- * cf:: ZXID configuration object, used for deteminin path prefix and for memory allocation
- * name:: Name of the file (under hierarchy defined by PATH configuration option)
- * sha1:: A sha1 buffer which should be exactly 20 bytes (160 bits) long. The
- *     buffer will be modified in place by this function. */
-
-/* Called by:  zxid_init_conf */
-void zxid_sha1_file(zxid_conf* cf, char* name, char* sha1)
-{
-  int gotall;
-  char* buf;
-  ZERO(sha1, 20);
-  buf = read_all_alloc(cf->ctx, "sha1_file", 1, &gotall, "%s%s", cf->cpath, name);
-  if (!buf)
-    return;
-  SHA1(buf, gotall, sha1);
-  ZX_FREE(cf->ctx, buf);
-}
-#endif
 
 char* zxid_extract_cert_pem(char* buf, char* name)
 {
@@ -1286,15 +1265,6 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->idp_sel_page      = ZXID_IDP_SEL_PAGE;
   cf->idp_sel_templ_file= ZXID_IDP_SEL_TEMPL_FILE;
   cf->idp_sel_templ     = ZXID_IDP_SEL_TEMPL;
-#if 0
-  cf->idp_sel_start     = ZXID_IDP_SEL_START;
-  cf->idp_sel_new_idp   = ZXID_IDP_SEL_NEW_IDP;
-  cf->idp_sel_our_eid   = ZXID_IDP_SEL_OUR_EID;
-  cf->idp_sel_tech_user = ZXID_IDP_SEL_TECH_USER;
-  cf->idp_sel_tech_site = ZXID_IDP_SEL_TECH_SITE;
-  cf->idp_sel_footer    = ZXID_IDP_SEL_FOOTER;
-  cf->idp_sel_end       = ZXID_IDP_SEL_END;
-#endif
 
   cf->an_page           = ZXID_AN_PAGE;
   cf->an_templ_file     = ZXID_AN_TEMPL_FILE;
@@ -1823,15 +1793,6 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
       if (!strcmp(n, "ISSUE_A7N"))       { SCAN_INT(v, cf->log_issue_a7n); break; }
       if (!strcmp(n, "ISSUE_MSG"))       { SCAN_INT(v, cf->log_issue_msg); break; }
       if (!strcmp(n, "ISSUE_AUTHNCTX"))  { cf->issue_authnctx = zxid_load_cstr_list(cf, cf->issue_authnctx, v); break; }
-#if 0
-      if (!strcmp(n, "IDP_SEL_START"))   { cf->idp_sel_start = v; break; }
-      if (!strcmp(n, "IDP_SEL_NEW_IDP")) { cf->idp_sel_new_idp = v; break; }
-      if (!strcmp(n, "IDP_SEL_OUR_EID")) { cf->idp_sel_our_eid = v; break; }
-      if (!strcmp(n, "IDP_SEL_TECH_USER")) { cf->idp_sel_tech_user =v; break; }
-      if (!strcmp(n, "IDP_SEL_TECH_SITE")) { cf->idp_sel_tech_site =v; break; }
-      if (!strcmp(n, "IDP_SEL_FOOTER"))  { cf->idp_sel_footer = v; break; }
-      if (!strcmp(n, "IDP_SEL_END"))     { cf->idp_sel_end = v; break; }
-#endif
       if (!strcmp(n, "IDP_SEL_PAGE"))    { cf->idp_sel_page = v; break; }
       if (!strcmp(n, "IDP_SEL_TEMPL_FILE")) { cf->idp_sel_templ_file = v; break; }
       if (!strcmp(n, "IDP_SEL_TEMPL"))   { cf->idp_sel_templ = v; break; }
@@ -2357,15 +2318,6 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 "</pre>"
 "<textarea cols=100 rows=20>"
 "IDP_SEL_TEMPL=%s\n"
-#if 0
-"IDP_SEL_START=%s\n"
-"IDP_SEL_NEW_IDP=%s\n"
-"IDP_SEL_OUR_EID=%s\n"
-"IDP_SEL_TECH_USER=%s\n"
-"IDP_SEL_TECH_SITE=%s\n"
-"IDP_SEL_FOOTER=%s\n"
-"IDP_SEL_END=%s\n"
-#endif
 "</textarea><pre>\n"
 
 "AN_PAGE=%s\n"
@@ -2564,15 +2516,6 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 STRNULLCHK(cf->idp_sel_page),
 		 STRNULLCHK(cf->idp_sel_templ_file),
 		 STRNULLCHK(cf->idp_sel_templ),
-#if 0
-		 STRNULLCHK(cf->idp_sel_start),
-		 STRNULLCHK(cf->idp_sel_new_idp),
-		 STRNULLCHK(cf->idp_sel_our_eid),
-		 STRNULLCHK(cf->idp_sel_tech_user),
-		 STRNULLCHK(cf->idp_sel_tech_site),
-		 STRNULLCHK(cf->idp_sel_footer),
-		 STRNULLCHK(cf->idp_sel_end),
-#endif
 		 STRNULLCHK(cf->an_page),
 		 STRNULLCHK(cf->an_templ_file),
 		 STRNULLCHK(cf->an_templ),

@@ -146,7 +146,7 @@ struct zx_str* zxid_date_time(zxid_conf* cf, time_t secs)
   struct tm t;
   secs += cf->timeskew;
   GMTIME_R(secs, t);
-#if 0
+#if ZXID_MSEC
   /*                      "2002-10-31T21:42:14.002Z" */
   return zx_strf(cf->ctx, "%04d-%02d-%02dT%02d:%02d:%02d.002Z",
 		 t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
@@ -163,7 +163,7 @@ struct zx_attr_s* zxid_date_time_attr(zxid_conf* cf, struct zx_elem_s* father, i
   struct tm t;
   secs += cf->timeskew;
   GMTIME_R(secs, t);
-#if 0
+#if ZXID_MSEC
   /*                                    "2002-10-31T21:42:14.002Z" */
   return zx_attrf(cf->ctx, father, tok, "%04d-%02d-%02dT%02d:%02d:%02d.002Z",
 		  t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
@@ -384,12 +384,6 @@ struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* p
   
   /* Additional URL signing */
 
-#if 0  
-  memcpy(url+len, "&SigAlg=" SIG_ALGO_URLENC, sizeof("&SigAlg=" SIG_ALGO_URLENC)-1);
-  len += sizeof("&SigAlg=" SIG_ALGO_URLENC)-1;
-  if (zxid_lazy_load_sign_cert_and_pkey(cf, 0, &sign_pkey, "SAML2 redir"))
-    zlen = zxsig_data(cf->ctx, len, url, &zbuf, sign_pkey, "SAML2 redir", 0);
-#else
   if (zxid_lazy_load_sign_cert_and_pkey(cf, &sign_cert, &sign_pkey, "SAML2 redir")) {
     mdalg = cf->samlsig_digest_algo;
     if (!mdalg || (mdalg[0]=='0'&&!mdalg[1]))
@@ -406,7 +400,6 @@ struct zx_str* zxid_saml2_redir_enc(zxid_conf* cf, char* field, struct zx_str* p
     ERR("Signature requested, but failed to read private key. %d",0);
     return 0;
   }
-#endif
   D("siglen=%d", zlen);
   
   /* Base64 and URL encode the sig. Had SAML2 specified safe base64, world would be simpler! */

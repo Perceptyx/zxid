@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # 31.10.2012, Sampo Kellomaki (sampo@iki.fi)
 #
-# Decode and format logs
+# Decode and format zxid logs
 #
 # Usage: cat foo.saml | ./zxdecode | ./log-pretty.pl
 #        ./log-pretty.pl -fn FN  # Decode FN hash to file and function name

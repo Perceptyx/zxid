@@ -101,7 +101,7 @@ public class app_demo extends HttpServlet {
 	
 	if (cf == null) {
 	    System.err.print("Running conf\n");
-	    String conf = getServletConfig().getInitParameter("ZXIDConf"); 
+	    String conf = getServletConfig().getInitParameter("ZXIDConf");
 	    cf = zxidjni.new_conf_to_cf(conf);
 	    zxidjni.set_opt(cf, 1, 1);  // Debug on
 	    zxidjni.set_opt(cf, 7, 3);  // Cause glibc malloc/free to dump core on error
@@ -111,18 +111,15 @@ public class app_demo extends HttpServlet {
 	
 	res.setContentType("text/html");
 	out.print("<title>Demo App Protected Content</title>\n");
+	out.print("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n");
 	out.print("<link type=\"text/css\" rel=stylesheet href=\"/idpsel.css\">\n<body>");
-	out.print("<table align=right><tr><td>");
 	//out.print("<a href=\"http://www.tas3.eu/\"><img src=\"tas3-logo.jpg\" height=64 border=0></a>");
 	//out.print("<a href=\"http://zxid.org/\"><img src=\"logo-zxid-128x128.png\" height=64 border=0></a>");
 	out.print(ptm);
-	//out.print("<iframe id=localnav class=nav src=\"/nav.html\"><a href=\"https://idp.i-dent.eu/nav.html\">Navigation iFrame</a></iframe><br>");
-	out.print("<br><iframe id=idpnav class=nav width=220 height=100 src=\"https://idp.i-dent.eu/nav.html\"><a href=\"https://idp.i-dent.eu/nav.html\">Navigation iFrame from IdP</a></iframe><br>");
-	out.print("</td></tr></table>");
+	out.print("<iframe id=idpnav class=nav width=210 height=100 style=\"position:absolute;right:0px;top:85px;\" frameborder=0 scrolling=no src=\"https://idp.i-dent.eu/nav.html\"><a href=\"https://idp.i-dent.eu/nav.html\">Navigation iFrame from IdP</a></iframe><br>");
 	out.print("<a href=\"http://synergetics.be/\"><img src=\"synlogo_s.jpg\" height=67 border=0></a><br>");
 	out.print("<h1>Demo Web GUI/Portal Protected Content</h1>\n");
-	out.print("<i>Relife end2end Trust Assurance Technical Demo</i><br>\n");
-	//out.print("<h1>ZXID Demo App Protected Content</h1> at " + fullURL + "\n");
+	out.print("<i>ZXID end2end Trust Assurance Technical Demo</i><br>\n");
 
 	// Render logout buttons (optional)
 	//out.print("[<a href=\"sso?gl=1&s="+sid+"\">Local Logout</a> | <a href=\"sso?gr=1&s="+sid+"\">Single Logout</a>]\n");
@@ -139,7 +136,7 @@ public class app_demo extends HttpServlet {
 	}
 
 	out.print("<table align=right><tr><td>");
-	out.print("<img src=\"tas3-recurs-demo.png\" width=500 border=0>");
+	out.print("<img src=\"recurs-demo-2016.png\" width=500 border=0>");
 	out.print("</td></tr></table>");
 
 	// Render protected content page (your application starts working)
@@ -226,7 +223,7 @@ public class app_demo extends HttpServlet {
 		    out.print(ret);
 		    out.print("</textarea>\n");
 		}
-		out.print("<img src=\"green-check-20x20.png\">WSC4 Response Authorized by PDP (A).<br>\n");
+		out.print("<p><img src=\"green-check-20x20.png\">WSC4 Response Authorized by PDP (A).<br>\n");
 	    }
 	}
 	

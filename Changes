@@ -122,6 +122,10 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
 
 No authentication done but request not allowed without authentication for Authentication not configured?
 
+zxid-1.43:: 6.3.2016
+    - Eliminated commented out code regarding crypto setup
+    - NOT RELEASED YET    
+
 zxid-1.42:: 27.2.2016
     - Ran through full test suite
     - Made signature and hash algorithms more configurable
@@ -145,7 +149,6 @@ zxid-1.38:: 11.4.2015
 zxid-1.30:: 19.2.2015
     - UMA and OAUTH work
     - Fixed Action header detection in the non-XML body case
-    - NOT RELEASED YET
 
 zxid-1.22:: 9.10.2014
     - Added to Local PDP multivalued role attribute matching

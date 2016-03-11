@@ -1035,15 +1035,7 @@ char* zx_zlib_raw_inflate(struct zx_ctx* c, int in_len, const char* in, int* out
     return 0;
   }
   
-#if 0
-  ret = inflate(&z, Z_FINISH);
-  if (ret != Z_STREAM_END) {
-    inflateEnd(&z);
-    ERR("zlib inflate failed with error code %d. Most probably the input data is empty, corrupt, or not in zlib format.", ret);
-    return 0;
-  }
-#else
-  while (--iter) {  /* Make sure we can never be caught in infinite loop */
+  while (--iter) {  /* Make sure we can never be caught in an infinite loop */
     ret = inflate(&z, Z_SYNC_FLUSH);
     switch (ret) {
     case Z_STREAM_END: goto done;
@@ -1063,7 +1055,6 @@ char* zx_zlib_raw_inflate(struct zx_ctx* c, int in_len, const char* in, int* out
       return 0;
     }
   }
-#endif
  done:
   *out_len = z.total_out;
   inflateEnd(&z);

@@ -24,8 +24,9 @@
  * 15.4.2013, added fflush(3) here and there to accommodate broken atexit() --Sampo
  * 17.11.2013, move redir_to_content feature to zxid_simple() --Sampo
  * 20.11.2013, move defaultqs feature feature to zxid_simple() --Sampo
- * 14.2.2014,  added redirafter feature for local IdP logins (e.g. zxidatsel.pl) --Sampo
- * 1.4.2015,   fixed skin based template path in case it does not have directory --Sampo
+ * 14.2.2014, added redirafter feature for local IdP logins (e.g. zxidatsel.pl) --Sampo
+ * 1.4.2015,  fixed skin based template path in case it does not have directory --Sampo
+ * 6.3.2016,  eliminated some commented out code --Sampo 
  *
  * Login button abbreviations
  * A2 = SAML 2.0 Artifact Profile
@@ -231,19 +232,6 @@ char* zxid_fed_mgmt_cf(zxid_conf* cf, int* res_len, int sid_len, char* sid, int 
 		 cf->mgmt_logout, cf->mgmt_defed);
   else
     ss = zx_dup_str(cf->ctx, "");
-
-#if 0
-  printf("COOKIE: foo\r\n");
-  if (qs) printf("QS(%s)\n", qs);
-  if (got>0) printf("GOT(%.*s)\n", got, buf);
-  if (cgi->err) printf("<p><font color=red><i>%s</i></font></p>\n", cgi->err);
-  if (cgi->msg) printf("<p><i>%s</i></p>\n", cgi->msg);
-  printf("User:<input name=user> PW:<input name=pw type=password>");
-  printf("<input name=login value=\" Login \" type=submit>");
-  printf("<h3>Technical options (typically hidden fields on production site)</h3>\n");
-  printf("sid(%s) nid(%s) <a href=\"zxid?s=%s\">Reload</a>", ses->sid, ses->nid, ses->sid);
-  if (cgi->dbg) printf("<p><form><textarea cols=100 row=10>%s</textarea></form>\n", cgi->dbg);
-#endif
 
   if (auto_flags & ZXID_AUTO_MGMTC && auto_flags & ZXID_AUTO_MGMTH) {  /* Both H&C: CGI */
     fprintf(stdout, "Content-Type: text/html" CRLF "Content-Length: %d" CRLF2 "%.*s",
@@ -708,15 +696,6 @@ struct zx_str* zxid_idp_select_zxstr_cf_cgi(zxid_conf* cf, zxid_cgi* cgi, int au
 		 FLDCHK(cgi, rs));
   } else
     ss = zx_dup_str(cf->ctx, "");
-#endif
-#if 0
-  if (cgi.err) printf("<p><font color=red><i>%s</i></font></p>\n", cgi.err);
-  if (cgi.msg) printf("<p><i>%s</i></p>\n", cgi.msg);
-  printf("User:<input name=user> PW:<input name=pw type=password>");
-  printf("<input name=login value=\" Login \" type=submit>");
-  printf("<h3>Login Using IdP Discovered from Common Domain Cookie (CDC)</h3>\n");
-  printf("RelayState: <input name=fr value=\"rs123\"><br>\n");
-  if (cgi.dbg) printf("<p><form><textarea cols=100 row=10>%s</textarea></form>\n", cgi.dbg);
 #endif
   return ss;
 }

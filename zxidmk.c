@@ -396,9 +396,6 @@ struct zx_sa_AuthnStatement_s* zxid_mk_an_stmt(zxid_conf* cf, zxid_ses* ses, str
   struct zx_str* ss;
   struct zx_sa_AuthnStatement_s* an_stmt = zx_NEW_sa_AuthnStatement(cf->ctx, father);
   if (ses->sesix) {
-#if 0
-    an_stmt->SessionIndex = zx_dup_str(cf->ctx, ses->sesix);
-#else
     /* Need noncorrelatable session index */
     eid_ss.len = strlen(eid);
     eid_ss.s = (char*)eid;
@@ -406,7 +403,6 @@ struct zx_sa_AuthnStatement_s* zxid_mk_an_stmt(zxid_conf* cf, zxid_ses* ses, str
     sesix.s = ses->sesix;
     ss = zxid_psobj_enc(cf, &eid_ss, "ZS", &sesix);
     an_stmt->SessionIndex = zx_ref_len_attr(cf->ctx, &an_stmt->gg, zx_SessionIndex_ATTR, ss->len, ss->s);
-#endif
   }
   an_stmt->AuthnInstant = zxid_date_time_attr(cf, &an_stmt->gg, zx_AuthnInstant_ATTR, ses->an_instant);
   an_stmt->AuthnContext = zx_NEW_sa_AuthnContext(cf->ctx, &an_stmt->gg);
