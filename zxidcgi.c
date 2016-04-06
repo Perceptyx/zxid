@@ -1,5 +1,5 @@
 /* zxidcgi.c  -  Handwritten functions for parsing SP specific CGI options
- * Copyright (c) 2012-2013 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
+ * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -16,6 +16,7 @@
  * 10.12.2011, added OAuth2, OpenID Connect, and UMA support --Sampo
  * 20.10.2012, made the fr to rs copy cause deflate safe base64 encode --Sampo
  * 14.3.2013   added language/skin dependent templates --Sampo
+ * 28.3.2016,  fixed alp.x and alp.y decoding problems --Sampo
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  */
 
@@ -205,7 +206,7 @@ set_eid:
       if (!strcmp(n, "access_token")) { cgi->access_token = v; break; }    /* OAUTH2 */
       if (!strcmp(n, "aud"))          { cgi->aud = v; break; }             /* OAUTH2 */
       switch (n[1]) {
-      case 'l': if (n[3]) goto unknown;  cgi->op = n[2];           break;  /* al = login */
+      case 'l': if (!ONE_OF_2(n[3], 0, '.')) goto unknown;  cgi->op = n[2]; break;  /* al = login alp alp.x alp.y */
       case 'u': if (n[2]) goto unknown;  if (v[0] || !cgi->uid) cgi->uid = v; break; /* au =user */
       case 'p': if (n[2]) goto unknown;  cgi->pw = v;              break;  /* ap = password */
       case 'q': if (n[2]) goto unknown;  cgi->pin = v;             break;  /* aq = pin */

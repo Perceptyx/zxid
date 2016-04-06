@@ -14,13 +14,14 @@
  *
  *   \n              -- zero, or more in case of heart beats
  *   COMMAND\n       -- lines end in LF (not CRLF)
- *   header:value\n  -- zero or more
+ *   header:value\n  -- zero or more (content-length is one possible header)
  *   \n              -- blank line separates headers and body
  *   payload
  *   \0
  *   \n              -- zero, or more in case of heart beats
  *
  * See also:  http://stomp.github.com/stomp-specification-1.1.html (20110331)
+ *            http://stomp.github.io/
  * Todo: implement heart beat generation and checking
  */
 
@@ -231,7 +232,7 @@ static struct hi_pdu* stomp_find_pending_req_for_resp(struct hi_io* io, struct h
  * This is essentially nice way for the client to communicate to us it has
  * difficulty in persisting the message. It could also just hang up and the
  * net effect would be the same. However, receiving the NACK allows us to
- * close the delivery bitch sooner so we can free the memory in the
+ * close the delivery batch sooner so we can free the memory in the
  * hopeless cases quicker. (*** there should also be a handler for
  * close-connection lost that would do similar cleanup) */
 

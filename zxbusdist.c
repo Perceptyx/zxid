@@ -241,7 +241,7 @@ void stomp_msg_deliver(struct hi_thr* hit, struct hi_pdu* db_pdu)
  * io object (and will keep on rescheduling itself until its job
  * has been done (??? may be not)). At that point it will free itself.
  * The acks will be written to ack_fd (to avoid 99% of the double delivery, and
- * to have an audit trail on our side about deliveries. */
+ * to have an audit trail on our side about deliveries). */
 
 /* Called by:  zxbus_persist */
 static void zxbus_sched_new_delivery(struct hi_thr* hit, struct hi_pdu* req, const char* sha1name, int dest_len, const char* dest)

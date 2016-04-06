@@ -1,4 +1,4 @@
-/* zxbusent.c  -  Audit Bus Entity management
+/* zxbusent.c  -  Audit Bus or zxcached Entity management
  * Copyright (c) 2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
@@ -168,7 +168,7 @@ static int zxbus_pw_authn_ent(const char* eid, const char* passw, int fd_hint)
  * To create bus users, which use SHA1 of their EntityID (the entityID is passed
  * in STOMP 1.1 login header) as username, you should follow these steps
  *
- * 1. Run ./zxbuslist -c 'URL=https://sp.foo.com/' -dc to determine the entity ID
+ * 1. Run ./zxbuslist -c 'BURL=https://sp.foo.com/' -dc to determine the entity ID
  * 2. Convert entity ID to SHA1 hash: ./zxcot -p 'http://sp.foo.com?o=B'
  * 3. Create the user: ./zxpasswd -at 'eid: http://sp.foo.com?o=B' -new G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/ <passwd
  * 4. To enable ClientTLS authentication, determine the subject_hash of

@@ -29,6 +29,7 @@
 # 21.11.2013, added zxid_httpd --Sampo
 # 9.2.2014,  added musl-libc compile --Sampo
 # 29.5.2015  upgraded the version due to addition of two factor authentication --Sampo
+# 3.4.2016,  added rules for zxcached --Sampo
 #
 # Build so far only tested on Linux, Solaris 8, MacOS 10.3, and mingw-w64. This
 # makefile needs gmake-3.78 or newer.
@@ -730,11 +731,13 @@ all_minus_perl: default precheck_apache apachezxid phpzxid javazxid app_demo.cla
 
 zxbus:  zxbusd zxbustailf zxbuslist
 
-aller: all zxbus app_demo.class
+zxcache:  zxcached
+
+aller: all zxbus zxcache app_demo.class
 
 maymay: javazxid app_demo.class
 
-diet64: zxcot-static-x64 zxpasswd-static-x64 zxididp-static-x64 zxidhlo-static-x64 zxlogview-static-x64 zxcall-static-x64 zxumacall-static-x64 zxdecode-static-x64 zxbusd-static-x64 zxbuslist-static-x64 zxbustailf-static-x64
+diet64: zxcot-static-x64 zxpasswd-static-x64 zxididp-static-x64 zxidhlo-static-x64 zxlogview-static-x64 zxcall-static-x64 zxumacall-static-x64 zxdecode-static-x64 zxbusd-static-x64 zxbuslist-static-x64 zxbustailf-static-x64 zxcached-static-x64
 
 ZXIDHDRS=zx.h zxid.h zxidnoswig.h c/zxidvers.h
 
@@ -830,7 +833,9 @@ endif
 
 endif
 
-ZXBUSD_OBJ=zxbusd.$(OBJ_EXT) hiios.$(OBJ_EXT) hiinit.$(OBJ_EXT) hitodo.$(OBJ_EXT) hinet.$(OBJ_EXT) hiread.$(OBJ_EXT) hiwrite.$(OBJ_EXT) hiiosdump.$(OBJ_EXT) testping.$(OBJ_EXT) http.$(OBJ_EXT) smtp.$(OBJ_EXT) stomp.$(OBJ_EXT) zxbusdist.$(OBJ_EXT) zxbussubs.$(OBJ_EXT) zxbusent.$(OBJ_EXT)
+ZXBUSD_OBJ=zxbusd.$(OBJ_EXT) hiios-stomp.$(OBJ_EXT) hiinit.$(OBJ_EXT) hitodo.$(OBJ_EXT) hinet.$(OBJ_EXT) hiread-stomp.$(OBJ_EXT) hiwrite-stomp.$(OBJ_EXT) hiiosdump.$(OBJ_EXT) testping.$(OBJ_EXT) stomp.$(OBJ_EXT) zxbusdist.$(OBJ_EXT) zxbussubs.$(OBJ_EXT) zxbusent.$(OBJ_EXT)
+
+ZXCACHED_OBJ=zxcached.$(OBJ_EXT) hiios-mcdb.$(OBJ_EXT) hiinit.$(OBJ_EXT) hitodo.$(OBJ_EXT) hinet.$(OBJ_EXT) hiread-mcdb.$(OBJ_EXT) hiwrite.$(OBJ_EXT) hiiosdump.$(OBJ_EXT) testping.$(OBJ_EXT) http.$(OBJ_EXT) mcdb.$(OBJ_EXT) zxdata.$(OBJ_EXT)
 
 #
 # Schemata and potential xml document roots.
@@ -1591,6 +1596,30 @@ $(MINI_HTTPD_DIR)/mime_types.h: $(MINI_HTTPD_DIR)/mime_types.txt
 
 mini_httpd_zxid: $(MINI_HTTPD_DIR)/mini_httpd_zxid $(MINI_HTTPD_DIR)/htpasswd
 
+### Special rules for building some files for zxbusd vs. zxcached
+
+hiios-stomp.$(OBJ_EXT): hiios.c
+	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
+
+hiios-mcdb.$(OBJ_EXT): hiios.c
+	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_MCDB=1 $(CINC)
+
+hiread-stomp.$(OBJ_EXT): hiread.c
+	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
+
+hiread-mcdb.$(OBJ_EXT): hiread.c
+	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_MCDB=1 $(CINC)
+
+hiwrite-stomp.$(OBJ_EXT): hiwrite.c
+	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
+
+stomp.$(OBJ_EXT): stomp.c
+	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
+
+mcdb.$(OBJ_EXT): mcdb.c
+	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_MCDB=1 $(CINC)
+
+
 ###
 ### zxid_httpd (derived from mini_httd).
 ###
@@ -1668,6 +1697,12 @@ zxbusd: $(ZXBUSD_OBJ) $(LIBZXID_A)
 	$(CC) $(OUTOPT)$@ $^ $(LIBS)
 
 zxbusd-static-x64: $(ZXBUSD_OBJ) $(LIBZXID_A)
+	diet gcc $(OUTOPT)$@ $^ -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
+
+zxcached: $(ZXCACHED_OBJ) $(LIBZXID_A)
+	$(CC) $(OUTOPT)$@ $^ $(LIBS)
+
+zxcached-static-x64: $(ZXCACHED_OBJ) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@ $^ -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
 zxidhrxml: zxidhrxmlwsc zxidhrxmlwsp
@@ -2012,7 +2047,7 @@ dirs: dir
 install_nodep:
 	@$(ECHO) "===== Installing in $(PREFIX) (to change do make install PREFIX=/your/path)"
 	-mkdir -p $(PREFIX) $(PREFIX)/bin $(PREFIX)/lib $(PREFIX)/include/zxid $(PREFIX)/include/zx $(PREFIX)/doc
-	$(CP) zxmkdirs.sh zxcall zxumacall zxpasswd zxcot zxlogview zxbusd zxbustailf zxbuslist zxdecode zxencdectest zxcleanlogs.sh zximport-htpasswd.pl zximport-ldif.pl xml-pretty.pl diffy.pl smime send.pl xacml2ldif.pl mockpdp.pl env.cgi zxid-java.sh zxidatsel.pl zxidnewuser.pl zxidcot.pl zxiddash.pl zxidexplo.pl zxidhlo zxidhlo.pl zxidhlo.php zxidhlo.sh zxidhlo-java.sh zxidhlocgi.php zxidhlowsf zxidhrxmlwsc zxidhrxmlwsp zxididp zxidsimple zxidwsctool zxidwspcgi zxtest.pl mini_httpd_zxid $(PREFIX)/bin
+	$(CP) zxmkdirs.sh zxcall zxumacall zxpasswd zxcot zxlogview zxbusd zxbustailf zxbuslist zxcached zxdecode zxencdectest zxcleanlogs.sh zximport-htpasswd.pl zximport-ldif.pl xml-pretty.pl diffy.pl smime send.pl xacml2ldif.pl mockpdp.pl env.cgi zxid-java.sh zxidatsel.pl zxidnewuser.pl zxidcot.pl zxiddash.pl zxidexplo.pl zxidhlo zxidhlo.pl zxidhlo.php zxidhlo.sh zxidhlo-java.sh zxidhlocgi.php zxidhlowsf zxidhrxmlwsc zxidhrxmlwsp zxididp zxidsimple zxidwsctool zxidwspcgi zxtest.pl mini_httpd_zxid $(PREFIX)/bin
 	$(CP) $(LIBZXID_A) libzxid.so* $(PREFIX)/lib
 	$(CP) libzxid.so.0.0 $(PREFIX)/lib
 	$(CP) *.h c/*.h $(PREFIX)/include/zxid
@@ -2070,7 +2105,7 @@ distclean: clean
 cleanbin:
 	rm -f zxid zxidsimple zxbench zxencdectest zxmqtest $(LIBZXID_A) libzxid.so* zxsizeof zxid.stderr
 	rm -f zxidhlo zxidhlowsf zxidhrxmlwsc zxidhrxmlwsp zxidsimple zxidsp zxidwsctool
-	rm -f zxidwspcgi zxidxfoobarwsp zxpasswd zxcot zxcall zxumacall zxbusd zxbustailf zxbuslist
+	rm -f zxidwspcgi zxidxfoobarwsp zxpasswd zxcot zxcall zxumacall zxbusd zxbustailf zxbuslist zxcached
 	rm -f mod_auth_saml$(SO) zxididp zxdecode zxlogview zxcot zxpasswd smime
 	rm -f zxid.dll zxidjava/zxidjni.dll *.exe
 
@@ -2078,7 +2113,7 @@ miniclean: perlclean phpclean pyclean rubyclean csharpclean javaclean docclean p
 	@$(ECHO) ------------------ Making miniclean
 	rm -f *.o *.obj zxid zxlogview zxbench zxencdectest zxmqtest $(LIBZXID_A) libzxid.so* sizeof zxid.stderr
 	rm -f zxidhlo zxidhlowsf zxidhrxmlwsc zxidhrxmlwsp zxidsimple zxidsp zxidwsctool
-	rm -f mod_auth_saml$(SO) zxididp zxbusd zxbustailf zxbuslist
+	rm -f mod_auth_saml$(SO) zxididp zxbusd zxbustailf zxbuslist zxcached
 	rm -f core* *~ .*~ .\#* c/.*~ c/.\#* sg/*~ sg/.*~ sg/.\#* foo bar ak.*
 
 # make cleany && make genwrap ENA_GEN=1 && make all ENA_GEN=1
@@ -2226,7 +2261,7 @@ zxidpcopytc: html/zxidp-user-terms.html html/zxidp-sp-terms.html
 	rsync html/zxidp-user-terms.html html/zxidp-sp-terms.html $(WEBROOT)/html
 
 rsynclite:
-	cd ..; rsync -a '--exclude=*.o' '--exclude=*.zip' '--exclude=TAGS' '--exclude=*.tgz' '--exclude=*.class' '--exclude=*.so' '--exclude=*.a'  '--exclude=zxlogview' '--exclude=zxidsimple'  '--exclude=zxidhlowsf'  '--exclude=zxidhlo' '--exclude=zxidsp' '--exclude=zxbusd' '--exclude=zxbustailf' '--exclude=zxbuslist' zxid mesozoic.homeip.net:
+	cd ..; rsync -a '--exclude=*.o' '--exclude=*.zip' '--exclude=TAGS' '--exclude=*.tgz' '--exclude=*.class' '--exclude=*.so' '--exclude=*.a'  '--exclude=zxlogview' '--exclude=zxidsimple'  '--exclude=zxidhlowsf'  '--exclude=zxidhlo' '--exclude=zxidsp' '--exclude=zxbusd' '--exclude=zxbustailf' '--exclude=zxbuslist' '--exclude=zxcached' zxid mesozoic.homeip.net:
 
 cvstag:
 	cvs tag ZXID_ZXIDREL_$(ZXIDVERSION)
@@ -2333,7 +2368,7 @@ dep: $(PULVER_DEPS)
 	rm -f deps.dep
 	$(MAKE) deps.dep
 
-deps: zxdecode.c zxcot.c zxpasswd.c zxidhlo.c zxbusd.c zxbustailf.c zxbuslist.c zxidsimple.c $(ZX_OBJ:.o=.c) c/saml2-const.h c/saml2md-const.h c/wsf-const.h $(PULVER_DEPS) c/zxidvers.h
+deps: zxdecode.c zxcot.c zxpasswd.c zxidhlo.c zxbusd.c zxbustailf.c zxbuslist.c zxcached.c zxidsimple.c $(ZX_OBJ:.o=.c) c/saml2-const.h c/saml2md-const.h c/wsf-const.h $(PULVER_DEPS) c/zxidvers.h
 	@$(ECHO) ================== Making deps
 	cat pulver/c_saml2_dec_c.deps | xargs $(CC) $(CDEF) $(CINC) -MM >>deps.dep
 	cat pulver/c_saml2_enc_c.deps | xargs $(CC) $(CDEF) $(CINC) -MM >>deps.dep
@@ -2343,7 +2378,7 @@ deps: zxdecode.c zxcot.c zxpasswd.c zxidhlo.c zxbusd.c zxbustailf.c zxbuslist.c 
 	cat pulver/c_saml2md_enc_c.deps | xargs $(CC) $(CDEF) $(CINC) -MM >>deps.dep
 	cat pulver/c_saml2md_aux_c.deps | xargs $(CC) $(CDEF) $(CINC) -MM >>deps.dep
 	cat pulver/c_saml2md_getput_c.deps | xargs $(CC) $(CDEF) $(CINC) -MM >>deps.dep
-	$(CC) $(CDEF) $(CINC) -MM zxdecode.c zxcot.c zxpasswd.c zxidhlo.c zxbusd.c zxbustailf.c zxbuslist.c zxidsimple.c c/saml2-const.h c/saml2md-const.h >>deps.dep
+	$(CC) $(CDEF) $(CINC) -MM zxdecode.c zxcot.c zxpasswd.c zxidhlo.c zxbusd.c zxbustailf.c zxbuslist.c zxcached.c zxidsimple.c c/saml2-const.h c/saml2md-const.h >>deps.dep
 
 #	$(ECHO) Deps built. $(foreach fil,$^,$(shell $(fil) >>deps.dep))
 
@@ -2351,7 +2386,7 @@ else
 
 dep: deps
 
-deps: $(ZX_OBJ:.o=.c) $(ZXID_LIB_OBJ:.o=.c) $(WSF_OBJ:.o=.c) $(OAUTH_OBJ:.o=.c) $(SMIME_LIB_OBJ:.o=.c) zxdecode.c zxcot.c zxpasswd.c zxidhlo.c zxbusd.c zxbustailf.c zxbuslist.c zxidsp.c zxidsimple.c $(ZX_OBJ:.o=.c) $(ZX_GEN_H) $(ZX_GEN_C) c/zx-const.h c/zxidvers.h
+deps: $(ZX_OBJ:.o=.c) $(ZXID_LIB_OBJ:.o=.c) $(WSF_OBJ:.o=.c) $(OAUTH_OBJ:.o=.c) $(SMIME_LIB_OBJ:.o=.c) zxdecode.c zxcot.c zxpasswd.c zxidhlo.c zxbusd.c zxbustailf.c zxbuslist.c zxcached.c zxidsp.c zxidsimple.c $(ZX_OBJ:.o=.c) $(ZX_GEN_H) $(ZX_GEN_C) c/zx-const.h c/zxidvers.h
 	$(CC) $(CDEF) $(CINC) -MM $^ >deps.dep
 
 # make gen ENA_GEN=1

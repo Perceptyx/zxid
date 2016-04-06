@@ -43,7 +43,7 @@
 #include "hiios.h"
 #include "errmac.h"
 
-extern zxid_conf* zxbus_cf;
+extern zxid_conf* zx_cf;
 extern int errmac_debug;
 #ifdef MUTEX_DEBUG
 extern pthread_mutexattr_t MUTEXATTR_DECL;
@@ -89,7 +89,7 @@ int hi_vfy_peer_ssl_cred(struct hi_thr* hit, struct hi_io* io, const char* eid)
     zx_report_openssl_err("peer_cert");
     return 0;
   }
-  meta = zxid_get_ent(zxbus_cf, eid);
+  meta = zxid_get_ent(zx_cf, eid);
   if (!meta) {
     ERR("Unable to find metadata for eid(%s) in verify peer cert", eid);
     return 0;
@@ -623,6 +623,9 @@ void hi_accept_book(struct hi_thr* hit, struct hi_io* io, int fd)
   INFO("ACCEPTed and booked(%x)", io->fd);  /* add IP and port of client */
   
   switch (io->qel.proto) {
+  case HIPROTO_MCDB:
+    /* *** Go straight to reading pdu without passing through TODO */
+    break;
   case HIPROTO_STOMP:
     /* *** Go straight to reading STOMP/CONNECT pdu without passing through TODO */
     break;
@@ -674,7 +677,7 @@ void hi_accept(struct hi_thr* hit, struct hi_io* listener)
   struct hi_io* io;
   struct sockaddr_in sa;
   int fd;
-  size_t size;
+  socklen_t size;
   size = sizeof(sa);
   D("accept from(%x)", listener->fd);
   if ((fd = accept(listener->fd, (struct sockaddr*)&sa, &size)) == -1) {

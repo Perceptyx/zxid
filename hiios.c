@@ -48,7 +48,7 @@ extern pthread_mutexattr_t MUTEXATTR_DECL;
 
 /*() Close an I/O object (in multiple stages)
  * The close may be called in response to I/O errors or for controlled
- * disconnect. At the time of first calling close, any number of
+ * disconnect. At the time of first call to hi_close(), any number of
  * threads (see io->n_thr) may be able to access the io object and the
  * io object may still be in todo queue or it may be returned by poll.
  * We need to wait for all these possibilities to flush out.
@@ -332,7 +332,9 @@ void hi_shuffle(struct hi_thr* hit, struct hiios* shf)
     case HI_HALF_ACCEPT: hi_accept_book(hit, (struct hi_io*)qe, ((struct hi_io*)qe)->fd);
     case HI_TCP_C:
     case HI_TCP_S:    hi_in_out(hit, (struct hi_io*)qe); break;
+#ifdef ENA_STOMP
     case HI_PDU_DIST: stomp_msg_deliver(hit, (struct hi_pdu*)qe); break;
+#endif
 #ifdef HAVE_NET_SNMP
     case HI_SNMP:     if (snmp_port) processSNMP(); break; /* *** needs more thought */
 #endif

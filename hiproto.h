@@ -1,5 +1,5 @@
 /* hiproto.h  -  Protocol constants for hiios
- * Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2006,2012,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -10,6 +10,9 @@
  * 15.4.2006, created over Easter holiday --Sampo
  * 16.8.2012, modified license grant to allow use with ZXID.org --Sampo
  * 17.8.2012, added STOMP 1.1 definitions  --Sampo
+ * 3.4.2016,  added memcached binary protocol definitions --Sampo
+ *
+ * See also: https://cloud.github.com/downloads/dustin/memcached/protocol-binary.txt
  */
 
 #ifndef _hiproto_h
@@ -31,6 +34,8 @@ struct hiios;
 #define HIPROTO_TEST_PING 6
 #define HIPROTO_STOMP 7
 #define HIPROTO_STOMPS 8
+#define HIPROTO_MCDB   9    /* memcached binary protocol */
+#define HIPROTO_MCDBS 10
 
 #ifdef ENA_S5066
 /* Application SAP IDs. See Annex F. */
@@ -208,6 +213,51 @@ int stomp_decode(struct hi_thr* hit, struct hi_io* io);
 void stomp_msg_deliver(struct hi_thr* hit, struct hi_pdu* db_pdu);
 int stomp_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, const char* ecode, const char* emsg);
 void stomp_send_receipt(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req);
+
+/* memcached binary protocol support (1.3, 24byte header) */
+
+#define MCDB_REQ_MAGIC  0x80
+#define MCDB_RESP_MAGIC 0x81
+
+#define MCDB_GET  0x00
+#define MCDB_SET  0x01
+#define MCDB_ADD  0x02
+#define MCDB_REPLACE 0x03
+#define MCDB_DEL  0x04
+#define MCDB_INC  0x05
+#define MCDB_DEC  0x06
+#define MCDB_QUIT 0x07
+#define MCDB_FLUSH 0x08
+#define MCDB_GETQ 0x09
+#define MCDB_NOP  0x0A
+#define MCDB_VERS 0x0B
+#define MCDB_GETK 0x0C
+#define MCDB_GETKQ 0x0D
+#define MCDB_APPEND 0x0E
+#define MCDB_PREPEND 0x0F
+#define MCDB_STAT 0x10
+#define MCDB_SETQ 0x11
+#define MCDB_ADDQ 0x12
+#define MCDB_REPLACEQ 0x13
+#define MCDB_DELQ 0x14
+#define MCDB_INCQ 0x15
+#define MCDB_DECQ 0x16
+#define MCDB_QUITQ 0x17
+#define MCDB_FLUSHQ 0x18
+#define MCDB_APPENDQ 0x19
+#define MCDB_PREPENDQ 0x1A
+#define MCDB_ZXMSGPACK 0x21  /* ZX specific: msgpack formatted envelope */
+
+#define MCDB_STATUS_OK 0x0000
+#define MCDB_STATUS_KEY_NOT_FOUND   0x0001
+#define MCDB_STATUS_KEY_EXISTS      0x0002
+#define MCDB_STATUS_VALUE_TOO_LARGE 0x0003
+#define MCDB_STATUS_INVALID_ARGS    0x0004
+#define MCDB_STATUS_ITEM_NOT_STORED 0x0005
+#define MCDB_STATUS_UNKNOWN_COMMAND 0x0081
+#define MCDB_STATUS_OUT_OF_MEMORY   0x0082
+
+int mcdb_decode(struct hi_thr* hit, struct hi_io* io);
 
 struct hi_ch* zxbus_find_ch(struct hiios* shf, int len, const char* dest);
 struct hi_ent* zxbus_load_ent(struct hiios* shf, int len, const char* eid);

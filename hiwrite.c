@@ -1,5 +1,5 @@
 /* hiwrite.c  -  Hiquu I/O Engine Write Operation.
- * Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2006,2012,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -11,9 +11,10 @@
  * 22.4.2006, refined multi iov sends over the weekend --Sampo
  * 16.8.2012, modified license grant to allow use with ZXID.org --Sampo
  * 6.9.2012,  added support for TLS and SSL --Sampo
+ * 6.4.2016,  added reallocation of PDU body --Sampo
  *
  * Idea: Consider separate lock for maintenance of to_write queue and separate
- * for in_write, iov, and actual wrintev().
+ * for in_write, iov, and actual writev().
  */
 
 #include <pthread.h>
@@ -49,9 +50,43 @@ extern int errmac_debug;
 #define heart_bt  dest
 #define zx_rcpt_sig dest
 
-/*() Schedule to be sent a response.
+static void stomp_set_msg_id_and_destination(struct hi_io* io, struct hi_pdu* resp)
+{
+#ifdef ENA_STOMP
+  /* *** this is really STOMP 1.1 specific. Ideally msg_id
+   * and dest would already be set by the STOMP layer before
+   * calling this - or there should be dispatch to protocol
+   * specific method to recover them. */
+  resp->ad.stomp.msg_id = strstr(resp->m, "\nmessage-id:");
+  if (resp->ad.stomp.msg_id) {
+    resp->ad.stomp.msg_id += sizeof("\nmessage-id:")-1;
+    resp->n = io->pending;  /* add to io->pending, protected by io->qel.mut */
+    io->pending = resp;
+    resp->ad.stomp.dest = strstr(resp->m, "\ndestination:");
+    if (resp->ad.stomp.dest)
+      resp->ad.stomp.dest += sizeof("\ndestination:")-1;
+    resp->ad.stomp.body = strstr(resp->m, "\n\n");
+    if (resp->ad.stomp.body) {
+      resp->ad.stomp.body += sizeof("\n\n")-1;
+      resp->ad.stomp.len = resp->ap - resp->ad.stomp.body - 1 /* nul at end of frame */;
+    } else
+      resp->ad.stomp.len = 0;
+    D("pending resp_%p msgid(%.*s)", resp, (int)(strchr(resp->ad.stomp.msg_id,'\n')-resp->ad.stomp.msg_id), resp->ad.stomp.msg_id);
+  } else {
+    ERR("request from server to client lacks message-id header and thus can not expect an ACK. Not scheduling as pending. %p", resp);
+  }
+#endif
+}
+
+/*() Schedule a response to be sent.
  * If req is supplied, the response is taken to be response to that.
- * Otherwise resp istreated as a stand along PDU, unsolicited response if you like.
+ * Otherwise resp is treated as a stand alone PDU, unsolicited response if you like.
+ * The actual data is assumed to be populated in resp->iov[]. The data need not
+ * be memory from pdu->m - it can be any memory as long as it is not freed until
+ * the write has completed. The memory in resp->iov[] will not be freed by this routine
+ * or its subroutines - you will have to arrange otherwise to free it, if desired.
+ * For example, if iov points to an inmemory database or cache, the memory would not
+ * be freed at all (except perhaps much later by cache garbage collector).
  * locking:: will take io->qel.mut */
 
 /* Called by:  hi_send1, hi_send2, hi_send3 */
@@ -73,28 +108,7 @@ void hi_send0(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
   LOCK(io->qel.mut, "send0");
   if (!resp->req) {
     /* resp is really a request sent by server to the client */
-    /* *** this is really STOMP 1.1 specific. Ideally msg_id
-     * and dest would already be set by the STOMP layer before
-     * calling this - or there should be dispatch to protocol
-     * specific method to recover them. */
-    resp->ad.stomp.msg_id = strstr(resp->m, "\nmessage-id:");
-    if (resp->ad.stomp.msg_id) {
-      resp->ad.stomp.msg_id += sizeof("\nmessage-id:")-1;
-      resp->n = io->pending;  /* add to io->pending, protected by io->qel.mut */
-      io->pending = resp;
-      resp->ad.stomp.dest = strstr(resp->m, "\ndestination:");
-      if (resp->ad.stomp.dest)
-	resp->ad.stomp.dest += sizeof("\ndestination:")-1;
-      resp->ad.stomp.body = strstr(resp->m, "\n\n");
-      if (resp->ad.stomp.body) {
-	resp->ad.stomp.body += sizeof("\n\n")-1;
-	resp->ad.stomp.len = resp->ap - resp->ad.stomp.body - 1 /* nul at end of frame */;
-      } else
-	resp->ad.stomp.len = 0;
-      D("pending resp_%p msgid(%.*s)", resp, (int)(strchr(resp->ad.stomp.msg_id,'\n')-resp->ad.stomp.msg_id), resp->ad.stomp.msg_id);
-    } else {
-      ERR("request from server to client lacks message-id header and thus can not expect an ACK. Not scheduling as pending. %p", resp);
-    }
+    stomp_set_msg_id_and_destination(io, resp);
   }
   
   if (ONE_OF_2(io->n_thr, HI_IO_N_THR_END_GAME, HI_IO_N_THR_END_POLL)) {
@@ -196,21 +210,21 @@ void hi_send3(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
 }
 
 /*() Send formatted response.
- * Uses underlying machiner of hi_send0().
- * *** As req argument is entirely lacking, this must be to send unsolicited responses. */
+ * Suitable for sending short responses that fit in HI_PDU_MEM bytes. The
+ * formatted size is truncated to fit.
+ * Uses underlying machinery of hi_send0(). */
 
 /* Called by:  hi_accept_book, smtp_data, smtp_ehlo, smtp_mail_from x2, smtp_rcpt_to x3, smtp_resp_wait_220_greet, smtp_resp_wait_250_msg_sent, stomp_cmd_ni, stomp_err, stomp_got_login, stomp_got_send, stomp_msg_deliver, stomp_send_receipt */
 void hi_sendf(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, char* fmt, ...)
 {
   va_list pv;
-  struct hi_pdu* pdu = hi_pdu_alloc(hit, "send");
+  struct hi_pdu* pdu = hi_pdu_alloc(hit, "sendf");
   if (!pdu) { hi_dump(hit->shf); NEVERNEVER("Out of PDUs in bad place. fmt(%s)", fmt); }
   
   va_start(pv, fmt);
   pdu->need = vsnprintf(pdu->m, pdu->lim - pdu->m, fmt, pv);
-  va_end(pv);
-  
-  pdu->ap += pdu->need;
+  va_end(pv);  
+  pdu->ap += pdu->need;  /* length arg to vsnprintf() has truncated the string to what fits */
   hi_send1(hit, io, parent, req, pdu, pdu->need, pdu->m);
 }
 
@@ -263,7 +277,7 @@ static void hi_make_iov(struct hi_io* io)
  * too long, then to shf->free_pdus, to avoid over accumulation
  * of PDUs in single thread (i.e. allocated in one, but freed in another).
  * locking:: will use shf->pdu_mut
- * see also:: hi_pdu_alloc() */
+ * see also:: hi_pdu_alloc() in hiread.c */
 
 /* Called by:  hi_free_req x2, hi_free_resp */
 static void hi_pdu_free(struct hi_thr* hit, struct hi_pdu* pdu, const char* lk1, const char* lk2)
@@ -271,6 +285,11 @@ static void hi_pdu_free(struct hi_thr* hit, struct hi_pdu* pdu, const char* lk1,
   int i;
 
   ASSERT(!ONE_OF_2(pdu->qel.intodo, HI_INTODO_SHF_FREE, HI_INTODO_HIT_FREE));
+
+  if (pdu->m != pdu->mem) {  /* if memory for pdu body was malloc'd, free it now */
+    FREE(pdu->m);
+  }
+  
   pdu->qel.n = &hit->free_pdus->qel;         /* move to hit free list */
   hit->free_pdus = pdu;
   ++hit->n_free_pdus;
@@ -299,7 +318,7 @@ static void hi_pdu_free(struct hi_thr* hit, struct hi_pdu* pdu, const char* lk1,
 
 /*() Free a response PDU.
  * *** Here complex determination about freeability of a PDU needs to be done.
- * For now we "fake" it by assuming that a response sufficies to free request.
+ * For now we "fake" it by assuming that a response sufficies to free a request.
  * In real life you would have to consider
  * a. multiple responses
  * b. subrequests and their responses
@@ -390,7 +409,7 @@ void hi_del_from_reqs(struct hi_io* io, struct hi_pdu* req)
  * locking:: called outside io->qel.mut, takes it indirectly */
 
 /* Called by:  hi_free_in_write */
-static void hi_free_req_fe(struct hi_thr* hit, struct hi_pdu* req)
+void hi_free_req_fe(struct hi_thr* hit, struct hi_pdu* req)
 {
   ASSERT(req->fe);
   if (!req->fe)
@@ -433,7 +452,7 @@ static void hi_free_in_write(struct hi_thr* hit, struct hi_io* io)
 
 /*() Post process iov after write.
  * Determine if any (resp) PDUs got completely written and
- * warrant deletion of entire chaing of req and responses,
+ * warrant deletion of entire chain of req and responses,
  * including subreqs and their responses.
  * locking:: called outside io->qel.mut */
 

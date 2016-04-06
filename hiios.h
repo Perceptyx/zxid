@@ -1,5 +1,5 @@
 /* hiios.h  -  Hiquu I/O Engine
- * Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2006,2012,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -10,6 +10,7 @@
  * 15.4.2006, created over Easter holiday --Sampo
  * 23.4.2006, DTS specific enhancements --Sampo
  * 16.8.2012, modified license grant to allow use with ZXID.org --Sampo
+ * 3.4.2016,  added memcached binary protocol support as well as zxcache functionality --Sampo
  *
  * A shuffler (hiios) is the top most global object, containing all
  * the connection objects and original global PDU memory pool.
@@ -31,7 +32,7 @@
  * Additionally a PDU may participate in various write related queues using wn (write next) pointer
  * i.   io->to_write_produce  -- add new pdus here (main thr only)
  * ii.  io->to_write_consume  -- list of PDUs that are imminently going to be written
- * iii. io->in_write          -- list of pdus that are in process of being written (have iovs)
+ * iii. io->in_write          -- list of PDUs that are in process of being written (have iovs)
  * iv.  io->subresps          -- subreq: list of resps, to ds_wait() upon
  *
  * The PDUs in the to_write queue have pdu->wn pointing from consume towards produce:
@@ -53,7 +54,7 @@
  * Threading strategy:
  *
  * An I/O object needs to "belong" to single thread for duration of a
- * polled I/O activity: if a thread responsd to poll for read, it needs
+ * polled I/O activity: if a thread responds to poll for read, it needs
  * to maintain control of the io object until it has read and decoded
  * the PDU to a point where it moves from io->cur_pdu to io->reqs. After
  * this another thread may be enabled to read another PDU from the
@@ -175,7 +176,7 @@ struct hi_io {
   struct hi_qel qel;         /* Next in todo_queue for IOs or in free_pdus. */
   struct hi_io* n;           /* next among io objects, esp. backends */
   struct hi_io* pair;        /* the other half of a proxy connection */
-  struct hi_ent* ent;        /* Login entity associated with connection */
+  struct hi_ent* ent;        /* Login (system) entity associated with connection */
   int fd;                    /* file descriptor (socket), or 0x80000000 flag if not in use */
   char events;               /* events from last poll */
   char n_iov;
@@ -209,6 +210,9 @@ struct hi_io {
     struct {
       int msgid;
     } stomp;
+    struct {
+      int msgid;
+    } mcdb;
   } ad;                      /* Application specific data */
 #ifdef USE_OPENSSL
   SSL* ssl;
@@ -223,6 +227,22 @@ struct hi_ad_stomp {
   char* vers;            /* version, also accept-version, tx_id */
   char* login;           /* also session, subs_id, subsc */
   char* pw;              /* also server, ack, msg_id */
+};
+
+struct hi_ad_mcdb {
+  char  magic;
+  char  op;
+  unsigned short keylen;
+  unsigned char  extraslen;
+  char  datatype;
+  short status;
+  long  len;             /* 32bits */
+  char  opaque[4];       /* 32bits */
+  char  cas[8];          /* 64bits, 8 bytes */
+  unsigned char* extras;
+  char* key;
+  unsigned long vallen;
+  char* val;
 };
 
 /*(s) PDU object */
@@ -246,11 +266,11 @@ struct hi_pdu {
   struct iovec iov[3];       /* Enough for header, payload, and CRC */
   
   int need;                  /* How much more is needed to complete a PDU? Also final length. */
-  char* scan;                /* How far has protocol parsin progressed, e.g. in SMTP. */
+  char* scan;                /* How far has protocol parsing progressed, e.g. in SMTP. */
   char* ap;                  /* Allocation pointer: next free memory location */
   char* m;                   /* Beginning of memory (often m == mem, but could be malloc'd) */
   char* lim;                 /* One past end of memory */
-  char mem[HI_PDU_MEM];      /* Memory for processing a PDU */
+  char mem[HI_PDU_MEM];      /* Memory for processing a (small) PDU */
 
   union {
 #ifdef ENA_S5066
@@ -263,9 +283,15 @@ struct hi_pdu {
       char rx_map[SIS_MAX_PDU_SIZE/8];  /* bitmap of bytes rx'd so we know if we have rx'd all */
     } dtsrx;
 #endif
+#ifdef ENA_SMTP
     struct {
       char* skip_ehlo;
     } smtp;
+#endif
+#ifdef ENA_MCDB
+    struct hi_ad_mcdb mcdb;
+#endif
+#ifdef ENA_STOMP
     struct hi_ad_stomp stomp;
     struct {
       int len;               /* Body length. */
@@ -275,6 +301,7 @@ struct hi_pdu {
       int acks;              /* Ack counter for delivery. */
       int nacks;             /* Nack counter: incontactables for delivery. */
     } delivb;
+#endif
   } ad;                      /* Application specific data */
 };
 
@@ -306,7 +333,7 @@ struct hiios {
   struct hi_lock pdu_mut;
   int max_pdus;
   struct hi_pdu* pdu_buf_blob;  /* Backingstore for the PDU pool (big blob) */
-  struct hi_pdu* free_pdus;     /* Global pool of PDUs (linked list) */
+  struct hi_pdu* free_pdus;     /* Global pool of free PDUs (linked list) */
 
 #if 0
   struct hi_lock c_pdu_buf_mut;
@@ -409,6 +436,8 @@ void hi_del_fd(struct hi_thr* hit, int fd);
 int hi_vfy_peer_ssl_cred(struct hi_thr* hit, struct hi_io* io, const char* eid);
 
 struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, const char* lk);
+void hi_pdu_realloc_m(struct hi_thr* hit, struct hi_pdu* pdu, int newsize, const char* lk);
+void hi_free_req_fe(struct hi_thr* hit, struct hi_pdu* req);
 void hi_send(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, struct hi_pdu* resp);
 void hi_send1(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, struct hi_pdu* resp, int len0, char* d0);
 void hi_send2(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, struct hi_pdu* resp, int len0, char* d0, int len1, char* d1);

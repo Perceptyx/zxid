@@ -63,7 +63,7 @@ int http_decode(struct hi_thr* hit, struct hi_io* io)
   
   if (n < HTTP_MIN_PDU_SIZE) {   /* too little, need more */
     req->need = HTTP_MIN_PDU_SIZE - n;
-    return 0;
+    return HI_NEED_MORE;
   }
   
   if (memcmp(p, "GET /", sizeof("GET /")-1)) {
@@ -81,7 +81,7 @@ int http_decode(struct hi_thr* hit, struct hi_io* io)
   
   if (!url_lim) {
     req->need = 1;
-    return 0;
+    return HI_NEED_MORE;
   }
   /* *** Proper processing of content-length and setting need to length of PDU is still needed. */
   D("need=%d len=%d buf(%.*s)", req->need, (int)(req->ap-req->m), (int)(req->ap-req->m), req->m);

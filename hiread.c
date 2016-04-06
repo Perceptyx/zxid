@@ -1,5 +1,5 @@
 /* hiread.c  -  Hiquu I/O Engine Read Operations
- * Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2006,2012,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -11,6 +11,7 @@
  * 16.8.2012, modified license grant to allow use with ZXID.org --Sampo
  * 19.8.2012, fixed serious free_pds manipulation bug in hi_pdu_alloc() --Sampo
  * 6.9.2012,  added support for TLS and SSL --Sampo
+ * 6.4.2016,  added reallocation of PDU body --Sampo
  *
  * Read more data to existing PDU (cur_pdu), or create new PDU and read data into it.
  */
@@ -33,11 +34,11 @@ extern int errmac_debug;
 
 #define SSL_ENCRYPTED_HINT "ERROR\nmessage:tls-needed\n\nTLS or SSL connection wanted but other end did not speak protocol.\n\0"
 
-/*() Allocate pdu.  First allocation from per thread pool is
+/*() Allocate pdu.  First an allocation from per thread pool is
  * attempted. This does not require any locking.  If that does not
  * work out, recourse to the shuffler level global pool, with locking, is made.
  * locking:: takes shf->pdu_mut
- * see also:: hi_pdu_free() */
+ * see also:: hi_pdu_free() in hiwrite.c */
 
 /* Called by: */
 struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, const char* lk)
@@ -83,13 +84,39 @@ struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, const char* lk)
   return pdu;
 }
 
+/*() For small PDUs the PDU body is kept inline in small buffer pdu->mem[], but
+ * it is possible to receive PDUs that do not fit in this small buffer. In that
+ * case we reallocate using malloc(3). The newsize is typically computed
+ * as (pdu->ap - pdu->m) + pdu->need. If it turns out that newsize is smaller
+ * than existing size, then nothing is done.
+ * locking:: PDU is assumed to be already under lock or otherwise protected
+ *     such as being the io->cur_pdu. */
+
+void hi_pdu_realloc_m(struct hi_thr* hit, struct hi_pdu* pdu, int newsize, const char* lk)
+{
+  char* p;
+  char* q = pdu->m;
+  if (pdu->lim-q >= newsize)
+    return;
+  MALLOCN(p, newsize);
+  memcpy(p, pdu->m, pdu->ap-pdu->m);
+  pdu->m = p;
+  pdu->lim = p+newsize;
+  pdu->scan += p-q;
+  pdu->ap += p-q;
+  if (q != pdu->mem) {
+    FREE(q);
+  }
+}
+
 /*() Check if there is more (than need for cur_pdu) in the input buffer.
  * Sometimes the input buffer contains more than
  * a PDU's worth and therefore needs to be prepared
  * as input for the next PDU.
  * The req->need field has to accurately reflact the size of the PDU. Typically
  * it is set in later stages of decoder.
- * As hi_checkmore() will cause cur_pdu to change, it is common to call hi_add_reqs() */
+ * As hi_checkmore() will cause cur_pdu to change, it is common to call hi_add_reqs()
+ * locking:: io->qel.mut is held by the caller */
 
 /* Called by:  hi_add_to_reqs */
 static void hi_checkmore(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int minlen)
@@ -215,8 +242,8 @@ int hi_read(struct hi_thr* hit, struct hi_io* io)
     pdu->ap += ret;
     io->n_read += ret;
     while (pdu
-	   && pdu->need   /* no further I/O desired */
-	   && pdu->need <= (pdu->ap - pdu->m)) {
+	   && pdu->need   /* until no further I/O desired */
+	   && pdu->need <= (pdu->ap - pdu->m)) {  /* must fit in buffer */
       D("decode_loop io(%x)->cur_pdu=%p need=%d", io->fd, pdu, pdu?pdu->need:-99);
       ASSERTOPP(pdu, ==, io->cur_pdu);
       switch (io->qel.proto) {
@@ -231,10 +258,18 @@ int hi_read(struct hi_thr* hit, struct hi_io* io)
       case HIPROTO_SIS:   if (sis_decode(hit, io))   goto conn_close;  break; /* *** use ret */
       case HIPROTO_DTS:   if (dts_decode(hit, io))   goto conn_close;  break; /* *** use ret */
 #endif
-      case HIPROTO_HTTP:  if (http_decode(hit, io))  goto conn_close;  break; /* *** use ret */
+#ifdef ENA_HTTP
+      case HIPROTO_HTTP:  ret = http_decode(hit, io); if (ret == HI_CONN_CLOSE)  goto conn_close;  break;
+#endif
+#ifdef ENA_STOMP
 	//case HIPROTO_STOMP: if (stomp_decode(hit, io)) goto conn_close;  break;
       case HIPROTO_STOMP: ret = stomp_decode(hit, io);  break;
+#endif
+#ifdef ENA_MCDB
+      case HIPROTO_MCDB:  ret = mcdb_decode(hit, io);   break;
+#endif
       case HIPROTO_TEST_PING: test_ping(hit, io);  break; /* *** use ret */
+#ifdef ENA_SMTP
       case HIPROTO_SMTP: /* *** use ret */
 	if (io->qel.kind == HI_TCP_C) {
 	  if (smtp_decode_resp(hit, io))  goto out;
@@ -243,6 +278,7 @@ int hi_read(struct hi_thr* hit, struct hi_io* io)
 	}
 	break;
 	/* *** add here a project dependent include? Or a macro. */
+#endif
       default: NEVERNEVER("unknown proto(%x)", io->qel.proto);
       }
       
@@ -273,13 +309,15 @@ int hi_read(struct hi_thr* hit, struct hi_io* io)
 	D("UNLOCK io(%x)->qel.thr=%lx", io->fd, (long)io->qel.mut.thr);
 	UNLOCK(io->qel.mut, "reset-reading");
 	break;
-      case HI_CONN_CLOSE:         goto conn_close_not_reading;
-      case HI_NEED_MORE: /* 2: Incomplete decode, we still hold io->reading. */
+      case HI_CONN_CLOSE: /* 1 */ goto conn_close_not_reading;
+      case HI_NEED_MORE:  /* 2: Incomplete decode, we still hold io->reading. */
 	ASSERT(io->reading);
+	if (pdu->need > (pdu->lim - pdu->ap))
+	  hi_pdu_realloc_m(hit, pdu, (pdu->ap - pdu->m) + pdu->need, "need more");
 	break;
       }
-    }
-  }
+    }  /* while (pdu ...) */
+  } /* while (1) */
 
  eagain_out:
   /* A special problem with EAGAIN: read(2) is not guaranteed to arm edge triggered epoll(2)
@@ -337,7 +375,7 @@ int hi_read(struct hi_thr* hit, struct hi_io* io)
 
 #if 0
 
-N.B. Be careful to link against same OPenSSL libraries as headers. Otherwise
+N.B. Be careful to link against same OpenSSL libraries as headers. Otherwise
 reference count errors may appers (at least with 1.0.1 headers agains 1.0.0 libs).
 
 Mystery SSL error (in the end caused by errors left in SSL stack by private key reading)

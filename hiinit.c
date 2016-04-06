@@ -31,7 +31,7 @@
 #include "hiios.h"
 #include "errmac.h"
 
-extern zxid_conf* zxbus_cf;
+extern zxid_conf* zx_cf;
 extern int errmac_debug;
 #ifdef MUTEX_DEBUG
 extern pthread_mutexattr_t MUTEXATTR_DECL;
@@ -185,16 +185,16 @@ struct hiios* hi_new_shuffler(struct hi_thr* hit, int nfd, int npdu, int nch, in
   //SSL_CTX_set_cert_verify_callback(shf->ssl_ctx, zxbus_cert_verify_cb, cf);
 
   /*SSL_CTX_load_verify_locations() SSL_CTX_set_client_CA_list(3) SSL_CTX_set_cert_store(3) */
-  if (!zxbus_cf->enc_cert)
-    zxbus_cf->enc_cert = zxid_read_cert(zxbus_cf, "enc-nopw-cert.pem");
-  if (!zxbus_cf->enc_pkey)
-    zxbus_cf->enc_pkey = zxid_read_private_key(zxbus_cf, "enc-nopw-cert.pem");
-  if (!SSL_CTX_use_certificate(shf->ssl_ctx, zxbus_cf->enc_cert)) {
+  if (!zx_cf->enc_cert)
+    zx_cf->enc_cert = zxid_read_cert(zx_cf, "enc-nopw-cert.pem");
+  if (!zx_cf->enc_pkey)
+    zx_cf->enc_pkey = zxid_read_private_key(zx_cf, "enc-nopw-cert.pem");
+  if (!SSL_CTX_use_certificate(shf->ssl_ctx, zx_cf->enc_cert)) {
     ERR("SSL certificate problem %d", 0);
     zx_report_openssl_err("new_shuffler-cert");
     return 0;
   }
-  if (!SSL_CTX_use_PrivateKey(shf->ssl_ctx, zxbus_cf->enc_pkey)) {
+  if (!SSL_CTX_use_PrivateKey(shf->ssl_ctx, zx_cf->enc_pkey)) {
     ERR("SSL private key problem %d", 0);
     zx_report_openssl_err("new_shuffler-privkey");
     return 0;

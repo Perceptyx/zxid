@@ -1,5 +1,5 @@
-/* zxbusd.c  -  Audit bus daemon using STOMP 1.1
- * Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+/* zxcached.c  -  Key Value Database Along the lines of memcached
+ * Copyright (c) 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -7,21 +7,19 @@
  * same licensing terms as zxid itself.
  * $Id$
  *
- * 15.4.2006, started work over Easter holiday --Sampo
- * 22.4.2006, added more options over the weekend --Sampo
- * 16.8.2012, modified license grant to allow use with ZXID.org --Sampo
+ * 3.4.2016, adapted from zxbusd --Sampo
  *
  * This file contains option processing, configuration, and main().
  *
- * To create bus users, you should follow these steps
- * 1. Run ./zxbuslist -c 'BURL=https://sp.foo.com/' -dc to determine the entity ID
- * 2. Convert entity ID to SHA1 hash: ./zxcot -p 'https://sp.foo.com?o=B'
- * 3. Create the user: ./zxpasswd -a 'eid: https://sp.foo.com?o=B' -new G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/ <passwd
- * 4. To enable ClientTLS authentication, determine the subject_hash of
- *    the encryption certificate and symlink that to the main account:
- *      > openssl x509 -subject_hash -noout </var/zxid/buscli/pem/enc-nopw-cert.pem
- *      162553b8
- *      > ln -s /var/zxid/bus/uid/G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/162553b8
+ * The zxcached implements a subset of memcached binary protocol combined
+ * with global hash, msgpack based local data structures, append to file
+ * persistence, and appropriate replication for a cluster to provide
+ * highly resilient service.
+ *
+ * zxcached is meant to function as resilient database backend for zxididp
+ * and for personal data store.
+ *
+ * See also: https://cloud.github.com/downloads/dustin/memcached/protocol-binary.txt
  */
 
 #include <pthread.h>
@@ -41,9 +39,8 @@
 #include "snmpInterface.h"
 #endif
 
-/*#include "dialout.h"       / * Async serial support */
-/*#include "serial_sync.h"   / * Sync serial support */
 #include "errmac.h"
+#include "zxdata.h"
 #include "hiios.h"
 #include "hiproto.h"
 #include "akbox.h"
@@ -51,34 +48,34 @@
 #include <zx/zxid.h>
 #include <zx/zxidutil.h>
 
-#define ZXBUS_PATH "/var/zxid/bus/"
+#define ZXCACHE_PATH "/var/zxid/cache/"
+#define ZXCACHE_KEYS 1000000  /* Should be about 3-5 times bigger than actual number of keys */
+#define STR(a) #a
 
 const char* help =
-"zxbusd  -  Audit bus daemon using STOMP 1.1 - R" ZXID_REL "\n\
-Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
+"zxcached  -  Key-value cache daemon with persistence - R" ZXID_REL "\n\
+Copyright (c) 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
 NO WARRANTY, not even implied warranties.\n\
 Send well researched bug reports to the author. Home: zxid.org\n\
 \n\
-Usage: zxbusd [options] PROTO:REMOTEHOST:PORT\n\
-       echo secret | zxbusd -p sis::5066 -c AES256 -k 0 dts:quebec.cellmail.com:5067\n\
-       echo secret | zxbusd -p sis::5066 -c AES256 -k 0 dts:/dev/se_hdlc1:S-9600-1000-8N1\n\
-       zxbusd -p smtp::25 sis:localhost:5066 smtp:mail.cellmail.com:25\n\
-  -c CONF          Optional configuration string (default -c CPATH=" ZXBUS_PATH ")\n\
-                   Most of the configuration is read from " ZXBUS_PATH ZXID_CONF_FILE "\n\
-  -cp PATH         Path for message and user databases. Default: " ZXBUS_PATH "\n\
+Usage: zxcached [options]\n\
+       zxcached -p mcdbs:127.0.0.1:4442 -r mcdbs:10.1.2.3:4442 -r mcdbs:10.1.4.3:4442\n\
+  -c CONF          Optional configuration string (default -c CPATH=" ZXCACHE_PATH ")\n\
+                   Most of the configuration is read from " ZXCACHE_PATH ZXID_CONF_FILE "\n\
+  -cp PATH         Path for hash and user databases. Default: " ZXCACHE_PATH "\n\
   -p  PROT:IF:PORT Protocol, network interface and TCP port for listening\n\
                    connections. If you omit interface, all interfaces are bound.\n\
-                     stomp:0.0.0.0:2229 - Listen for STOMP 1.1 (default if no -p supplied)\n\
-                     smtp:0.0.0.0:25    - Listen for SMTP (RFC 2821)\n\
+                     mcdbs:0.0.0.0:4442 - Listen for memcached binary protocol over TLS\n\
+                                         (default if no -p supplied)\n\
+                     mcdb:0.0.0.0:4441  - Listen for memcached binary protocol over TCP\n\
                      http:0.0.0.0:80    - Listen for HTTP/1.0 (simplified)\n\
                      tp:0.0.0.0:5068    - Listen for test ping protocol\n\
+  -r  PROT:IP:PORT Replica to push writes to\n\
   -t  SECONDS      Connection timeout. Default: 0=no timeout.\n\
-  -cy CIPHER       Enable crypto on DTS interface using specified cipher. Use '?' for list.\n\
-  -k  FDNUMBER     File descriptor for reading symmetric key. Use 0 for stdin.\n\
+  -nkeys NUMBER    Number of keys in global hash table, large to keep hash sparse. Default " STR(ZXCACHE_KEYS) "\n \
   -nfd  NUMBER     Maximum number of file descriptors, i.e. simultaneous\n\
                    connections. Default 20 (about 16 connections).\n\
   -npdu NUMBER     Maximum number of simultaneously active PDUs. Default 60.\n\
-  -nch  NUMBER     Maximum number of subscribable channels. Default 10.\n\
   -nthr NUMBER     Number of threads. Default 1. Should not exceed number of CPUs.\n\
   -nkbuf BYTES     Size of kernel buffers. Default is not to change kernel buffer size.\n\
   -nlisten NUMBER  Listen backlog size. Default 128.\n\
@@ -101,16 +98,18 @@ Usage: zxbusd [options] PROTO:REMOTEHOST:PORT\n\
   -license         Show licensing details\n\
   -h               This help message\n\
   --               End of options\n\
-N.B. Although zxbusd is a 'daemon', it does not daemonize itself. You can always say zxbusd&\n";
+N.B. Although zxcached is a 'daemon', it does not daemonize itself. You can always say zxcached&\n";
 
-char* instance = "zxbusd";  /* how this server is identified in logs */
-char* zxbus_path = ZXBUS_PATH;
+char* instance = "zxcached";  /* how this server is identified in logs */
+char* zxcache_path = ZXCACHE_PATH;
 zxid_conf* zx_cf;
+struct zx_hash* zx_gh;  /* the global hash */
 int ak_buf_size = 0;
 int verbose = 1;
 extern int errmac_debug;
 int debugpoll = 0;
 int timeout = 0;
+int nkeys = ZXCACHE_KEYS;
 int nfd = 20;
 int npdu = 60;
 int nch = 10;
@@ -142,7 +141,9 @@ struct hi_proto hi_prototab[] = {  /* n.b. order in this table must match consta
   { "http",   8080, 0, 0 },
   { "tp",     5068, 0, 0 },  /* testping (6) */
   { "stomp",  2228, 0, 0 },  /* 7 */
-  { "stomps", 2229, 1, 0 },  /* 8 n.b. 2229 is zxbus assigned port. Normal STOMP port is 61613 */
+  { "stomps", 2229, 1, 0 },  /* 8 n.b. 2229 is zxcache assigned port. Normal STOMP port is 61613 */
+  { "mcdb",   4441, 0, 0 },  /* 9 */
+  { "mcdbs",  4442, 1, 0 },  /* 10 n.b. 4442 is zxcache assigned port. */
   { "", 0 }
 };
 
@@ -211,7 +212,7 @@ int parse_port_spec(char* arg, struct hi_host_spec** head, char* default_host)
   return 1;
 }
 
-/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcall_main, zxcot_main, zxdecode_main */
+/* Called by:  main x8, zxcached_main, zxcachelist_main, zxcachetailf_main, zxcall_main, zxcot_main, zxdecode_main */
 void opt(int* argc, char*** argv, char*** env)
 {
   struct zx_str* ss;
@@ -244,11 +245,13 @@ void opt(int* argc, char*** argv, char*** env)
 	if (!(*argc)) break;
 	nfd = atoi((*argv)[0]);
 	continue;
+#if 0
       case 'c': if ((*argv)[0][3] != 'h' || (*argv)[0][4]) break;
 	++(*argv); --(*argc);
 	if (!(*argc)) break;
 	nch = atoi((*argv)[0]);
 	continue;
+#endif
       case 'p': if ((*argv)[0][3] != 'd' || (*argv)[0][4] != 'u' || (*argv)[0][5]) break;
 	++(*argv); --(*argc);
 	if (!(*argc)) break;
@@ -259,7 +262,14 @@ void opt(int* argc, char*** argv, char*** env)
 	if (!(*argc)) break;
 	nthr = atoi((*argv)[0]);
 	continue;
-      case 'k': if ((*argv)[0][3] != 'b' || (*argv)[0][4] != 'u' || (*argv)[0][5] != 'f' || (*argv)[0][6]) break;
+      case 'k':
+	if ((*argv)[0][3] == 'e' || (*argv)[0][4] == 'y' || (*argv)[0][5] == 's' || !(*argv)[0][6]) {
+	  ++(*argv); --(*argc);
+	  if (!(*argc)) break;
+	  nkeys = atoi((*argv)[0]);
+	  continue;
+	}
+	if ((*argv)[0][3] != 'b' || (*argv)[0][4] != 'u' || (*argv)[0][5] != 'f' || (*argv)[0][6]) break;
 	++(*argv); --(*argc);
 	if (!(*argc)) break;
 	nkbuf = atoi((*argv)[0]);
@@ -340,6 +350,11 @@ void opt(int* argc, char*** argv, char*** env)
       
     case 'r':
       switch ((*argv)[0][2]) {
+      case '\0':
+	++(*argv); --(*argc);
+	if (!(*argc)) break;
+	if (!parse_port_spec((*argv)[0], &remotes, "replica")) break;
+	continue;
       case 'f':
 	AK_TS(LEAK, 0, "memory leaks enabled");
 #if 1
@@ -455,7 +470,7 @@ void opt(int* argc, char*** argv, char*** env)
       case 'p':
 	++(*argv); --(*argc);
 	if (!(*argc)) break;
-	zxbus_path = (*argv)[0];	
+	zxcache_path = (*argv)[0];	
 	continue;
       }
       break;
@@ -506,7 +521,7 @@ void opt(int* argc, char*** argv, char*** env)
 
 /* Parse serial port config string and do all the ioctls to get it right. */
 
-/* Called by:  zxbusd_main */
+/* Called by:  zxcached_main */
 static struct hi_io* serial_init(struct hi_thr* hit, struct hi_host_spec* hs)
 {
 #ifdef ENA_SERIAL
@@ -571,12 +586,12 @@ void* thread_loop(void* _shf)
 pthread_mutexattr_t MUTEXATTR_DECL;
 extern int zxid_suppress_vpath_warning;
 
-#ifndef zxbusd_main
-#define zxbusd_main main
+#ifndef zxcached_main
+#define zxcached_main main
 #endif
 
 /* Called by: */
-int zxbusd_main(int argc, char** argv, char** env)
+int zxcached_main(int argc, char** argv, char** env)
 { 
   struct hi_thr hit;
   hi_hit_init(&hit);
@@ -617,17 +632,17 @@ int zxbusd_main(int argc, char** argv, char** env)
         ERR("Evaluation copy expired, in %d secs this program will stop working", COMPILED_DATE + THREE_MONTHS-now);
   } else {
     if (now + ONE_DAY < COMPILED_DATE){
-      ERR("Check for demo erroneus. Clock set too far in past? %d",0);
+      ERR("Clock set too far in past? %d",0);
       exit(4);
     }
   }
 #endif
   
   zxid_suppress_vpath_warning = 1;
-  zx_cf = zxid_new_conf_to_cf("CPATH=" ZXBUS_PATH);
-  /*openlog("zxbusd", LOG_PID, LOG_LOCAL0);     *** Do we want syslog logging? */
+  zx_cf = zxid_new_conf_to_cf("CPATH=" ZXCACHE_PATH);
+  /*openlog("zxcached", LOG_PID, LOG_LOCAL0);     *** Do we want syslog logging? */
   opt(&argc, &argv, &env);
-  zxbus_path = zx_cf->cpath;
+  zxcache_path = zx_cf->cpath;
 
   /*if (stats_prefix) init_cmdline(argc, argv, env, stats_prefix);*/
   CMDLINE("init");
@@ -690,7 +705,7 @@ int zxbusd_main(int argc, char** argv, char** env)
   }
 
   /* Cause exit(3) to be called with the intent that any gcov profiling will get
-   * written to disk before we die. If zxbusd is not stopped with `kill -USR1' and you
+   * written to disk before we die. If zxcached is not stopped with `kill -USR1' and you
    * use plain kill instead, the profile will indicate many unexecuted (#####) lines. */
   if (signal(SIGUSR1, exit) == SIG_ERR) {
     perror("signal USR1 exit");
@@ -749,7 +764,7 @@ int zxbusd_main(int argc, char** argv, char** env)
 
   if (snmp_port) {
 #ifdef HAVE_NET_SNMP
-    initializeSNMPSubagent("open5066", SNMPLOGFILE);
+    initializeSNMPSubagent("zxcached", SNMPLOGFILE);
     /* *** we need to discover the SNMP socket somehow so we can insert it to
      * our file descriptor table so it gets properly polled, etc. --Sampo */
 #else
@@ -762,8 +777,14 @@ int zxbusd_main(int argc, char** argv, char** env)
   if (drop_gid) if (setgid(drop_gid)) { perror("setgid"); exit(1); }
   if (drop_uid) if (setuid(drop_uid)) { perror("setuid"); exit(1); }
 
-  CMDLINE("load_subs");
-  zxbus_load_subs(shuff);
+  /* Initialize global hash */
+
+  zx_gh = malloc(sizeof(struct zx_hash)+nkeys*sizeof(struct zx_bucket*));
+  memset(zx_gh, 0, sizeof(struct zx_hash)+nkeys*sizeof(struct zx_bucket*));
+  zx_gh->len = nkeys;
+
+  CMDLINE("load_keys");
+  //zxcache_load_keys(shuff);
   
   hi_sanity_shf(255, shuff);
   
@@ -786,4 +807,4 @@ int zxbusd_main(int argc, char** argv, char** env)
 
 //char* assert_msg = "%s: Internal error caused an ASSERT to fire. Deliberately provoking a core dump.\nSorry for the inconvenience and thank you for your collaboration.\n";
 
-/* EOF  --  zxbusd.c */
+/* EOF  --  zxcached.c */

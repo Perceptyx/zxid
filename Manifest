@@ -157,12 +157,15 @@ zxdecode.c       - SAML redirect and post message decoding tool
 zxbuslist.c      - Utility for listening to zxbus and sending output to stdout
 zxbustailf.c     - tailf like utility for sending tail of a log to zxbus
 
-# ZXID Audit Bus
+# ZXID Audit Bus and Cache/DB
 
 zxbusd.c         - Audit Bus Daemon (message queue broker)
 zxbusdist.c      - Message persist and distribution
 zxbusent.c       - Entity management
 zxbussubs.c      - Subscription management
+zxcached.c       - Key-Value Cache and Database Daemon
+zxdata.h         - Data structures for Key-Value Cache
+zxdata.c         - Data structures manipulations for Key-Value Cache
 hiios.h          - Header for Hiquu high performance I/O Engine
 hiios.c          - Hiquu high performance I/O Engine main loop
 hiinit.c         - Hiquu high performance I/O Engine initialization
@@ -173,6 +176,7 @@ hiwrite.c        - Hiquu high performance I/O Engine write dispatcher
 hiproto.h        - Hiquu high performance I/O Engine protocol constants
 hiiosdump.c      - Hiquu high performance I/O Engine data structure dump
 testping.c       - testping benchmarking protocol module for hiios
+mcdb.c           - memcached binary protocol (1.3) module for hiios
 stomp.c          - STOMP 1.1 protocol module for hiios
 http.c           - Primitive http/1.0 protocol module for hiios
 smtp.c           - Pipelined SMTP protocol module for hiios

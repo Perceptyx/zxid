@@ -146,9 +146,9 @@ public class app_demo extends HttpServlet {
 	while (val_names.hasMoreElements()) {
 	    String name = (String)val_names.nextElement();
 	    if (name.equals("cn")
-		|| name.equals("role")
-		|| name.equals("o")
-		|| name.equals("ou")
+		//|| name.equals("role")
+		//|| name.equals("o")
+		//|| name.equals("ou")
 		|| name.equals("fedusername")
 		|| name.equals("nidfmt")
 		|| name.equals("affid")
@@ -221,7 +221,7 @@ public class app_demo extends HttpServlet {
 		if (true || verbose) {
 		    out.print("<textarea cols=80 rows=20>");
 		    out.print(ret);
-		    out.print("</textarea>\n");
+		    out.print("</textarea><br>\n");
 		}
 		out.print("<p><img src=\"green-check-20x20.png\">WSC4 Response Authorized by PDP (A).<br>\n");
 	    }
@@ -249,7 +249,7 @@ public class app_demo extends HttpServlet {
 		if (true || verbose) {
 		    out.print("<textarea cols=80 rows=20>");
 		    out.print(ret);
-		    out.print("</textarea>\n");
+		    out.print("</textarea><br>\n");
 		}
 		out.print("<img src=\"green-check-20x20.png\">WSC4 Response Authorized by PDP (A).<br>\n");
 		System.err.print("^^^ leaf done\n");

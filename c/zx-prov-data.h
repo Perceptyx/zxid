@@ -19,7 +19,7 @@
 #endif
 
 /* -------------------------- prov_CallbackEPR -------------------------- */
-/* refby( zx_prov_PMGetDescriptor_s zx_prov_UpdateEPRItem_s ) */
+/* refby( zx_prov_UpdateEPRItem_s zx_prov_PMGetDescriptor_s ) */
 #ifndef zx_prov_CallbackEPR_EXT
 #define zx_prov_CallbackEPR_EXT
 #endif
@@ -526,7 +526,7 @@ void zx_prov_PMDeleteResponse_REV_Status(struct zx_prov_PMDeleteResponse_s* x);
 
 #endif
 /* -------------------------- prov_PMDescriptor -------------------------- */
-/* refby( zx_prov_PMUpdateItem_s zx_pmm_Provision_s zx_pmm_PMUpdateItem_s zx_prov_PMRegisterDescriptorItem_s zx_prov_PMGetDescriptorResponse_s ) */
+/* refby( zx_prov_PMUpdateItem_s zx_prov_PMGetDescriptorResponse_s zx_pmm_PMUpdateItem_s zx_pmm_Provision_s zx_prov_PMRegisterDescriptorItem_s ) */
 #ifndef zx_prov_PMDescriptor_EXT
 #define zx_prov_PMDescriptor_EXT
 #endif
@@ -1051,7 +1051,7 @@ void zx_prov_PMEGetInfoResponse_REV_PMEInfo(struct zx_prov_PMEGetInfoResponse_s*
 
 #endif
 /* -------------------------- prov_PMEHash -------------------------- */
-/* refby( zx_prov_PMEInfo_s zx_prov_PMERegister_s ) */
+/* refby( zx_prov_PMERegister_s zx_prov_PMEInfo_s ) */
 #ifndef zx_prov_PMEHash_EXT
 #define zx_prov_PMEHash_EXT
 #endif
@@ -1588,7 +1588,7 @@ void zx_prov_PMGetStatusResponse_REV_PMStatus(struct zx_prov_PMGetStatusResponse
 
 #endif
 /* -------------------------- prov_PMID -------------------------- */
-/* refby( zx_prov_PMActivateItem_s zx_prov_PMDeleteItem_s zx_pmm_PMDeactivateItem_s zx_prov_PMStatus_s zx_pmm_PMActivateItem_s zx_prov_PMDeactivateItem_s zx_prov_PMDescriptor_s zx_pmm_PMGetStatus_s zx_pmm_PMDeleteItem_s zx_prov_UpdateEPRItem_s zx_prov_PMGetStatus_s ) */
+/* refby( zx_pmm_PMGetStatus_s zx_prov_UpdateEPRItem_s zx_prov_PMDescriptor_s zx_pmm_PMDeactivateItem_s zx_prov_PMDeleteItem_s zx_pmm_PMDeleteItem_s zx_prov_PMActivateItem_s zx_pmm_PMActivateItem_s zx_prov_PMStatus_s zx_prov_PMGetStatus_s zx_prov_PMDeactivateItem_s ) */
 #ifndef zx_prov_PMID_EXT
 #define zx_prov_PMID_EXT
 #endif
