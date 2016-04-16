@@ -1157,6 +1157,12 @@ public class zxidjniJNI {
   public final static native int zxid_conf_to_cf_len(long jarg1, int jarg2, String jarg3);
   public final static native String zxid_simple_len(int jarg1, String jarg2, int jarg3, String jarg4, long jarg5, int jarg6);
   public final static native String zxid_simple_show_idp_sel(long jarg1, long jarg2, long jarg3, int jarg4);
+  public final static native String zxid_simple_show_meta(long jarg1, long jarg2, long jarg3, int jarg4);
+  public final static native String zxid_simple_show_carml(long jarg1, long jarg2, long jarg3, int jarg4);
+  public final static native String zxid_simple_show_conf(long jarg1, long jarg2, long jarg3, int jarg4);
+  public final static native String zxid_simple_show_jwks(long jarg1, long jarg2, long jarg3, int jarg4);
+  public final static native String zxid_simple_show_dynclireg(long jarg1, long jarg2, long jarg3, int jarg4);
+  public final static native String zxid_simple_show_rsrcreg(long jarg1, long jarg2, long jarg3, int jarg4);
   public final static native String zxid_idp_list_len(int jarg1, String jarg2, long jarg3, int jarg4);
   public final static native String zxid_idp_list_cf_cgi(long jarg1, long jarg2, long jarg3, int jarg4);
   public final static native String zxid_idp_select_len(int jarg1, String jarg2, long jarg3, int jarg4);

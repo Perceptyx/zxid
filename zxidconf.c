@@ -43,7 +43,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#ifndef MINGW
 #include <grp.h>
+#endif
 #ifdef USE_CURL
 #include <curl/curl.h>
 #endif
@@ -580,7 +582,10 @@ struct zxid_map* zxid_load_unix_grp_az_map(zxid_conf* cf, struct zxid_map* map, 
   gid_t* gids;
 
   DD("v(%s)", v);
-
+#ifdef MINGW
+  ERR("UNIX_GRP_AZ_MAP directive not supported on Windows %d", 0);
+  return 0;
+#else
   n_grps = getgroups(0,0);
   gids = ZX_ALLOC(cf->ctx, (n_grps+1)*sizeof(gid_t));
   getgroups(n_grps, gids);
@@ -651,6 +656,7 @@ struct zxid_map* zxid_load_unix_grp_az_map(zxid_conf* cf, struct zxid_map* map, 
 
   ZX_FREE(cf->ctx, gids);
   return map;
+#endif
 }
 
 /*() Reverse of zxid_load_map(). */

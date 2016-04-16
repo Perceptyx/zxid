@@ -167,7 +167,7 @@ void zxid_sso_set_relay_state_to_return_to_this_url(zxid_conf* cf, zxid_cgi* cgi
       if (!cgi->uri_path)
 	cgi->uri_path = "";
     }
-    ss = zx_strf(cf->ctx, "%s%c%s", cgi->uri_path, cgi->qs&&cgi->qs[0]?'?':0, STRNULLCHK(cgi->qs));
+    ss = zx_strf(cf->ctx, "%s%s%s", cgi->uri_path, cgi->qs&&cgi->qs[0]?"?":"", STRNULLCHK(cgi->qs));
     cgi->rs = zxid_deflate_safe_b64_raw(cf->ctx, -2, ss->s);
     D("rs(%s) from(%s) uri_path(%s) qs(%s)",cgi->rs,ss->s,cgi->uri_path,STRNULLCHKD(cgi->qs));
     zx_str_free(cf->ctx, ss);

@@ -1013,7 +1013,7 @@ int main(int argc, char** av)
       (void) printf("%s\n", SERVER_SOFTWARE);
       exit(0);
     }
-    if (!strcmp(av[an], "-D")) ++errmac_debug; /* zxid_httpd runs always in -D mode */
+    if (!strcmp(av[an], "-D")) { ++errmac_debug; D("debug=0x%x", errmac_debug); }
     else if (!strcmp(av[an], "-S") && an + 1 < argc)  { ++an; certfile = av[an]; do_ssl = 1; }
     else if (!strcmp(av[an], "-Y") && an + 1 < argc)  { ++an; cipher = av[an]; }
     else if (!strcmp(av[an], "-zx") && an + 1 < argc) { ++an; zxid_conf_str = av[an]; }
@@ -1611,9 +1611,12 @@ static void do_file(void) {
 
   check_referer();
 
-  if (cgi_pattern && zx_match(cgi_pattern, file)) {  /* Is it CGI? */
-    do_cgi();
-    return;
+  if (cgi_pattern) {
+    D("cgi_pattern(%s) file(%s)", cgi_pattern, file);
+    if (zx_match(cgi_pattern, file)) {  /* Is it CGI? */
+      do_cgi();
+      return;
+    }
   }
   if (pathinfo)
     send_error_and_exit(404, "Not Found", "", "File not found. 2");

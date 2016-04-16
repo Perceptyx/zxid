@@ -37884,6 +37884,354 @@ XS(_wrap_zxid_simple_show_idp_sel) {
 }
 
 
+XS(_wrap_zxid_simple_show_meta) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    int *arg3 = (int *) 0 ;
+    int arg4 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    int val4 ;
+    int ecode4 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 4) || (items > 4)) {
+      SWIG_croak("Usage: zxid_simple_show_meta(cf,cgi,res_len,auto_flags);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_simple_show_meta" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_simple_show_meta" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_int, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_simple_show_meta" "', argument " "3"" of type '" "int *""'"); 
+    }
+    arg3 = (int *)(argp3);
+    ecode4 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(3), &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "zxid_simple_show_meta" "', argument " "4"" of type '" "int""'");
+    } 
+    arg4 = (int)(val4);
+    result = (char *)zxid_simple_show_meta(arg1,arg2,arg3,arg4);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_simple_show_carml) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    int *arg3 = (int *) 0 ;
+    int arg4 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    int val4 ;
+    int ecode4 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 4) || (items > 4)) {
+      SWIG_croak("Usage: zxid_simple_show_carml(cf,cgi,res_len,auto_flags);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_simple_show_carml" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_simple_show_carml" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_int, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_simple_show_carml" "', argument " "3"" of type '" "int *""'"); 
+    }
+    arg3 = (int *)(argp3);
+    ecode4 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(3), &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "zxid_simple_show_carml" "', argument " "4"" of type '" "int""'");
+    } 
+    arg4 = (int)(val4);
+    result = (char *)zxid_simple_show_carml(arg1,arg2,arg3,arg4);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_simple_show_conf) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    int *arg3 = (int *) 0 ;
+    int arg4 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    int val4 ;
+    int ecode4 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 4) || (items > 4)) {
+      SWIG_croak("Usage: zxid_simple_show_conf(cf,cgi,res_len,auto_flags);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_simple_show_conf" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_simple_show_conf" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_int, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_simple_show_conf" "', argument " "3"" of type '" "int *""'"); 
+    }
+    arg3 = (int *)(argp3);
+    ecode4 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(3), &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "zxid_simple_show_conf" "', argument " "4"" of type '" "int""'");
+    } 
+    arg4 = (int)(val4);
+    result = (char *)zxid_simple_show_conf(arg1,arg2,arg3,arg4);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_simple_show_jwks) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    int *arg3 = (int *) 0 ;
+    int arg4 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    int val4 ;
+    int ecode4 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 4) || (items > 4)) {
+      SWIG_croak("Usage: zxid_simple_show_jwks(cf,cgi,res_len,auto_flags);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_simple_show_jwks" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_simple_show_jwks" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_int, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_simple_show_jwks" "', argument " "3"" of type '" "int *""'"); 
+    }
+    arg3 = (int *)(argp3);
+    ecode4 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(3), &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "zxid_simple_show_jwks" "', argument " "4"" of type '" "int""'");
+    } 
+    arg4 = (int)(val4);
+    result = (char *)zxid_simple_show_jwks(arg1,arg2,arg3,arg4);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_simple_show_dynclireg) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    int *arg3 = (int *) 0 ;
+    int arg4 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    int val4 ;
+    int ecode4 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 4) || (items > 4)) {
+      SWIG_croak("Usage: zxid_simple_show_dynclireg(cf,cgi,res_len,auto_flags);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_simple_show_dynclireg" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_simple_show_dynclireg" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_int, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_simple_show_dynclireg" "', argument " "3"" of type '" "int *""'"); 
+    }
+    arg3 = (int *)(argp3);
+    ecode4 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(3), &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "zxid_simple_show_dynclireg" "', argument " "4"" of type '" "int""'");
+    } 
+    arg4 = (int)(val4);
+    result = (char *)zxid_simple_show_dynclireg(arg1,arg2,arg3,arg4);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_simple_show_rsrcreg) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    int *arg3 = (int *) 0 ;
+    int arg4 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    int val4 ;
+    int ecode4 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 4) || (items > 4)) {
+      SWIG_croak("Usage: zxid_simple_show_rsrcreg(cf,cgi,res_len,auto_flags);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_simple_show_rsrcreg" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_simple_show_rsrcreg" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_int, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_simple_show_rsrcreg" "', argument " "3"" of type '" "int *""'"); 
+    }
+    arg3 = (int *)(argp3);
+    ecode4 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(3), &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "zxid_simple_show_rsrcreg" "', argument " "4"" of type '" "int""'");
+    } 
+    arg4 = (int)(val4);
+    result = (char *)zxid_simple_show_rsrcreg(arg1,arg2,arg3,arg4);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
 XS(_wrap_zxid_idp_list_len) {
   {
     int arg1 ;
@@ -51239,6 +51587,12 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zxid_conf_to_cf_len", _wrap_zxid_conf_to_cf_len},
 {"Net::SAMLc::zxid_simple_len", _wrap_zxid_simple_len},
 {"Net::SAMLc::zxid_simple_show_idp_sel", _wrap_zxid_simple_show_idp_sel},
+{"Net::SAMLc::zxid_simple_show_meta", _wrap_zxid_simple_show_meta},
+{"Net::SAMLc::zxid_simple_show_carml", _wrap_zxid_simple_show_carml},
+{"Net::SAMLc::zxid_simple_show_conf", _wrap_zxid_simple_show_conf},
+{"Net::SAMLc::zxid_simple_show_jwks", _wrap_zxid_simple_show_jwks},
+{"Net::SAMLc::zxid_simple_show_dynclireg", _wrap_zxid_simple_show_dynclireg},
+{"Net::SAMLc::zxid_simple_show_rsrcreg", _wrap_zxid_simple_show_rsrcreg},
 {"Net::SAMLc::zxid_idp_list_len", _wrap_zxid_idp_list_len},
 {"Net::SAMLc::zxid_idp_list_cf_cgi", _wrap_zxid_idp_list_cf_cgi},
 {"Net::SAMLc::zxid_idp_select_len", _wrap_zxid_idp_select_len},

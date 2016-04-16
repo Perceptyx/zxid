@@ -1084,7 +1084,7 @@ void zx_wst_RequestSecurityTokenCollection_REV_RequestSecurityToken(struct zx_ws
 
 #endif
 /* -------------------------- wst_RequestSecurityTokenResponse -------------------------- */
-/* refby( zx_wst_RequestSecurityTokenResponseCollection_s zx_wst_IssuedTokens_s ) */
+/* refby( zx_wst_IssuedTokens_s zx_wst_RequestSecurityTokenResponseCollection_s ) */
 #ifndef zx_wst_RequestSecurityTokenResponse_EXT
 #define zx_wst_RequestSecurityTokenResponse_EXT
 #endif

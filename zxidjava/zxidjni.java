@@ -4176,6 +4176,30 @@ public class zxidjni implements zxidjniConstants {
     return zxidjniJNI.zxid_simple_show_idp_sel(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
   }
 
+  public static String simple_show_meta(zxid_conf cf, zxid_cgi cgi, SWIGTYPE_p_int res_len, int auto_flags) {
+    return zxidjniJNI.zxid_simple_show_meta(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
+  }
+
+  public static String simple_show_carml(zxid_conf cf, zxid_cgi cgi, SWIGTYPE_p_int res_len, int auto_flags) {
+    return zxidjniJNI.zxid_simple_show_carml(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
+  }
+
+  public static String simple_show_conf(zxid_conf cf, zxid_cgi cgi, SWIGTYPE_p_int res_len, int auto_flags) {
+    return zxidjniJNI.zxid_simple_show_conf(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
+  }
+
+  public static String simple_show_jwks(zxid_conf cf, zxid_cgi cgi, SWIGTYPE_p_int res_len, int auto_flags) {
+    return zxidjniJNI.zxid_simple_show_jwks(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
+  }
+
+  public static String simple_show_dynclireg(zxid_conf cf, zxid_cgi cgi, SWIGTYPE_p_int res_len, int auto_flags) {
+    return zxidjniJNI.zxid_simple_show_dynclireg(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
+  }
+
+  public static String simple_show_rsrcreg(zxid_conf cf, zxid_cgi cgi, SWIGTYPE_p_int res_len, int auto_flags) {
+    return zxidjniJNI.zxid_simple_show_rsrcreg(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
+  }
+
   public static String idp_list_len(int conf_len, String conf, SWIGTYPE_p_int res_len, int auto_flags) {
     return zxidjniJNI.zxid_idp_list_len(conf_len, conf, SWIGTYPE_p_int.getCPtr(res_len), auto_flags);
   }

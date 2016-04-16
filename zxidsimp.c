@@ -27,6 +27,7 @@
  * 14.2.2014, added redirafter feature for local IdP logins (e.g. zxidatsel.pl) --Sampo
  * 1.4.2015,  fixed skin based template path in case it does not have directory --Sampo
  * 6.3.2016,  eliminated some commented out code --Sampo 
+ * 16.4.2016, fixed premature nul termination in Location redirects, added cookies ot redirects --Sampo
  *
  * Login button abbreviations
  * A2 = SAML 2.0 Artifact Profile
@@ -817,13 +818,18 @@ char* zxid_simple_show_json(zxid_conf* cf, const char* json, int* res_len, int a
 /*() Helper function to redirect according to auto flags. */
 
 /* Called by:  zxid_show_protected_content_setcookie, zxid_simple_idp_an_ok_do_rest, zxid_simple_idp_new_user, zxid_simple_idp_recover_password, zxid_simple_idp_show_an, zxid_simple_show_err, zxid_simple_show_idp_sel */
-static char* zxid_simple_redir_page(zxid_conf* cf, char* redir, char* rs, int* res_len, int auto_flags)
+static char* zxid_simple_redir_page(zxid_conf* cf, zxid_ses* ses, char* redir, char* rs, int* res_len, int auto_flags)
 {
   char* res;
   struct zx_str* ss;
   D("cf=%p redir(%s)", cf, redir);
   if (auto_flags & ZXID_AUTO_REDIR) {
-    fprintf(stdout, "Location: %s%c%s" CRLF2, redir, rs?'?':0, STRNULLCHK(rs));
+    fprintf(stdout, "Location: %s%s%s" CRLF, redir, rs?"?":"", STRNULLCHK(rs));
+    if (ses && ses->setcookie)
+      fprintf(stdout, "Set-Cookie: %s" CRLF, ses->setcookie);
+    if (ses && ses->setptmcookie)
+      fprintf(stdout, "Set-Cookie: %s" CRLF, ses->setptmcookie);
+    fprintf(stdout, CRLF);
     fflush(stdout);
     if (auto_flags & ZXID_AUTO_EXIT)
       exit(0);
@@ -831,10 +837,24 @@ static char* zxid_simple_redir_page(zxid_conf* cf, char* redir, char* rs, int* r
       *res_len = 1;
     return zx_dup_cstr(cf->ctx, "n");
   }
-  ss = zx_strf(cf->ctx, "Location: %s%c%s" CRLF2, redir, rs?'?':0, STRNULLCHK(rs));
+  if (ses && (ses->setcookie || ses->setptmcookie)) {
+    if (ses->setcookie) {
+      if (ses->setptmcookie)
+	ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF "Set-Cookie: %s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs), ses->setcookie, ses->setptmcookie);
+      else
+	ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs), ses->setcookie);
+    } else if (ses->setptmcookie) {
+      ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs), ses->setptmcookie);
+    } else
+      goto nocookie;
+  } else {
+ nocookie:
+    ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs));
+  }
   if (res_len)
     *res_len = ss->len;
   res = ss->s;
+  D("redir res(%s) len=%d %02x%02x%02x%02x%02x%02x", res, ss->len, res[ss->len-6], res[ss->len-5], res[ss->len-4], res[ss->len-3], res[ss->len-2], res[ss->len-1]);
   ZX_FREE(cf->ctx, ss);
   return res;
 }
@@ -852,7 +872,7 @@ char* zxid_simple_show_idp_sel(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int a
   D("cf=%p cgi=%p templ(%s)", cf, cgi, STRNULLCHKQ(cgi->templ));
   if (cf->idp_sel_page && cf->idp_sel_page[0]) {
     D("idp_sel_page(%s) rs(%s)", cf->idp_sel_page, STRNULLCHK(cgi->rs));
-    return zxid_simple_redir_page(cf, cf->idp_sel_page, cgi->rs, res_len, auto_flags);
+    return zxid_simple_redir_page(cf, 0, cf->idp_sel_page, cgi->rs, res_len, auto_flags);
   }
   ss = auto_flags & (ZXID_AUTO_LOGINC | ZXID_AUTO_LOGINH)
     ? zxid_idp_select_zxstr_cf_cgi(cf, cgi, auto_flags)
@@ -868,7 +888,7 @@ char* zxid_simple_show_idp_sel(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int a
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 
 /* Called by:  zxid_simple_no_ses_cf x2, zxid_simple_ses_active_cf x2 */
-static char* zxid_simple_show_meta(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
+char* zxid_simple_show_meta(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
 {
   struct zx_str* meta = zxid_sp_meta(cf, cgi);
   return zxid_simple_show_page(cf, meta, ZXID_AUTO_METAC, ZXID_AUTO_METAH,
@@ -878,7 +898,7 @@ static char* zxid_simple_show_meta(zxid_conf* cf, zxid_cgi* cgi, int* res_len, i
 /*() Emit CARML declaration for SP. Corresponds to "o=c" query string. */
 
 /* Called by:  zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
-static char* zxid_simple_show_carml(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
+char* zxid_simple_show_carml(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
 {
   struct zx_str* carml = zxid_sp_carml(cf);
   return zxid_simple_show_page(cf, carml, ZXID_AUTO_METAC, ZXID_AUTO_METAH,
@@ -888,7 +908,7 @@ static char* zxid_simple_show_carml(zxid_conf* cf, zxid_cgi* cgi, int* res_len, 
 /*() Dump internal info and configuration. Corresponds to "o=d" query string. */
 
 /* Called by:  zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
-static char* zxid_simple_show_conf(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
+char* zxid_simple_show_conf(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
 {
   struct zx_str* ss = zxid_show_conf(cf);
   return zxid_simple_show_page(cf, ss, ZXID_AUTO_METAC, ZXID_AUTO_METAH,
@@ -898,7 +918,7 @@ static char* zxid_simple_show_conf(zxid_conf* cf, zxid_cgi* cgi, int* res_len, i
 /*() Emit Java Web Key Set. Corresponds to "o=j" query string. */
 
 /* Called by:  zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
-static char* zxid_simple_show_jwks(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
+char* zxid_simple_show_jwks(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
 {
   struct zx_str* ss = zx_ref_str(cf->ctx, zxid_mk_jwks(cf));
   return zxid_simple_show_page(cf, ss, ZXID_AUTO_METAC, ZXID_AUTO_METAH,
@@ -911,7 +931,7 @@ static char* zxid_simple_show_jwks(zxid_conf* cf, zxid_cgi* cgi, int* res_len, i
 /*() Perform and reply to OAUTH2 Dynamic Client Registration. Corresponds to "o=J" query string. */
 
 /* Called by:  zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
-static char* zxid_simple_show_dynclireg(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
+char* zxid_simple_show_dynclireg(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
 {
   return zxid_simple_show_json(cf, zxid_mk_oauth2_dyn_cli_reg_res(cf, cgi),
 			       res_len, auto_flags, "Status: 201 Created" CRLF);
@@ -920,7 +940,7 @@ static char* zxid_simple_show_dynclireg(zxid_conf* cf, zxid_cgi* cgi, int* res_l
 /*() Perform and reply to OAUTH2 Resource Registration. Corresponds to "o=H" query string. */
 
 /* Called by:  zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
-static char* zxid_simple_show_rsrcreg(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
+char* zxid_simple_show_rsrcreg(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
 {
   char rev[256];
   char status_etag[1024];
@@ -946,7 +966,7 @@ char* zxid_simple_show_err(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_
 		 cgi->err && cgi->err[0] ? "&err=" : "", cgi->err ? cgi->err : "",
 		 cf->burl);
     D("err_page(%s) p(%s)", cf->err_page, p);
-    return zxid_simple_redir_page(cf, cf->err_page, p, res_len, auto_flags);
+    return zxid_simple_redir_page(cf, 0, cf->err_page, p, res_len, auto_flags);
   }
     
   ss = zxid_template_page_cf(cf, cgi, cf->err_templ_file, cf->err_templ, 4096, auto_flags);
@@ -994,16 +1014,16 @@ static char* zxid_simple_idp_an_ok_do_rest(zxid_conf* cf, zxid_cgi* cgi, zxid_se
 		 cgi->err && cgi->err[0] ? "&err=" : "", cgi->err ? cgi->err : "",
 		 cf->burl);
     D("atsel_page(%s) redir(%s)", cf->atsel_page, p);
-    return zxid_simple_redir_page(cf, cf->atsel_page, p, res_len, auto_flags);
+    return zxid_simple_redir_page(cf, ses, cf->atsel_page, p, res_len, auto_flags);
   }
   if (cgi->redirafter && *cgi->redirafter) {
     len = strlen(cgi->redirafter);
     if (!strcmp(cgi->redirafter + len - sizeof("s=X") + 1, "s=X")) {
       p = zx_alloc_sprintf(cf->ctx, 0, "%.*s%s", len-1, cgi->redirafter, cgi->sid);
       D("redirafter(%s)", p);
-      return zxid_simple_redir_page(cf, p, 0, res_len, auto_flags);
+      return zxid_simple_redir_page(cf, ses, p, 0, res_len, auto_flags);
     } else {
-      return zxid_simple_redir_page(cf, cgi->redirafter, 0, res_len, auto_flags);
+      return zxid_simple_redir_page(cf, ses, cgi->redirafter, 0, res_len, auto_flags);
     }
   }
   return zxid_simple_ses_active_cf(cf, cgi, ses, res_len, auto_flags); /* o=F variant */
@@ -1084,7 +1104,7 @@ static char* zxid_simple_idp_show_an(zxid_conf* cf, zxid_cgi* cgi, int* res_len,
     if (cgi->ssoreq)
       ZX_FREE(cf->ctx, cgi->ssoreq);
     D("an_page(%s) ar(%s)", cf->an_page, ar);
-    return zxid_simple_redir_page(cf, cf->an_page, ar, res_len, auto_flags);
+    return zxid_simple_redir_page(cf, 0, cf->an_page, ar, res_len, auto_flags);
   }
   
   if (cf->log_level>1)
@@ -1212,7 +1232,7 @@ static char* zxid_simple_idp_new_user(zxid_conf* cf, zxid_cgi* cgi, int* res_len
 		 cgi->err && cgi->err[0] ? "&err=" : "", cgi->err ? cgi->err : "",
 		 cf->burl);
     D("new_user_page(%s) redir(%s)", cf->new_user_page, p);
-    return zxid_simple_redir_page(cf, cf->new_user_page, p, res_len, auto_flags);
+    return zxid_simple_redir_page(cf, 0, cf->new_user_page, p, res_len, auto_flags);
   }
 
   ERR("No new user page URL defined. (IdP config problem, or IdP intentionally does not support online new user creation. See NEW_USER_PAGE config option.) %d", 0);
@@ -1238,7 +1258,7 @@ static char* zxid_simple_idp_recover_password(zxid_conf* cf, zxid_cgi* cgi, int*
 		 cgi->err && cgi->err[0] ? "&err=" : "", cgi->err ? cgi->err : "",
 		 cf->burl);
     D("recover_passwd(%s) redir(%s)", cf->recover_passwd, p);
-    return zxid_simple_redir_page(cf, cf->recover_passwd, p, res_len, auto_flags);
+    return zxid_simple_redir_page(cf, 0, cf->recover_passwd, p, res_len, auto_flags);
   }
 
   ERR("No password recover page URL defined. (IdP config problem, or IdP intentionally does not support online password recovery. See RECOVER_PASSWD config option.) %d", 0);
@@ -1312,7 +1332,7 @@ static char* zxid_show_protected_content_setcookie(zxid_conf* cf, zxid_cgi* cgi,
 	  :strcmp(cgi->uri_path, rs)) {  /* Different, need external or internal redirect */
 	D("redirect(%s) redir_to_content=%d", rs, cf->redir_to_content);
 	if (cf->redir_to_content) {
-	  return zxid_simple_redir_page(cf, rs, 0, res_len, auto_flags);
+	  return zxid_simple_redir_page(cf, ses, rs, 0, res_len, auto_flags);
 	} else {
 	  D("*** internal redirect(%s)", rs);
 	}
@@ -1740,7 +1760,7 @@ char* zxid_simple_cf_ses(zxid_conf* cf, int qs_len, char* qs, zxid_ses* ses, int
     cgi.qs = qs = getenv("QUERY_STRING");
     if (qs) {
       qs = zx_dup_cstr(cf->ctx, qs);
-      D("QUERY_STRING(%s) %s %d", STRNULLCHK(qs), ZXID_REL, errmac_debug);
+      D("env QUERY_STRING(%s) %s %d", STRNULLCHK(qs), ZXID_REL, errmac_debug);
       zxid_parse_cgi(cf, &cgi, qs);
       if (ONE_OF_8(cgi.op, 'H', 'J', 'P', 'R', 'S', 'T', 'Y', 'Z')) {
 	cont_len = getenv("CONTENT_LENGTH");
@@ -1813,7 +1833,7 @@ char* zxid_simple_cf_ses(zxid_conf* cf, int qs_len, char* qs, zxid_ses* ses, int
       ERR("IMPLEMENTATION LIMIT: Query String MUST be nul terminated len=%d", qs_len);
       exit(1);
     }
-    D("QUERY_STRING(%s) %s", STRNULLCHK(qs), ZXID_REL);
+    D("supplied QUERY_STRING(%s) %s", STRNULLCHK(qs), ZXID_REL);
     if (qs)
       qs = zx_dup_cstr(cf->ctx, qs);
     zxid_parse_cgi(cf, &cgi, qs);

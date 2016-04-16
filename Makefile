@@ -546,6 +546,9 @@ ifeq ($(TARGET),xmingw64b)
 #
 # Cross compiling openssl
 #     ./Configure --prefix=/usr/x86_64-w64-mingw32 --cross-compile-prefix=x86_64-w64-mingw32- enable-rc5 enable-mdc2 zlib mingw64-cross-debug
+#
+#  "mingw64-cross-debug", "gcc:-mno-cygwin -DL_ENDIAN -O2 -g -Wall -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE::-D_MT:MINGW64:-lws2_32 -lgdi32 -lcrypt32:SIXTY_FOUR_BIT RC4_CHUNK_LL DES_INT EXPORT_VAR_AS_FN:${x86_64_asm}:mingw64:win32:cygwin-shared:-D_WINDLL:-mno-cygwin:.dll.a",
+#
 #     #make depend   # error, apparently not needed
 #     make
 #     # If you have syntax errors with string "<symlink>" then eliminate
@@ -556,7 +559,7 @@ ifeq ($(TARGET),xmingw64b)
 #     cp apps/openssl.exe /usr/x86_64-w64-mingw32/bin
 #
 # Cross compiling curl
-#     CPPFLAGS='-I/usr/x86_64-w64-mingw32/include' LDFLAGS='-L/usr/x86_64-w64-mingw32/lib' LIBS='-lz' ./configure --prefix=/usr/x86_64-w64-mingw32 --with-ssl=/usr/x86_64-w64-mingw32 --without-gnutls -enable-debug --enable-thread --enable-nonblocking --host=x86_64-w64-mingw32 --with-random=/random.txt --disable-shared --enable-static
+#     CPPFLAGS='-I/usr/x86_64-w64-mingw32/include -DMINGW' LDFLAGS='-L/usr/x86_64-w64-mingw32/lib' LIBS='-lz' ./configure --prefix=/usr/x86_64-w64-mingw32 --with-ssl=/usr/x86_64-w64-mingw32 --without-gnutls -enable-debug --enable-thread --enable-nonblocking --host=x86_64-w64-mingw32 --with-random=/random.txt --disable-shared --enable-static
 #     make
 #     cp lib/.libs/libcurl* /usr/x86_64-w64-mingw32/lib
 #     cp -r include/curl/ /usr/x86_64-w64-mingw32/include
@@ -1279,7 +1282,7 @@ perlcleaner: perlclean
 
 ifeq ($(ENA_GEN),1)
 
-php/zxid_wrap.c php/zxid.php php/php_zxid.h php/Makefile: $(ZX_GEN_H) zxid.h phpzxid.i
+php/zxid_wrap.c php/zxid.php php/php_zxid.h: $(ZX_GEN_H) zxid.h phpzxid.i
 	@which $(SWIG) || ( echo "You need to install swig-1.3.x from swig.org. Not found $(SWIG)" && exit 2 )
 	cd php; $(SWIG) -o zxid_wrap.c -noproxy -php ../phpzxid.i
 
@@ -1316,7 +1319,7 @@ phpcleaner: phpclean
 
 ifeq ($(ENA_GEN),1)
 
-py/zxid_wrap.c py/zxid.py py/Makefile: $(ZX_GEN_H) zxid.h pyzxid.i
+py/zxid_wrap.c py/zxid.py: $(ZX_GEN_H) zxid.h pyzxid.i
 	@which $(SWIG) || ( echo "You need to install swig-1.3.x from swig.org. Not found $(SWIG)" && exit 2 )
 	cd py; $(SWIG) -o zxid_wrap.c -python ../pyzxid.i
 
@@ -1347,7 +1350,7 @@ pycleaner: pyclean
 
 ifeq ($(ENA_GEN),1)
 
-ruby/zxid_wrap.c ruby/zxid.ruby ruby/Makefile: $(ZX_GEN_H) zxid.h rubyzxid.i
+ruby/zxid_wrap.c ruby/zxid.ruby: $(ZX_GEN_H) zxid.h rubyzxid.i
 	@which $(SWIG) || ( echo "You need to install swig-1.3.x from swig.org. Not found $(SWIG)" && exit 2 )
 	cd ruby; $(SWIG) -o zxid_wrap.c -ruby ../rubyzxid.i
 
@@ -1373,35 +1376,67 @@ rubycleaner: rubyclean
 	rm -rf ruby/zxid.ruby ruby/zxid_wrap.c
 
 ###
-###  C# (csharp) Module (*** Poorly tested)
+###  C# (csharp) Module
 ###
 
 ifeq ($(ENA_GEN),1)
 
-csharp/zxid_wrap.c csharp/zxid.csharp csharp/Makefile: $(ZX_GEN_H) zxid.h csharpzxid.i
+csharp/zxid_wrap.c csharp/zxidcs.cs csharp/zxidcsPINVOKE.cs: $(ZX_GEN_H) zxid.h csharpzxid.i
 	@which $(SWIG) || ( echo "You need to install swig-1.3.x from swig.org. Not found $(SWIG)" && exit 2 )
 	cd csharp; $(SWIG) -o zxid_wrap.c -noproxy -csharp ../csharpzxid.i
+	$(PERL) -pi -e 's/SWIGTYPE_p_zxid_conf/zxid_conf/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zxid_conf.cs csharp/zxid_conf.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zxid_ses/zxid_ses/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zxid_ses.cs csharp/zxid_ses.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zxid_cgi/zxid_cgi/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zxid_cgi.cs csharp/zxid_cgi.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zxid_entity_s/zxid_entity/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zxid_entity_s.cs csharp/zxid_entity.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zx_sa_Assertion_s/zxid_a7n/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zx_sa_Assertion_s.cs csharp/zxid_a7n.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zx_sa_NameID_s/zxid_nid/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zx_sa_NameID_s.cs csharp/zxid_nid.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zx_a_EndpointReference_s/zxid_epr/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zx_a_EndpointReference_s.cs csharp/zxid_epr.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zx_tas3_Status_s/zxid_tas3_status/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zx_tas3_Status_s.cs csharp/zxid_tas3_status.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zx_e_Fault_s/zxid_fault/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zx_e_Fault_s.cs csharp/zxid_fault.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zx_sec_Token_s/zxid_tok/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zx_sec_Token_s.cs csharp/zxid_tok.cs
+	$(PERL) -pi -e 's/(public static \w+ )zxid_/$$1/' csharp/zxidcs.cs
+	$(PERL) -pi -e 's/DllImport\(\"zxidcs\"/DllImport\(\"zxidcli\"/' csharp/zxidcsPINVOKE.cs
 
 endif
 
 csharp/zxid_wrap.$(OBJ_EXT): csharp/zxid_wrap.c
 	$(CC) -c $(OUTOPT)$@ `$(CSHARP_CONFIG) --includes` $(CFLAGS) $(CDEF) $(CINC) $<
 
-csharp/csharp_zxid$(SO): csharp/zxid_wrap.$(OBJ_EXT) $(LIBZXID_A)
-	$(LD) $(LDFLAGS) $(OUTOPT)csharp/csharp_zxid$(SO) -shared csharp/zxid_wrap.$(OBJ_EXT) $(LIBZXID) $(LIBS)
+csharp/zxidcli$(SO): csharp/zxid_wrap.$(OBJ_EXT) $(LIBZXID_A)
+	$(LD) $(LDFLAGS) $(OUTOPT)csharp/zxidcli$(SO) -shared csharp/zxid_wrap.$(OBJ_EXT) $(LIBZXID) $(LIBS)
+	[ -L libzxidcli$(SO) ] || ln -s csharp/zxidcli$(SO) libzxidcli$(SO)
+	cd csharp; [ -L libzxidcli$(SO) ] || ln -s zxidcli$(SO) libzxidcli$(SO)
 
-csharpzxid: csharp/csharp_zxid$(SO)
+csharp/zxidcs.dll: csharp/zxidcs.cs csharp/zxidcsPINVOKE.cs
+	mcs -target:library -out:csharp/zxidcs.dll csharp/*.cs
+	[ -L zxidcs.dll ] || ln -s csharp/zxidcs.dll
 
-csharpzxid_install: csharp/csharp_zxid$(SO)
+zxhelloswig.exe: zxhelloswig.cs
+	mcs -out:zxhelloswig.exe zxhelloswig.cs -r:csharp/zxidcs
+	echo "To run: MONO_PATH=csharp LD_LIBRARY_PATH=csharp:. ./zxhelloswig.exe"
+
+csharpzxid: csharp/zxidcli$(SO) csharp/zxidcs.dll zxhelloswig.exe
+
+csharpzxid_install: csharp/zxidcli$(SO) csharp/zxidcs.dll
 	@$(ECHO) Installing in `$(CSHARP_CONFIG) --extension-dir`
 	mkdir -p `$(CSHARP_CONFIG) --extension-dir`
 	$(CP) $< `$(CSHARP_CONFIG) --extension-dir`
 
 csharpclean:
-	rm -rf csharp/*.$(OBJ_EXT) csharp/*~ csharp/*$(SO)
+	rm -rf csharp/*.$(OBJ_EXT) csharp/*~ csharp/*$(SO) csharp/*.dll csharp/*.exe
 
 csharpcleaner: csharpclean
-	rm -rf csharp/zxid.csharp csharp/zxid_wrap.c
+	rm -rf csharp/*.cs csharp/zxid_wrap.c
 
 ###
 ###  Java JNI Module

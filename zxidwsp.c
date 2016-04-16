@@ -733,7 +733,7 @@ char* zxid_wsp_validate_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, s
  * parts.
  *
  * cf:: ZXID configuration object, see zxid_new_conf()
- * ses:: Session object that contains the EPR cache. New data is extracted from request to session.
+ * ses:: Prevoiously allocated session object that contains the EPR cache. New data is extracted from request to session.
  * az_cred:: (Optional) Additional authorization credentials or
  *     attributes, query string format. These credentials will be populated
  *     to the attribute pool in addition to the ones obtained from token and

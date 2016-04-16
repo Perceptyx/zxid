@@ -1,14 +1,17 @@
 /* csharpzxid.i  -  SWIG interface file for C# extension for libzxid
- * Copyright (c) 2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
+ * Copyright (c) 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
  * Licensed under Apache License 2.0, see file COPYING.
  * $Id: csharpzxid.i,v 1.3 2008-08-07 13:06:59 sampo Exp $
- * 7.5.2008, created --Sampo
+ * 7.4.2016, created --Sampo
+ *
+ * See also: http://swig.org/Doc1.3/CSharp.html
+ *           http://www.mono-project.com/docs/advanced/pinvoke/
  */
-%module "zxid"
+%module "zxidcs"
 %{
 
 #include "errmac.h"
@@ -23,15 +26,17 @@
 
 %}
 
-
+/*
+*** figure out C# equivalent of java (*jenv)->GetStringUTFLength(env, jstring)
 %typemap (in) (int len, char* s) %{
-  // The following jstring casts could probably be avoided with proper use of typemaps
-  $1 = (*jenv)->GetStringUTFLength(jenv, (jstring)$input);
-  $2 = (char*)(*jenv)->GetStringUTFChars(jenv, (jstring)$input, 0);
+  // The following casts could probably be avoided with proper use of typemaps
+  $1 = (*env)->GetStringUTFLength(env, (string)$input);
+  $2 = (char*)(*env)->GetStringUTFChars(env, (string)$input, 0);
   // *** Whether we can free, or not, the obtained string depends
   //     on whether the zxid API will take reference to the string.
 %}
-%typemap (freearg) (int len, char* s) "(*jenv)->ReleaseStringUTFChars(jenv, (jstring)$input, $2);"
+%typemap (freearg) (int len, char* s) "(*env)->ReleaseStringUTFChars(jenv, (jstring)$input, $2);"
+*/
 
 
 //%typemap (out) struct zx_str* {

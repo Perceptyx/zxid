@@ -16,4 +16,20 @@ Install
   make              # creates libzxid
   make csharpzxid
 
+See zxhelloswig.cs for some elementary examples on how to call ZXID using the
+CSharp interface.
+
+Files:
+
+zxidcs.dll - (once compiled) contains the zxidcs class (from zxidcs.cs). Also contains
+    marshalling class zxidcsPINVOKE (from zxidcsPINVOKE.cs) and any of the SWIGTYPE*.cs
+    files.
+libzxidcli.so (or zxidcli.dll) - (once compiled) contains marshalling in C (from zxid_wrap.c)
+    and also statically linked copy of the full libzxid.a, i.e. only libzxidcli.so is
+    needed at run time, no need for libzxid.so (zxidcli.dll and zxid.dll respectively).
+
+The CSharp level class is named zxidcs to avoid naming conflict with the main zxid library.
+The C marshalling library is named zxidcli to avoid naming conflict on windows where
+we need one dll for C code and one for CSharp code and they can not both be called zxidcs.dll
+
 --Sampo

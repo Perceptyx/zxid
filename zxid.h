@@ -729,7 +729,7 @@ struct zxid_invite {
 
 /* --------------- zxid_simple() API (see zxidsimp.c) --------------- */
 
-#define ZXID_AUTO_EXIT    0x01 /* Do not call exit(2), return "n" instead */
+#define ZXID_AUTO_EXIT    0x01 /* Call exit(2) instead of returning "n" */
 #define ZXID_AUTO_REDIR   0x02 /* Autoredirs, assume CGI, calls exit(2) */
 #define ZXID_AUTO_SOAPC   0x04 /* SOAP resp content */
 #define ZXID_AUTO_SOAPH   0x08 /* SOAP resp headers */
@@ -760,6 +760,14 @@ ZXID_DECL char* zxid_fed_mgmt_cf(zxid_conf* cf, int* res_len, int sid_len, char*
 ZXID_DECL int zxid_conf_to_cf_len(zxid_conf* cf, int conf_len, const char* conf);
 ZXID_DECL char* zxid_simple_len(int conf_len, char* conf, int qs_len, char* qs, int* res_len, int auto_flags);
 ZXID_DECL char* zxid_simple_show_idp_sel(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
+
+ZXID_DECL char* zxid_simple_show_meta(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
+ZXID_DECL char* zxid_simple_show_carml(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
+ZXID_DECL char* zxid_simple_show_conf(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
+ZXID_DECL char* zxid_simple_show_jwks(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
+ZXID_DECL char* zxid_simple_show_dynclireg(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
+ZXID_DECL char* zxid_simple_show_rsrcreg(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
+
 ZXID_DECL char* zxid_idp_list_len(int conf_len, char* conf, int* res_len, int auto_flags);
 ZXID_DECL char* zxid_idp_list_cf_cgi(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags);
 ZXID_DECL char* zxid_idp_select_len(int conf_len, char* conf, int* res_len, int auto_flags);
