@@ -42,19 +42,30 @@
 #define ZXVAL_HASH 6
 #define ZXVAL_PACK 7
 
+/* Pure string, without tok and next links of zx_str */
+
 struct zx_lstr {
-  int len;
   char* s;
+  long len;
 };
 
 struct zx_val {
-  int kind;
+  long len;
+  unsigned char kind;
+  unsigned char pad1;
+  unsigned char pad2;
+  unsigned char pad3;
   union {
     long long i; /* 64bit */
     double d;
-    struct zx_lstr ls;  /* string: length + char* */
-    struct zx_ary* ary;
-    struct zx_hash* has;
+    char* s;
+    struct zx_val* a;
+    struct zx_bucket** h;
+    struct zx_gbucket** gh;
+
+    //struct zx_lstr ls;  /* string: length + char* */
+    //struct zx_ary* ary;
+    //struct zx_hash* hash;
   } ue;
 };
 
@@ -79,6 +90,7 @@ struct zx_gbucket {
   long long updatens;  /* 64bit last update timestamp (ns) for replication, see clock_gettime(2) */
   long long expiryns;  /* 64bit seconds since unix epoch */
   struct hi_lock mut;
+  unsigned char symkey[32]; /* AES256 (or other algo) symmetric encryption key */
 };
 
 struct zx_hash {

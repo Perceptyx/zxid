@@ -41,7 +41,7 @@ extern int errmac_debug;
  * see also:: hi_pdu_free() in hiwrite.c */
 
 /* Called by: */
-struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, const char* lk)
+struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, struct hi_io* fe, const char* lk)
 {
   struct hi_pdu* pdu;
 
@@ -77,8 +77,8 @@ struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, const char* lk)
   pdu->lim = pdu->mem + HI_PDU_MEM;
   pdu->m = pdu->scan = pdu->ap = pdu->mem;
   pdu->req = pdu->parent = pdu->subresps = pdu->reals = pdu->synths = 0;
-  pdu->fe = 0;
-  pdu->need = 1;  /* trigger network I/O */
+  pdu->fe = fe;
+  pdu->need = 1;  /* Trigger network I/O. Generally this should be set to protocol MIN_PDU */
   pdu->n = 0;
   HI_SANITY(hit->shf, hit);
   return pdu;
@@ -113,7 +113,7 @@ void hi_pdu_realloc_m(struct hi_thr* hit, struct hi_pdu* pdu, int newsize, const
  * Sometimes the input buffer contains more than
  * a PDU's worth and therefore needs to be prepared
  * as input for the next PDU.
- * The req->need field has to accurately reflact the size of the PDU. Typically
+ * The req->need field has to accurately reflect the size of the PDU. Typically
  * it is set in later stages of decoder.
  * As hi_checkmore() will cause cur_pdu to change, it is common to call hi_add_reqs()
  * locking:: io->qel.mut is held by the caller */
@@ -127,13 +127,12 @@ static void hi_checkmore(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
    * a. because we already hold io->qel.mut (saves lock, otherwise hi_read() will alloc)
    * b. because we might need to copy tail of previous req to it */
 
-  io->cur_pdu = hi_pdu_alloc(hit, "cur_pdu-ckm");
+  io->cur_pdu = hi_pdu_alloc(hit, io, "cur_pdu-ckm");
   if (!io->cur_pdu) {  hi_dump(hit->shf); NEVERNEVER("*** out of pdus in bad place %d", n); }
-  io->cur_pdu->fe = io;
   io->cur_pdu->need = minlen;
   ++io->n_pdu_in;   /* stats */
   
-  D("Chkmore(%x) mn=%d n=%d req_%p->need=%d", io->fd, minlen, n, req, req->need);
+  D("Chkmore(%x) min=%d n=%d req_%p->need=%d", io->fd, minlen, n, req, req->need);
   ASSERT(minlen > 0);  /* If this is ever zero it will prevent hi_poll() from producing. */
   if (n > req->need) {
     memcpy(io->cur_pdu->ap, req->m + req->need, n - req->need);
@@ -189,7 +188,7 @@ int hi_read(struct hi_thr* hit, struct hi_io* io)
     D("loop(%x)->cur_pdu=%p ssl_%p", io->fd, pdu, io->ssl);
     ASSERT(pdu);  /* Exists either through hi_shuff_init() or through hi_check_more() */
   retry:
-    D("read(%x) have=%d need=%d buf_avail=%d", io->fd, (int)(pdu->ap-pdu->m), pdu->need, (int)(pdu->lim-pdu->ap));
+    D("read(%x) have=%d need=%d buf_avail=%d ap=%p", io->fd, (int)(pdu->ap-pdu->m), pdu->need, (int)(pdu->lim-pdu->ap), pdu->ap);
     ASSERT(io->reading);
 #ifdef USE_OPENSSL
     if (io->ssl) {

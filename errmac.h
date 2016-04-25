@@ -428,7 +428,7 @@ extern char errmac_instance[64];
 
 #define ERRMAC_DEBUG_MASK   0x03  /* 0 = no debug, 1=minimal info debug, 2=bit more, 3=lot more */
 #define ERRMAC_XMLDBG       0x04
-#define ERRMAC_RESERVED     0x08
+#define ERRMAC_HIIOS        0x08
 #define ERRMAC_INOUT        0x10
 #define MOD_AUTH_SAML_INOUT 0x20
 #define CURL_INOUT          0x40  /* Back Channel */

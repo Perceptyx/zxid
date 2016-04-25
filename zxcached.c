@@ -100,8 +100,11 @@ Usage: zxcached [options]\n\
   --               End of options\n\
 N.B. Although zxcached is a 'daemon', it does not daemonize itself. You can always say zxcached&\n";
 
-char* instance = "zxcached";  /* how this server is identified in logs */
+extern char errmac_instance[64];
 char* zxcache_path = ZXCACHE_PATH;
+#ifdef ENA_STOMP
+char* zxbus_path = "/var/zxid/";
+#endif
 zxid_conf* zx_cf;
 struct zx_hash* zx_gh;  /* the global hash */
 int ak_buf_size = 0;
@@ -309,7 +312,13 @@ void opt(int* argc, char*** argv, char*** env)
       case 'i':  if ((*argv)[0][3]) break;
 	++(*argv); --(*argc);
 	if (!(*argc)) break;
-	instance = (*argv)[0];
+	strncpy(errmac_instance, (*argv)[0], sizeof(errmac_instance)-1);
+	errmac_instance[sizeof(errmac_instance)-1] = 0; /* ensure nul term on Microsoft */
+	continue;
+      case 'd':  if ((*argv)[0][3]) break;
+	++(*argv); --(*argc);
+	if (!(*argc)) break;
+	errmac_debug = atoi((*argv)[0]);
 	continue;
       case 'c':
 	ss = zxid_show_conf(zx_cf);
@@ -593,7 +602,10 @@ extern int zxid_suppress_vpath_warning;
 /* Called by: */
 int zxcached_main(int argc, char** argv, char** env)
 { 
+  ptrdiff_t err;
   struct hi_thr hit;
+  //strncpy(errmac_instance, "zxcached", sizeof(errmac_instance));
+  strncpy(errmac_instance, CC_RED("zxcached"), sizeof(errmac_instance));
   hi_hit_init(&hit);
   ak_init(*argv);
 #ifdef MINGW
@@ -643,6 +655,11 @@ int zxcached_main(int argc, char** argv, char** env)
   /*openlog("zxcached", LOG_PID, LOG_LOCAL0);     *** Do we want syslog logging? */
   opt(&argc, &argv, &env);
   zxcache_path = zx_cf->cpath;
+
+  if (!listen_ports) {
+    ERR("No listening ports specified. You must supply at least one -p option.\n%s", help);
+    exit(1);
+  }
 
   /*if (stats_prefix) init_cmdline(argc, argv, env, stats_prefix);*/
   CMDLINE("init");
@@ -699,10 +716,11 @@ int zxcached_main(int argc, char** argv, char** env)
   }
 
 #ifndef MINGW  
-  if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {   /* Ignore SIGPIPE */
+  if ((err = (ptrdiff_t)signal(SIGPIPE, SIG_IGN)) == (ptrdiff_t)SIG_ERR) {   /* Ignore SIGPIPE */
     perror("signal ignore pipe");
     exit(2);
   }
+  D("sigpipe=%ld sizeof: int=%ld ptrdiff_t=%ld void*=%ld SIG_ERR=%ld",err,sizeof(int),sizeof(ptrdiff_t),sizeof(void*),sizeof(SIG_ERR));
 
   /* Cause exit(3) to be called with the intent that any gcov profiling will get
    * written to disk before we die. If zxcached is not stopped with `kill -USR1' and you
@@ -713,7 +731,8 @@ int zxcached_main(int argc, char** argv, char** env)
   }
 #endif
 
-  shuff = hi_new_shuffler(&hit, nfd, npdu, nch, nthr);
+  if (!(shuff = hi_new_shuffler(&hit, nfd, npdu, nch, nthr)))
+    exit(6);
   {
     struct hi_io* io;
     struct hi_host_spec* hs;
@@ -779,6 +798,7 @@ int zxcached_main(int argc, char** argv, char** env)
 
   /* Initialize global hash */
 
+  ERR("sizeof: zx_lstr=%ld zx_val=%ld zx_bucket=%ld zx_gbucket=%ld", sizeof(struct zx_lstr), sizeof(struct zx_val), sizeof(struct zx_bucket), sizeof(struct zx_gbucket));
   zx_gh = malloc(sizeof(struct zx_hash)+nkeys*sizeof(struct zx_bucket*));
   memset(zx_gh, 0, sizeof(struct zx_hash)+nkeys*sizeof(struct zx_bucket*));
   zx_gh->len = nkeys;
@@ -792,11 +812,10 @@ int zxcached_main(int argc, char** argv, char** env)
   
   CMDLINE("unleash");
   {
-    int err;
     pthread_t tid;
     for (--nthr; nthr; --nthr)
       if ((err = pthread_create(&tid, 0, thread_loop, shuff))) {
-	ERR("pthread_create() failed: %d (nthr=%d)", err, nthr);
+	ERR("pthread_create() failed: %ld (nthr=%d)", err, nthr);
 	exit(2);
       }
   }

@@ -90,7 +90,7 @@ static void zxbus_info_cb(const SSL *ssl, int where, int ret)
 #endif
 
 /*() Allocate io structure (connection) pool and global PDU
- * pool, from which per thread pools will be plensihed - see
+ * pool, from which per thread pools will be plenished - see
  * hi_pdu_alloc() - and initialize syncronization primitives. */
 
 /* Called by:  zxbusd_main */
@@ -121,11 +121,7 @@ struct hiios* hi_new_shuffler(struct hi_thr* hit, int nfd, int npdu, int nch, in
   shf->max_ios = nfd;
   for (i = 0; i < nfd; ++i) {
     pthread_mutex_init(&shf->ios[i].qel.mut.ptmut, MUTEXATTR);
-    if (!(shf->ios[i].cur_pdu = hi_pdu_alloc(hit, "new_shuffler"))) {
-      ERR("Out of PDUs when preparing cur_pdu for each I/O object. Use -npdu to specify a value at least twice the value of -nfd. Current values: npdu=%d, nfd=%d", npdu, nfd);
-      exit(1);
-    }
-    shf->ios[i].cur_pdu->fe = &shf->ios[i];
+    /* shf->ios[i].cur_pdu -- we do not allocate cur_pdu until connection is accepted */
   }
   
   pthread_cond_init(&shf->todo_cond, 0);
@@ -189,13 +185,13 @@ struct hiios* hi_new_shuffler(struct hi_thr* hit, int nfd, int npdu, int nch, in
     zx_cf->enc_cert = zxid_read_cert(zx_cf, "enc-nopw-cert.pem");
   if (!zx_cf->enc_pkey)
     zx_cf->enc_pkey = zxid_read_private_key(zx_cf, "enc-nopw-cert.pem");
-  if (!SSL_CTX_use_certificate(shf->ssl_ctx, zx_cf->enc_cert)) {
-    ERR("SSL certificate problem %d", 0);
+  if (!zx_cf->enc_cert || !SSL_CTX_use_certificate(shf->ssl_ctx, zx_cf->enc_cert)) {
+    ERR("SSL certificate problem %p", zx_cf->enc_cert);
     zx_report_openssl_err("new_shuffler-cert");
     return 0;
   }
-  if (!SSL_CTX_use_PrivateKey(shf->ssl_ctx, zx_cf->enc_pkey)) {
-    ERR("SSL private key problem %d", 0);
+  if (!zx_cf->enc_pkey || !SSL_CTX_use_PrivateKey(shf->ssl_ctx, zx_cf->enc_pkey)) {
+    ERR("SSL private key problem %p", zx_cf->enc_pkey);
     zx_report_openssl_err("new_shuffler-privkey");
     return 0;
   }

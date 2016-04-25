@@ -187,7 +187,13 @@ int http_decode(struct hi_thr* hit, struct hi_io* io);
 int smtp_decode_req(struct hi_thr* hit, struct hi_io* io);
 int smtp_decode_resp(struct hi_thr* hit, struct hi_io* io);
 
+/* HTTP/1.0 Support */
+
+#define HTTP_MIN_PDU_SIZE ((int)sizeof("GET / HTTP/1.0\n\n")-1)
+
 /* STOMP 1.1 Support */
+
+#define STOMP_MIN_PDU_SIZE (sizeof("ACK\n\n\0")-1)
 
 /* States of STOMP parsing for client */
 #define STOMP_INIT 0  /* Issue STOMP */
@@ -215,6 +221,8 @@ int stomp_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, const ch
 void stomp_send_receipt(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req);
 
 /* memcached binary protocol support (1.3, 24byte header) */
+
+#define MCDB_MIN_PDU_SIZE 24  /* fixed header of the binary protocol */
 
 #define MCDB_REQ_MAGIC  0x80
 #define MCDB_RESP_MAGIC 0x81

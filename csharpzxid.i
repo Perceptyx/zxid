@@ -28,6 +28,9 @@
 
 /*
 *** figure out C# equivalent of java (*jenv)->GetStringUTFLength(env, jstring)
+*** Marshal.PtrToStringAnsi()
+*** Encoding.UTF8.GetBytes(string data)
+*** http://www.codeproject.com/Articles/138614/Advanced-Topics-in-PInvoke-String-Marshaling
 %typemap (in) (int len, char* s) %{
   // The following casts could probably be avoided with proper use of typemaps
   $1 = (*env)->GetStringUTFLength(env, (string)$input);

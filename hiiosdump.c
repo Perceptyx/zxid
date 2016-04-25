@@ -49,10 +49,11 @@
 short hi_color = 4;
 
 /*() Sanity check hiios pdu data structures.
+ * Also outputs graphviz dot syntax for the datastructures
  * Returns number of nodes scanned, or negative for errors. */
 
 /* Called by:  hi_sanity_hit, hi_sanity_io x4, hi_sanity_pdu x3, hi_sanity_shf x2 */
-int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu)
+int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu, int level)
 {
   int errs = 0;
   int nodes = 0;
@@ -60,12 +61,12 @@ int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu)
 
   if (mode&0x80) {
     if (root_pdu->reals)
-      printf("    pdu_%p  //reals  (%.*s)\n", root_pdu, (int)MIN(root_pdu->ap-root_pdu->m,4), root_pdu->m);
+      printf("%*spdu_%p  //reals  (%.*s)\n", level*2, "", root_pdu, (int)MIN(root_pdu->ap-root_pdu->m,4), root_pdu->m);
     else
-      printf("    pdu_%p -> null [label=reals];\n", root_pdu);
+      printf("%*spdu_%p -> null [label=reals];\n", level*2, "", root_pdu);
   }
   for (pdu = root_pdu->reals; pdu; pdu = pdu->n) {
-    if (mode&0x80) printf("    -> pdu_%p  // (%.*s)\n", pdu, (int)MIN(pdu->ap-pdu->m,4), pdu->m);
+    if (mode&0x80) printf("%*s-> pdu_%p  // (%.*s)\n", level*2, "", pdu, (int)MIN(pdu->ap-pdu->m,4), pdu->m);
     if (pdu->color == hi_color+1) {
       printf("ERR *** pdu_%p has circular reference (color=%d) wrt pdu->reals pdu->n\n", pdu, pdu->color);
       --errs;
@@ -73,23 +74,23 @@ int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu)
     } else {
       pdu->color = hi_color+1;
       ++nodes;
-      if (mode&0x01) nodes += hi_sanity_pdu(mode, pdu);
+      if (mode&0x01) nodes += hi_sanity_pdu(mode, pdu, level+1);
     }
     if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
       printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
       --errs;
     }
   }
-  if (mode&0x80 && root_pdu->reals) printf("    [label=reals];\n");
+  if (mode&0x80 && root_pdu->reals) printf("%*s[label=reals];\n", level*2, "");
 
   if (mode&0x80) {
     if (root_pdu->synths)
-      printf("    pdu_%p  // synths\n", root_pdu);
+      printf("%*spdu_%p  // synths\n", level*2, "", root_pdu);
     else
-      printf("    pdu_%p -> null [label=synths];\n", root_pdu);
+      printf("%*spdu_%p -> null [label=synths];\n", level*2, "", root_pdu);
   }
   for (pdu = root_pdu->synths; pdu; pdu = pdu->n) {
-    if (mode&0x80) printf("    -> pdu_%p\n", pdu);
+    if (mode&0x80) printf("%*s-> pdu_%p\n", level*2, "", pdu);
     if (pdu->color == hi_color+1) {
       printf("ERR *** pdu_%p has circular reference (color=%d) wrt pdu->synths pdu->n\n", pdu, pdu->color);
       --errs;
@@ -97,23 +98,23 @@ int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu)
     } else {
       pdu->color = hi_color+1;
       ++nodes;
-      if (mode&0x01) nodes += hi_sanity_pdu(mode, pdu);
+      if (mode&0x01) nodes += hi_sanity_pdu(mode, pdu, level+1);
     }
     if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
       printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
       --errs;
     }
   }
-  if (mode&0x80 && root_pdu->synths) printf("    [label=synths];\n");
+  if (mode&0x80 && root_pdu->synths) printf("%*s[label=synths];\n", level*2, "");
 
   if (mode&0x80) {
     if (root_pdu->subresps)
-      printf("    pdu_%p  // subresps\n", root_pdu);
+      printf("%*spdu_%p  // subresps\n", level*2, "", root_pdu);
     else
-      printf("    pdu_%p -> null [label=subresps];\n", root_pdu);
+      printf("%*spdu_%p -> null [label=subresps];\n", level*2, "", root_pdu);
   }
   for (pdu = root_pdu->subresps; pdu; pdu = pdu->wn) {
-    if (mode&0x80) printf("    -> pdu_%p\n", pdu);
+    if (mode&0x80) printf("%*s-> pdu_%p\n", level*2, "", pdu);
     if (pdu->color == hi_color+2) {
       printf("ERR *** pdu_%p has circular reference (color=%d) wrt pdu->subresps pdu->wn\n", pdu, pdu->color);
       --errs;
@@ -121,14 +122,14 @@ int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu)
     } else {
       pdu->color = hi_color+2;
       ++nodes;
-      if (mode&0x01) nodes += hi_sanity_pdu(mode, pdu);
+      if (mode&0x01) nodes += hi_sanity_pdu(mode, pdu, level+1);
     }
     if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
       printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
       --errs;
     }
   }
-  if (mode&0x80 && root_pdu->subresps) printf("    [label=subresps];\n");
+  if (mode&0x80 && root_pdu->subresps) printf("%*s[label=subresps];\n", level*2, "");
 
   return errs?errs:nodes;
 }
@@ -148,7 +149,7 @@ int hi_sanity_io(int mode, struct hi_io* root_io)
     return 0;
   }
   
-  if (mode&0x80) printf("  io_%p -> pdu_%p [label=cur_pdu]; // fd=0x%x\n", root_io, root_io->cur_pdu, root_io->fd);
+  if (mode&0x80) printf("  io_%p -> pdu_%p [label=cur_pdu]; // fd=0x%x need=%d have=%d\n", root_io, root_io->cur_pdu, root_io->fd, root_io->cur_pdu?root_io->cur_pdu->need:-2, root_io->cur_pdu?(int)(root_io->cur_pdu->ap-root_io->cur_pdu->m):-2);
   if (root_io->cur_pdu)
     root_io->cur_pdu->color = hi_color+1;  /* cur_pdu is mutually exclusive with io->reqs */
 
@@ -167,7 +168,7 @@ int hi_sanity_io(int mode, struct hi_io* root_io)
     } else {
       pdu->color = hi_color+1;
       ++nodes;
-      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu);
+      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu, 2);
     }
     if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
       printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
@@ -191,20 +192,22 @@ int hi_sanity_io(int mode, struct hi_io* root_io)
     } else {
       pdu->color = hi_color+1;
       ++nodes;
-      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu);
+      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu, 2);
     }
     if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
       printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
       --errs;
     }
   }
-  if (mode&0x80 && root_io->reqs) printf("[label=pending];\n");
+  if (mode&0x80 && root_io->pending) printf("[label=pending];\n");
 
   if (mode&0x80) {
-    if (root_io->to_write_produce) {
-      printf("  io_%p -> pdu_%p [label=to_write_produce]; // (%.*s)\n", root_io, root_io->to_write_produce, (int)MIN(root_io->to_write_produce->ap-root_io->to_write_produce->m,4), root_io->to_write_produce->m);
-      ASSERT(root_io->to_write_produce->wn == 0);
-      /*if (mode&0x02) nodes += hi_sanity_pdu(mode, root_io->to_write_produce);*/
+    /* N.B. to_write_produce is just other end of to_write_consume, so let the
+     * to_write_consume code do the pointer chasing, see below */
+    if (pdu = root_io->to_write_produce) {
+      printf("  io_%p -> pdu_%p [label=to_write_produce]; // (%.*s)\n", root_io, pdu, (int)MIN(pdu->ap-pdu->m,4), pdu->m);
+      ASSERT(pdu->wn == 0);
+      /*if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu, 2);*/
       if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
 	printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
 	--errs;
@@ -228,7 +231,7 @@ int hi_sanity_io(int mode, struct hi_io* root_io)
     } else {
       pdu->color = hi_color+2;
       ++nodes;
-      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu);
+      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu, 2);
     }
     if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
       printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
@@ -252,7 +255,7 @@ int hi_sanity_io(int mode, struct hi_io* root_io)
     } else {
       pdu->color = hi_color+2;
       ++nodes;
-      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu);
+      if (mode&0x02) nodes += hi_sanity_pdu(mode, pdu, 2);
     }
     if (pdu->qel.intodo != HI_INTODO_PDUINUSE) {
       printf("ERR *** pdu_%p has wrong intodo=%x expected %x\n", pdu, pdu->qel.intodo, HI_INTODO_PDUINUSE);
@@ -299,7 +302,7 @@ int hi_sanity_hit(int mode, struct hi_thr* root_hit)
     }
     pdu->color = hi_color+0;
     ++nodes;
-    if (!(mode&0x08)) nodes += hi_sanity_pdu(mode, pdu);
+    if (!(mode&0x08)) nodes += hi_sanity_pdu(mode, pdu, 1);
   }
   if (mode&0x80 && root_hit->free_pdus) printf("[label=free_pdus];\n");
 
@@ -337,17 +340,17 @@ int hi_sanity_shf(int mode, struct hiios* root_shf)
 
   if (mode&0x80) {
     if (root_shf->ios)
-      printf("shf_%p  // max_ios=%d\n", root_shf, root_shf->max_ios);
+      printf("// shf_%p;  // max_ios=%d\n", root_shf, root_shf->max_ios);
     else
       printf("shf_%p -> null [label=ios];\n", root_shf);
   }
   for (io = root_shf->ios; io < root_shf->ios + root_shf->max_ios; ++io) {
     if (!io->n_thr && (io->fd & 0x80000000 || io->fd == 0)) {
       /*ASSERT(io->qel.intodo == HI_INTODO_SHF_FREE);  doesn't hold betw 1st close and end game */
-      printf("io_%p  // free? fd(%x) n_c/t=%d/%d in_todo=%d\n", io, io->fd, io->n_close, io->n_thr, io->qel.intodo);
+      printf("shf_%p -> io_%p;  // free? fd(%x) n_c/t=%d/%d in_todo=%d\n", root_shf, io, io->fd, io->n_close, io->n_thr, io->qel.intodo);
       continue;   /* ios slot not in use */
     }
-    if (mode&0x80) printf("-> io_%p\n", io);
+    if (mode&0x80) printf("shf_%p -> io_%p;\n", root_shf, io);
     ++nodes;
     if (mode&0x04) {
       res = hi_sanity_io(mode, io);
@@ -357,7 +360,6 @@ int hi_sanity_shf(int mode, struct hiios* root_shf)
 	nodes += res;
     }
   }
-  if (mode&0x80 && root_shf->ios) printf("[label=ios];\n");
 
   if (mode&0x80) {
     if (root_shf->todo_consume)
@@ -376,7 +378,7 @@ int hi_sanity_shf(int mode, struct hiios* root_shf)
     pdu->color = hi_color+0;
     ++nodes;
     if (!(mode&0x08)) {
-      res = hi_sanity_pdu(mode, pdu);
+      res = hi_sanity_pdu(mode, pdu, 1);
       if (res < 0)
 	errs += res;
       else
@@ -415,7 +417,7 @@ int hi_sanity_shf(int mode, struct hiios* root_shf)
     pdu->color = hi_color+0;
     ++nodes;
     if (!(mode&0x08)) {
-      res = hi_sanity_pdu(mode, pdu);
+      res = hi_sanity_pdu(mode, pdu, 1);
       if (res < 0)
 	errs += res;
       else
@@ -428,7 +430,7 @@ int hi_sanity_shf(int mode, struct hiios* root_shf)
 }
 
 /*() hi_sanity is called by macro HI_SANITY() and is meant to be called from gdb interactively.
- * Returns number of nodes scanned, or negative for errors. */
+ * Returns number of nodes scanned, or negative number of errors. */
 
 /* Called by: */
 int hi_sanity(int mode, struct hiios* root_shf, struct hi_thr* root_hit, const char* fn, int line)
@@ -437,12 +439,12 @@ int hi_sanity(int mode, struct hiios* root_shf, struct hi_thr* root_hit, const c
   hi_color += 4;
   if (root_shf) {
     res = hi_sanity_shf(mode, root_shf);
-    D("Data structure dump %d\n---------------------- %s:%d", res, fn, line);
+    D("End of data structure dump %d\n---------------------- %s:%d", res, fn, line);
     ASSERT(res >= 0);
   }
   if (root_hit) {
     res = hi_sanity_hit(mode, root_hit);
-    D("Hit structure dump %d\n====================== %s:%d", res, fn, line);
+    D("End of hit structure dump %d\n====================== %s:%d", res, fn, line);
     ASSERT(res >= 0);
   }
   return 0;
@@ -455,13 +457,14 @@ int hi_sanity(int mode, struct hiios* root_shf, struct hi_thr* root_hit, const c
 int hi_dump(struct hiios* shf)
 {
   struct hi_thr* hit;
-  int res = hi_sanity_shf(255, shf);
+  int res;
   hi_color += 4;
+  res = hi_sanity_shf(255, shf);
+  printf("End of data structure dump %d\n----------------------\n", res);
   D("Dumping shf=%p hi_color=%d", shf, hi_color);
-  printf("Data structure dump %d\n----------------------\n", res);
   for (hit = shf->threads; hit; hit = hit->n) {
     res = hi_sanity_hit(255, hit);
-    printf("Hit structure dump %d\n======================\n", res);
+    printf("End of hit structure dump %d\n======================\n", res);
   }
   return res;
 }

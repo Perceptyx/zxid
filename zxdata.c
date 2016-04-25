@@ -95,6 +95,7 @@ struct zx_gbucket* zx_global_set_by_len_key(int len, const char* key, struct zx_
 {
   struct zx_bucket** bktp = zx_bucket_slot_by_len_key(zx_gh, len, key);
   struct zx_gbucket*  bkt = (struct zx_gbucket*)*bktp;
+  D("key(%.*s) bktp=%p bkt=%p", len, key, bktp, bkt);
   
   if (!bkt) {  /* miss: slot not yet occupied */
     bkt = zx_new_gbucket(len, key, val);

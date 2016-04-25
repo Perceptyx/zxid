@@ -147,8 +147,7 @@ void hi_close(struct hi_thr* hit, struct hi_io* io, const char* lk)
   
   if (io->cur_pdu) {
     hi_free_req(hit, io->cur_pdu, "close-cur ");
-    io->cur_pdu = hi_pdu_alloc(hit, "cur_pdu-clo");  /* *** Could we recycle the PDU without freeing? */
-    io->cur_pdu->fe = io;
+    io->cur_pdu = 0; /* There is no cur_pdu until connection is accepted */
   }
 #ifdef ENA_S5066
   void sis_clean(struct hi_io* io);
@@ -167,7 +166,7 @@ void hi_close(struct hi_thr* hit, struct hi_io* io, const char* lk)
     }
     io->ent = 0;
   } else {
-    ERR("io(%x) has no entity associated", io->fd);
+    D("io(%x) has no entity associated", io->fd);
   }
   
 #ifdef USE_OPENSSL
@@ -322,7 +321,7 @@ void hi_shuffle(struct hi_thr* hit, struct hiios* shf)
   shf->threads = hit;
   UNLOCK(shf->todo_mut, "add-thread");
   INFO("Start shuffling hit(%p) shf(%p)", hit, shf);
-  hi_sanity_shf(255, shf);
+  hi_color += 4; hi_sanity_shf(255, shf);
   while (1) {
     HI_SANITY(hit->shf, hit);
     qe = hi_todo_consume(hit);  /* Wakes up the heard to receive work. */

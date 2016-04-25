@@ -55,16 +55,15 @@
 #define msg_id    pw
 #define heart_bt  dest
 #define zx_rcpt_sig dest
-#define STOMP_MIN_PDU_SIZE (sizeof("ACK\n\n\0")-1)
 
 extern int verbose;  /* defined in option parsing in zxbusd.c */
-extern zxid_conf* zxbus_cf;
+extern zxid_conf* zx_cf;
 
 #if 0
 /* Called by: */
 static struct hi_pdu* stomp_encode_start(struct hi_thr* hit)
 {
-  struct hi_pdu* resp = hi_pdu_alloc(hit,"stomp_enc_start");
+  struct hi_pdu* resp = hi_pdu_alloc(hit,0,"stomp_enc_start");
   if (!resp) { hi_dump(hit->shf); NEVERNEVER("*** out of pdus in bad place %d", 0); }
   return resp;
 }
@@ -147,7 +146,7 @@ void stomp_send_receipt(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req
   }
   DD("rcpt(%.*s) len=%d", len, rcpt, len);
 
-  zxbus_mint_receipt(zxbus_cf, sizeof(sigbuf), sigbuf,
+  zxbus_mint_receipt(zx_cf, sizeof(sigbuf), sigbuf,
 		     len, rcpt,
 		     -2, req->ad.stomp.dest,
 		     -1, io->ent->eid,   /* entity to which we issue receipt */
@@ -302,14 +301,14 @@ static void stomp_got_ack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* r
   else
     D("ACK par_%p->len=%d rq_%p->len=%d", parent, parent->ad.delivb.len, resp->req, resp->req->ad.stomp.len);
 
-  eid = zxid_my_ent_id_cstr(zxbus_cf);
-  ver = zxbus_verify_receipt(zxbus_cf, io->ent->eid,
+  eid = zxid_my_ent_id_cstr(zx_cf);
+  ver = zxbus_verify_receipt(zx_cf, io->ent->eid,
 			     siglen, siglen?resp->ad.stomp.zx_rcpt_sig:"",
 			     -2, resp->req->ad.stomp.msg_id,
 			     -2, resp->req->ad.stomp.dest,
 			     -1, eid,  /* our eid, the receipt was issued to us */
 			     resp->req->ad.stomp.len, resp->req->ad.stomp.body);
-  ZX_FREE(zxbus_cf->ctx, eid);
+  ZX_FREE(zx_cf->ctx, eid);
   if (ver != ZXSIG_OK) {
     ERR("ACK signature validation failed: %d", ver);
     hi_free_resp(hit, resp, "ack ");

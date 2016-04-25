@@ -42,16 +42,15 @@
 #define msg_id    pw
 #define heart_bt  dest
 #define zx_rcpt_sig dest
-#define MCDB_MIN_PDU_SIZE 24  /* fixed header of the binary protocol */
 
 extern int verbose;  /* defined in option parsing in zxceched.c */
-extern zxid_conf* zxbus_cf;
+extern zxid_conf* zx_cf;
 
 #if 0
 /* Called by: */
 static struct hi_pdu* mcdb_encode_start(struct hi_thr* hit)
 {
-  struct hi_pdu* resp = hi_pdu_alloc(hit,"mcdb_enc_start");
+  struct hi_pdu* resp = hi_pdu_alloc(hit,0,"mcdb_enc_start");
   if (!resp) { hi_dump(hit->shf); NEVERNEVER("*** out of pdus in bad place %d", 0); }
   return resp;
 }
@@ -74,7 +73,7 @@ int mcdb_ok(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int extral
 {
   int len;
   char* p;
-  struct hi_pdu* resp = hi_pdu_alloc(hit, "mcdb_ok");
+  struct hi_pdu* resp = hi_pdu_alloc(hit, io, "mcdb_ok");
   p = resp->ap;
   p[0] = MCDB_RESP_MAGIC;  /* 0x81 */
   p[1] = req->ad.mcdb.op;
@@ -100,6 +99,7 @@ int mcdb_ok(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int extral
     memcpy(p+24, extra, extralen);
   resp->ap += 24+extralen;
   
+  D("ok req=%p resp=%p vallen=%d cpkey=%d", req, resp, vallen, cpkey);
   if (vallen) {
     if (cpkey) {
       hi_send3(hit, io, 0, req, resp, 24+extralen, p, req->ad.mcdb.keylen, req->ad.mcdb.key, vallen, (void*)val);
@@ -123,7 +123,7 @@ int mcdb_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int statu
 {
   int len;
   char* p;
-  struct hi_pdu* resp = hi_pdu_alloc(hit, "mcdb_err");
+  struct hi_pdu* resp = hi_pdu_alloc(hit, io, "mcdb_err");
   p = resp->ap;
   p[0] = MCDB_RESP_MAGIC;  /* 0x81 */
   p[1] = req->ad.mcdb.op;
@@ -162,6 +162,7 @@ int mcdb_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int statu
 /* Called by:  mcdb_decode x2 */
 static int mcdb_frame_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, const char* emsg)
 {
+  D("emsg(%s)", emsg);
   /* At this early stage the req is still a io->cur_pdu. We need to
    * promote it to a real request so that the free logic will work right. */
   hi_add_to_reqs(hit, io, req, MCDB_MIN_PDU_SIZE);
@@ -204,7 +205,7 @@ void mcdb_send_receipt(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
   }
   DD("rcpt(%.*s) len=%d", len, rcpt, len);
 
-  zxbus_mint_receipt(zxbus_cf, sizeof(sigbuf), sigbuf,
+  zxbus_mint_receipt(zx_cf, sizeof(sigbuf), sigbuf,
 		     len, rcpt,
 		     -2, req->ad.mcdb.dest,
 		     -1, io->ent->eid,   /* entity to which we issue receipt */
@@ -352,14 +353,14 @@ static void mcdb_got_ack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   else
     D("ACK par_%p->len=%d rq_%p->len=%d", parent, parent->ad.delivb.len, resp->req, resp->req->ad.mcdb.len);
 
-  eid = zxid_my_ent_id_cstr(zxbus_cf);
-  ver = zxbus_verify_receipt(zxbus_cf, io->ent->eid,
+  eid = zxid_my_ent_id_cstr(zx_cf);
+  ver = zxbus_verify_receipt(zx_cf, io->ent->eid,
 			     siglen, siglen?resp->ad.mcdb.zx_rcpt_sig:"",
 			     -2, resp->req->ad.mcdb.msg_id,
 			     -2, resp->req->ad.mcdb.dest,
 			     -1, eid,  /* our eid, the receipt was issued to us */
 			     resp->req->ad.mcdb.len, resp->req->ad.mcdb.body);
-  ZX_FREE(zxbus_cf->ctx, eid);
+  ZX_FREE(zx_cf->ctx, eid);
   if (ver != ZXSIG_OK) {
     ERR("ACK signature validation failed: %d", ver);
     hi_free_resp(hit, resp, "ack ");
@@ -397,6 +398,7 @@ static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   }
   /* lookup the value from hash */
   if (bkt = zx_global_get_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key)) {
+    D("get(%.*s) bkt=%p val(%.*s) cpkey=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, bkt, bkt->b.val.ue.ls.len, bkt->b.val.ue.ls.s, cpkey);
     mcdb_ok(hit, io, req, 4, "\0\0\0\0", cpkey, 0,
 	    bkt->b.val.ue.ls.len, bkt->b.val.ue.ls.s, mcdb_zero_cas);
   } else {
@@ -457,7 +459,7 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   char* lim;
   unsigned char* p = (unsigned char*)req->m;
   
-  D("decode req(%p)->need=%d (%.*s)", req, req->need, (int)MIN(req->ap - req->m, 3), req->m);
+  D("decode req(%p)->need=%d have=%d", req, req->need, (int)(req->ap - req->m));
   HI_SANITY(hit->shf, hit);
   
   if ((unsigned char*)req->ap - p < MCDB_MIN_PDU_SIZE) {   /* too little, need more */
@@ -487,7 +489,8 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
     D("need=%d have=%d", req->need, (int)(req->ap - req->m));
     return HI_NEED_MORE;
   }
-  
+
+  req->need = lim-req->m; /* final PDU length */
   req->ad.mcdb.extras = p;
   p += req->ad.mcdb.extraslen;
   if ((char*)p > lim) goto ooberr;
@@ -505,7 +508,9 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   /* Operation dispatch */
 
   switch (req->ad.mcdb.op) {
+  case MCDB_GETQ: // 0x09
   case MCDB_GET:   mcdb_got_get(hit,io,req,0); break; //  0x00
+  case MCDB_GETKQ: // 0x0D
   case MCDB_GETK:  mcdb_got_get(hit,io,req,1); break; //  0x0C
   case MCDB_ADD: //  0x02
   case MCDB_REPLACE: // 0x03
@@ -522,8 +527,6 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   case MCDB_INC: //  0x05
   case MCDB_DEC: //  0x06
   case MCDB_FLUSH: // 0x08
-  case MCDB_GETQ: // 0x09
-  case MCDB_GETKQ: // 0x0D
   case MCDB_APPEND: // 0x0E
   case MCDB_PREPEND: // 0x0F
   case MCDB_STAT: // 0x10

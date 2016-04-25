@@ -97,7 +97,7 @@
 #define zx_rcpt_sig dest
 
 extern int verbose;  /* defined in option parsing in zxbusd.c */
-extern zxid_conf* zxbus_cf;
+extern zxid_conf* zx_cf;
 extern char* zxbus_path;
 
 /*() Read the .ack/SHA1 file for a message and parse it into linked
@@ -246,7 +246,7 @@ void stomp_msg_deliver(struct hi_thr* hit, struct hi_pdu* db_pdu)
 /* Called by:  zxbus_persist */
 static void zxbus_sched_new_delivery(struct hi_thr* hit, struct hi_pdu* req, const char* sha1name, int dest_len, const char* dest)
 {
-  struct hi_pdu* pdu = hi_pdu_alloc(hit, "deliv-bitch");
+  struct hi_pdu* pdu = hi_pdu_alloc(hit, 0, "deliv-bitch");
   pdu->qel.kind = HI_PDU_DIST;
   memcpy(pdu->m, req->m, req->need);  /* copy PDU substance */
   pdu->ap += req->need;
@@ -286,7 +286,7 @@ void zxbus_sched_pending_delivery(struct hi_thr* hit, const char* dest)
   
   while (de = readdir(dir))  /* iterate over messages in the channel directory */
     if (de->d_name[0] != '.' && de->d_name[strlen(de->d_name)-1] != '~') { /* ign hidden&backup */
-      if (!(pdu = hi_pdu_alloc(hit, "pend-bitch")))
+      if (!(pdu = hi_pdu_alloc(hit, 0, "pend-bitch")))
 	break;
       pdu->qel.kind = HI_PDU_DIST;
       pdu->ap += read_all(pdu->lim - pdu->ap, pdu->ap, "pend-bitch", 1,
@@ -369,7 +369,7 @@ int zxbus_persist(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
   dest_len = nl-dest;
   DD("persist(%.*s)", dest_len, dest);
   
-  if (!(len = zxbus_persist_msg(zxbus_cf, sizeof(c_path), c_path,
+  if (!(len = zxbus_persist_msg(zx_cf, sizeof(c_path), c_path,
 			       dest_len, dest, req->ap-req->m, req->m))) {
     stomp_err(hit,io,req,"persist failure at server","Unable to persist message. Can not guarantee reliable delivery, therefore rejecting.");    
     /* *** should we make an effort to close the connection? */

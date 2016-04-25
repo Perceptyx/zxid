@@ -23,7 +23,7 @@
 /* Called by:  http_send_data, http_send_err, http_send_file */
 struct hi_pdu* http_encode_start(struct hi_thr* hit)
 {
-  struct hi_pdu* resp = hi_pdu_alloc(hit, "http-enc-start");
+  struct hi_pdu* resp = hi_pdu_alloc(hit, 0, "http-enc-start");
   if (!resp) {  hi_dump(hit->shf); NEVERNEVER("*** out of pdus in bad place %d", 0); }
   return resp;
 }
@@ -49,8 +49,6 @@ void http_send_file(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, in
   //struct hi_pdu* resp = http_encode_start(hit);
   /*hi_sendv(hit, io, 0, req, resp, len, resp->m, size, req->m + len);*/
 }
-
-#define HTTP_MIN_PDU_SIZE ((int)sizeof("GET / HTTP/1.0\n\n")-1)
 
 /* Called by: */
 int http_decode(struct hi_thr* hit, struct hi_io* io)

@@ -185,6 +185,7 @@ SHARED_CLOSE=-Wl,--no-whole-archive
 ### Form CFLAGS from its components
 CDEF+= -D_REENTRANT -DDEBUG
 CDEF+= -DMUTEX_DEBUG=1
+CDEF+= -DENA_MCDB=1 -DENA_STOMP -DENA_HTTP
 CFLAGS+= -g -fPIC -fno-strict-aliasing
 #CFLAGS += -Os    # gcc-3.4.6 miscompiles with -Os on ix86 (2010 --Sampo)
 CFLAGS+= -fmessage-length=0
@@ -194,8 +195,10 @@ LIBZXID_A?=libzxid.a
 LIBZXID?=-L. -lzxid
 PLATFORM_OBJ?=
 OUTOPT?=-o 
-OBJ_EXT?=o
+# Object file extension: Usually .o on unix and .obj on Windows
+OE?=o
 EXE?=
+# Shared library extension: .so on unix, .dll on Windows
 SO?=.so
 
 ifeq ($(ENA_PG),1)
@@ -619,7 +622,7 @@ SHARED_CLOSE=
 CFLAGS=-Zi -WL -DMAYBE_UNUSED=''
 #CFLAGS+=-Yd
 OUTOPT=-OUT:
-OBJ_EXT=obj
+OE=obj
 EXE=.exe
 SO=.dll
 PLATFORM_OBJ=zxdirent.obj
@@ -676,14 +679,14 @@ ifeq ($(TARGET),win32cl)
 %.obj: %.c
 	$(CC) $(CFLAGS) $(CDEF) $(CINC) -Fo$@ -c $<
 else
-%.$(OBJ_EXT): %.c
+%.$(OE): %.c
 	$(CC) $(OUTOPT)$@ -c $< $(CFLAGS) $(CDEF) $(CINC)
 endif
 
-%$(EXE): %.$(OBJ_EXT)
+%$(EXE): %.$(OE)
 	$(LD) $(OUTOPT)$@ $< $(LDFLAGS) $(LIBZXID) $(LIBS)
 
-precheck/%$(EXE): precheck/%.$(OBJ_EXT)
+precheck/%$(EXE): precheck/%.$(OE)
 	$(LD) $(OUTOPT)$@ $< $(LDFLAGS) $(LIBS)
 
 else
@@ -694,18 +697,18 @@ ifeq ($(TARGET),win32cl)
 	@if $(CC) $(CFLAGS) $(CDEF) $(CINC) -Fo$@ -c $< ; then : ; else \
 	echo Failed command:; echo '$(CC) $(CFLAGS) $(CDEF) $(CINC) -Fo$@ -c $<' ; false; fi
 else
-%.$(OBJ_EXT): %.c
+%.$(OE): %.c
 	@echo "  Compiling $<"
 	@if $(CC) $(OUTOPT)$@ -c $< $(CFLAGS) $(CDEF) $(CINC) ; then : ; else \
 	echo Failed command:; echo '$(CC) $(OUTOPT)$@ -c $< $(CFLAGS) $(CDEF) $(CINC)' ; false; fi
 endif
 
-precheck/chk-%$(EXE): precheck/chk-%.$(OBJ_EXT)
+precheck/chk-%$(EXE): precheck/chk-%.$(OE)
 	@echo "  Link exe  $@"
 	@if $(LD) $(OUTOPT)$@ $< $(LDFLAGS) $(LIBS) ; then : ; else \
 	echo Failed command:; echo '$(LD) $(OUTOPT)$@ $< $(LDFLAGS) $(LIBS)' ; false; fi
 
-%$(EXE): %.$(OBJ_EXT)
+%$(EXE): %.$(OE)
 	@echo "  Linking   $@"
 	@if $(LD) $(OUTOPT)$@ $< $(LDFLAGS) $(LIBZXID) $(LIBS) ; then : ; else \
 	echo Failed command:; echo '$(LD) $(OUTOPT)$@ $< $(LDFLAGS) $(LIBZXID) $(LIBS)' ; false; fi
@@ -744,15 +747,15 @@ diet64: zxcot-static-x64 zxpasswd-static-x64 zxididp-static-x64 zxidhlo-static-x
 
 ZXIDHDRS=zx.h zxid.h zxidnoswig.h c/zxidvers.h
 
-ZXID_LIB_OBJ=zxidsimp.$(OBJ_EXT) zxidpool.$(OBJ_EXT) zxidpsso.$(OBJ_EXT) zxidsso.$(OBJ_EXT) zxidslo.$(OBJ_EXT) zxiddec.$(OBJ_EXT) zxidspx.$(OBJ_EXT) zxididpx.$(OBJ_EXT) zxidmni.$(OBJ_EXT) zxidpep.$(OBJ_EXT) zxidpdp.$(OBJ_EXT) zxidmk.$(OBJ_EXT) zxida7n.$(OBJ_EXT) zxidses.$(OBJ_EXT) zxiduser.$(OBJ_EXT) zxidcgi.$(OBJ_EXT) zxidconf.$(OBJ_EXT) zxidecp.$(OBJ_EXT) zxidcdc.$(OBJ_EXT) zxidloc.$(OBJ_EXT) zxidlib.$(OBJ_EXT) zxidmeta.$(OBJ_EXT) zxidmda.$(OBJ_EXT) zxidcurl.$(OBJ_EXT) zxidepr.$(OBJ_EXT) zxida7n.$(OBJ_EXT) ykcrc.$(OBJ_EXT) ykaes.$(OBJ_EXT) $(PLATFORM_OBJ)
+ZXID_LIB_OBJ=zxidsimp.$(OE) zxidpool.$(OE) zxidpsso.$(OE) zxidsso.$(OE) zxidslo.$(OE) zxiddec.$(OE) zxidspx.$(OE) zxididpx.$(OE) zxidmni.$(OE) zxidpep.$(OE) zxidpdp.$(OE) zxidmk.$(OE) zxida7n.$(OE) zxidses.$(OE) zxiduser.$(OE) zxidcgi.$(OE) zxidconf.$(OE) zxidecp.$(OE) zxidcdc.$(OE) zxidloc.$(OE) zxidlib.$(OE) zxidmeta.$(OE) zxidmda.$(OE) zxidcurl.$(OE) zxidepr.$(OE) zxida7n.$(OE) ykcrc.$(OE) ykaes.$(OE) $(PLATFORM_OBJ)
 
-ZX_OBJ=c/zx-ns.$(OBJ_EXT) c/zx-attrs.$(OBJ_EXT) c/zx-elems.$(OBJ_EXT) zxlibdec.$(OBJ_EXT) zxlibenc.$(OBJ_EXT) zxlib.$(OBJ_EXT) zxns.$(OBJ_EXT) zxpw.$(OBJ_EXT) zxutil.$(OBJ_EXT) zxbusprod.$(OBJ_EXT) zxlog.$(OBJ_EXT) zxsig.$(OBJ_EXT) zxcrypto.$(OBJ_EXT) akbox_fn.$(OBJ_EXT) match.$(OBJ_EXT) c/license.$(OBJ_EXT)
+ZX_OBJ=c/zx-ns.$(OE) c/zx-attrs.$(OE) c/zx-elems.$(OE) zxlibdec.$(OE) zxlibenc.$(OE) zxlib.$(OE) zxns.$(OE) zxpw.$(OE) zxutil.$(OE) zxbusprod.$(OE) zxlog.$(OE) zxsig.$(OE) zxcrypto.$(OE) akbox_fn.$(OE) match.$(OE) c/license.$(OE)
 
-WSF_OBJ=zxidmkwsf.$(OBJ_EXT) zxidwsf.$(OBJ_EXT) zxidwsc.$(OBJ_EXT) zxidwsp.$(OBJ_EXT) zxiddi.$(OBJ_EXT) zxidim.$(OBJ_EXT) zxidps.$(OBJ_EXT)
+WSF_OBJ=zxidmkwsf.$(OE) zxidwsf.$(OE) zxidwsc.$(OE) zxidwsp.$(OE) zxiddi.$(OE) zxidim.$(OE) zxidps.$(OE)
 
-OAUTH_OBJ=zxidoauth.$(OBJ_EXT)
+OAUTH_OBJ=zxidoauth.$(OE)
 
-SMIME_LIB_OBJ=certauth.$(OBJ_EXT) keygen.$(OBJ_EXT) pkcs12.$(OBJ_EXT) smime-enc.$(OBJ_EXT) smime-qry.$(OBJ_EXT) smime-vfy.$(OBJ_EXT) smimemime.$(OBJ_EXT) smimeutil.$(OBJ_EXT)
+SMIME_LIB_OBJ=certauth.$(OE) keygen.$(OE) pkcs12.$(OE) smime-enc.$(OE) smime-qry.$(OE) smime-vfy.$(OE) smimemime.$(OE) smimeutil.$(OE)
 
 ifeq ($(PULVER),1)
 
@@ -775,12 +778,12 @@ c_saml2_enc_c_o=$(shell cat pulver/c_saml2_enc_c.deps)
 c_saml2_aux_c_o=$(shell cat pulver/c_saml2_aux_c.deps)
 c_saml2_getput_c_o=$(shell pulver/c_saml2_getput_c.deps)
 
-#pulver/c_saml2_dec_c.deps $(c_saml2_dec_c_o:.$(OBJ_EXT)=.c): c/saml2-dec.c	
+#pulver/c_saml2_dec_c.deps $(c_saml2_dec_c_o:.$(OE)=.c): c/saml2-dec.c	
 
 pulver/c_saml2_dec_c.deps: c/saml2-dec.c	
 	$(PULVERIZE) pulver c/saml2-dec.c >pulver/c_saml2_dec_c.deps
 
-#pulver/c_saml2_enc_c.deps $(c_saml2_enc_c_o:%.$(OBJ_EXT)=%.c): c/saml2-enc.c	
+#pulver/c_saml2_enc_c.deps $(c_saml2_enc_c_o:%.$(OE)=%.c): c/saml2-enc.c	
 
 pulver/c_saml2_enc_c.deps $(foo:%.o=%.c): c/saml2-enc.c	
 	$(PULVERIZE) pulver c/saml2-enc.c >pulver/c_saml2_enc_c.deps
@@ -836,9 +839,9 @@ endif
 
 endif
 
-ZXBUSD_OBJ=zxbusd.$(OBJ_EXT) hiios-stomp.$(OBJ_EXT) hiinit.$(OBJ_EXT) hitodo.$(OBJ_EXT) hinet.$(OBJ_EXT) hiread-stomp.$(OBJ_EXT) hiwrite-stomp.$(OBJ_EXT) hiiosdump.$(OBJ_EXT) testping.$(OBJ_EXT) stomp.$(OBJ_EXT) zxbusdist.$(OBJ_EXT) zxbussubs.$(OBJ_EXT) zxbusent.$(OBJ_EXT)
+ZXBUSD_OBJ=zxbusd.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) testping.$(OE) http.$(OE)
 
-ZXCACHED_OBJ=zxcached.$(OBJ_EXT) hiios-mcdb.$(OBJ_EXT) hiinit.$(OBJ_EXT) hitodo.$(OBJ_EXT) hinet.$(OBJ_EXT) hiread-mcdb.$(OBJ_EXT) hiwrite.$(OBJ_EXT) hiiosdump.$(OBJ_EXT) testping.$(OBJ_EXT) http.$(OBJ_EXT) mcdb.$(OBJ_EXT) zxdata.$(OBJ_EXT)
+ZXCACHED_OBJ=zxcached.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) testping.$(OE) http.$(OE)
 
 #
 # Schemata and potential xml document roots.
@@ -1248,7 +1251,7 @@ wsfrawmod: WSF_Raw/Raw.pm WSF_Raw/Raw_wrap.c
 
 ifeq ($(TARGET),xmingw64)
 
-Net/SAML_wrap.$(OBJ_EXT): Net/SAML_wrap.c
+Net/SAML_wrap.$(OE): Net/SAML_wrap.c
 	$(warning SAMLWRAP)
 	$(CC) -c $(OUTOPT)$@ $(CFLAGS) $(CDEF) $(CINC) $<
 
@@ -1290,13 +1293,13 @@ endif
 
 # -Wno-unused-label
 
-php/zxid_wrap.$(OBJ_EXT): php/zxid_wrap.c
+php/zxid_wrap.$(OE): php/zxid_wrap.c
 	$(warning PHPWRAP)
 	$(CC) -c $(OUTOPT)$@ `$(PHP_CONFIG) --includes` $(CFLAGS) $(CDEF) $(CINC) $<
 
-php/php_zxid$(SO): php/zxid_wrap.$(OBJ_EXT) $(LIBZXID_A)
+php/php_zxid$(SO): php/zxid_wrap.$(OE) $(LIBZXID_A)
 	$(warning PHPLINK)
-	$(LD) $(LDFLAGS) $(OUTOPT)php/php_zxid$(SO) -shared php/zxid_wrap.$(OBJ_EXT) $(LIBZXID) $(LIBS)
+	$(LD) $(LDFLAGS) $(OUTOPT)php/php_zxid$(SO) -shared php/zxid_wrap.$(OE) $(LIBZXID) $(LIBS)
 
 phpzxid: php/php_zxid$(SO)
 
@@ -1308,7 +1311,7 @@ phpzxid_install: php/php_zxid$(SO)
 #cp zxid.ini `$(PHP_CONFIG) --extension-dir`
 
 phpclean:
-	rm -rf php/*.$(OBJ_EXT) php/*~ php/*$(SO)
+	rm -rf php/*.$(OE) php/*~ php/*$(SO)
 
 phpcleaner: phpclean
 	rm -rf php/php_zxid.h php/zxid.php php/zxid_wrap.c
@@ -1325,11 +1328,11 @@ py/zxid_wrap.c py/zxid.py: $(ZX_GEN_H) zxid.h pyzxid.i
 
 endif
 
-py/zxid_wrap.$(OBJ_EXT): py/zxid_wrap.c
+py/zxid_wrap.$(OE): py/zxid_wrap.c
 	$(CC) -c $(OUTOPT)$@ `$(PY_CONFIG) --includes` $(CFLAGS) $(CDEF) $(CINC) $<
 
-py/py_zxid$(SO): py/zxid_wrap.$(OBJ_EXT) $(LIBZXID_A)
-	$(LD) $(LDFLAGS) $(OUTOPT)py/py_zxid$(SO) -shared py/zxid_wrap.$(OBJ_EXT) $(LIBZXID) $(LIBS)
+py/py_zxid$(SO): py/zxid_wrap.$(OE) $(LIBZXID_A)
+	$(LD) $(LDFLAGS) $(OUTOPT)py/py_zxid$(SO) -shared py/zxid_wrap.$(OE) $(LIBZXID) $(LIBS)
 
 pyzxid: py/py_zxid$(SO)
 
@@ -1339,7 +1342,7 @@ pyzxid_install: py/py_zxid$(SO)
 	$(CP) $< `$(PY_CONFIG) --extension-dir`
 
 pyclean:
-	rm -rf py/*.$(OBJ_EXT) py/*~ py/*$(SO)
+	rm -rf py/*.$(OE) py/*~ py/*$(SO)
 
 pycleaner: pyclean
 	rm -rf py/zxid.py py/zxid_wrap.c
@@ -1356,11 +1359,11 @@ ruby/zxid_wrap.c ruby/zxid.ruby: $(ZX_GEN_H) zxid.h rubyzxid.i
 
 endif
 
-ruby/zxid_wrap.$(OBJ_EXT): ruby/zxid_wrap.c
+ruby/zxid_wrap.$(OE): ruby/zxid_wrap.c
 	$(CC) -c $(OUTOPT)$@ `$(RUBY_CONFIG) --includes` $(CFLAGS) $(CDEF) $(CINC) $<
 
-ruby/ruby_zxid$(SO): ruby/zxid_wrap.$(OBJ_EXT) $(LIBZXID_A)
-	$(LD) $(LDFLAGS) $(OUTOPT)ruby/ruby_zxid$(SO) -shared ruby/zxid_wrap.$(OBJ_EXT) $(LIBZXID) $(LIBS)
+ruby/ruby_zxid$(SO): ruby/zxid_wrap.$(OE) $(LIBZXID_A)
+	$(LD) $(LDFLAGS) $(OUTOPT)ruby/ruby_zxid$(SO) -shared ruby/zxid_wrap.$(OE) $(LIBZXID) $(LIBS)
 
 rubyzxid: ruby/ruby_zxid$(SO)
 
@@ -1370,7 +1373,7 @@ rubyzxid_install: ruby/ruby_zxid$(SO)
 	$(CP) $< `$(RUBY_CONFIG) --extension-dir`
 
 rubyclean:
-	rm -rf ruby/*.$(OBJ_EXT) ruby/*~ ruby/*$(SO)
+	rm -rf ruby/*.$(OE) ruby/*~ ruby/*$(SO)
 
 rubycleaner: rubyclean
 	rm -rf ruby/zxid.ruby ruby/zxid_wrap.c
@@ -1390,6 +1393,8 @@ csharp/zxid_wrap.c csharp/zxidcs.cs csharp/zxidcsPINVOKE.cs: $(ZX_GEN_H) zxid.h 
 	mv csharp/SWIGTYPE_p_zxid_ses.cs csharp/zxid_ses.cs
 	$(PERL) -pi -e 's/SWIGTYPE_p_zxid_cgi/zxid_cgi/g' csharp/*.cs
 	mv csharp/SWIGTYPE_p_zxid_cgi.cs csharp/zxid_cgi.cs
+	$(PERL) -pi -e 's/SWIGTYPE_p_zx_str/zx_str/g' csharp/*.cs
+	mv csharp/SWIGTYPE_p_zx_str.cs csharp/zx_str.cs
 	$(PERL) -pi -e 's/SWIGTYPE_p_zxid_entity_s/zxid_entity/g' csharp/*.cs
 	mv csharp/SWIGTYPE_p_zxid_entity_s.cs csharp/zxid_entity.cs
 	$(PERL) -pi -e 's/SWIGTYPE_p_zx_sa_Assertion_s/zxid_a7n/g' csharp/*.cs
@@ -1409,11 +1414,11 @@ csharp/zxid_wrap.c csharp/zxidcs.cs csharp/zxidcsPINVOKE.cs: $(ZX_GEN_H) zxid.h 
 
 endif
 
-csharp/zxid_wrap.$(OBJ_EXT): csharp/zxid_wrap.c
+csharp/zxid_wrap.$(OE): csharp/zxid_wrap.c
 	$(CC) -c $(OUTOPT)$@ `$(CSHARP_CONFIG) --includes` $(CFLAGS) $(CDEF) $(CINC) $<
 
-csharp/zxidcli$(SO): csharp/zxid_wrap.$(OBJ_EXT) $(LIBZXID_A)
-	$(LD) $(LDFLAGS) $(OUTOPT)csharp/zxidcli$(SO) -shared csharp/zxid_wrap.$(OBJ_EXT) $(LIBZXID) $(LIBS)
+csharp/zxidcli$(SO): csharp/zxid_wrap.$(OE) $(LIBZXID_A)
+	$(LD) $(LDFLAGS) $(OUTOPT)csharp/zxidcli$(SO) -shared csharp/zxid_wrap.$(OE) $(LIBZXID) $(LIBS)
 	[ -L libzxidcli$(SO) ] || ln -s csharp/zxidcli$(SO) libzxidcli$(SO)
 	cd csharp; [ -L libzxidcli$(SO) ] || ln -s zxidcli$(SO) libzxidcli$(SO)
 
@@ -1433,7 +1438,7 @@ csharpzxid_install: csharp/zxidcli$(SO) csharp/zxidcs.dll
 	$(CP) $< `$(CSHARP_CONFIG) --extension-dir`
 
 csharpclean:
-	rm -rf csharp/*.$(OBJ_EXT) csharp/*~ csharp/*$(SO) csharp/*.dll csharp/*.exe
+	rm -rf csharp/*.$(OE) csharp/*~ csharp/*$(SO) csharp/*.dll csharp/*.exe
 
 csharpcleaner: csharpclean
 	rm -rf csharp/*.cs csharp/zxid_wrap.c
@@ -1472,17 +1477,17 @@ zxidjava/zxid_wrap.c: $(ZX_GEN_H) zxid.h javazxid.i
 endif
 
 ifeq ($(TARGET),win32cl)
-zxidjava/zxid_wrap.$(OBJ_EXT): zxidjava/zxid_wrap.c
+zxidjava/zxid_wrap.$(OE): zxidjava/zxid_wrap.c
 	$(warning JAVAWRAP)
 	$(CC) -c $< -Fozxid_wrap.obj $(JNI_INC) $(CFLAGS) $(CDEF) $(CINC)
 	$(CP) zxid_wrap.obj $@
 else
-zxidjava/zxid_wrap.$(OBJ_EXT): zxidjava/zxid_wrap.c
+zxidjava/zxid_wrap.$(OE): zxidjava/zxid_wrap.c
 	$(warning JAVAWRAP)
 	$(CC) -c $< $(OUTOPT)$@ $(JNI_INC) $(CFLAGS) $(CDEF) $(CINC)
 endif
 
-$(ZXIDJNI_SO): zxidjava/zxid_wrap.$(OBJ_EXT) $(LIBZXID_A)
+$(ZXIDJNI_SO): zxidjava/zxid_wrap.$(OE) $(LIBZXID_A)
 	$(warning JNILINK)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $(SHARED_FLAGS) $< $(SHARED_CLOSE) $(LIBZXID) $(SO_LIBS)
 
@@ -1566,7 +1571,7 @@ gitreadd:
 	git add zxidjava/*.java zxidjava/*.c Net/Makefile Net/SAML.pm Net/*.c php/*.[hc] c/*.[hc]
 
 javaclean:
-	rm -rf zxidjava/*.$(OBJ_EXT) zxidjava/*~ zxidjava/*$(SO) zxidjava/*.class *.class
+	rm -rf zxidjava/*.$(OE) zxidjava/*~ zxidjava/*$(SO) zxidjava/*.class *.class
 
 javacleaner: javaclean
 	rm -rf zxidjava/*.java zxidjava/zxid_wrap.c
@@ -1583,15 +1588,15 @@ bene: benessosrvlet.class benedemo.class
 ### Apache authentication module
 ###
 
-mod_auth_saml.$(OBJ_EXT): mod_auth_saml.c $(LIBZXID_A)
+mod_auth_saml.$(OE): mod_auth_saml.c $(LIBZXID_A)
 	$(warning MOD_AUTH_SAML COMPILE)
 	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) $(CINC) $(APACHE_INC) $(APR_INC)
 
-mod_auth_saml$(SO): mod_auth_saml.$(OBJ_EXT) $(LIBZXID_A)
+mod_auth_saml$(SO): mod_auth_saml.$(OE) $(LIBZXID_A)
 	$(warning MOD_AUTH_SAML LINK SO)
-	$(LD) $(LDFLAGS) $(OUTOPT)mod_auth_saml$(SO) $(SHARED_FLAGS) mod_auth_saml.$(OBJ_EXT) $(SHARED_CLOSE) $(LIBZXID) $(MOD_AUTH_SAML_LIBS) $(LIBS)
+	$(LD) $(LDFLAGS) $(OUTOPT)mod_auth_saml$(SO) $(SHARED_FLAGS) mod_auth_saml.$(OE) $(SHARED_CLOSE) $(LIBZXID) $(MOD_AUTH_SAML_LIBS) $(LIBS)
 
-precheck_apache:  precheck/chk-apache.$(OBJ_EXT) precheck/chk-apache
+precheck_apache:  precheck/chk-apache.$(OE) precheck/chk-apache
 	precheck/chk-apache
 
 apachezxid: precheck_apache precheck mod_auth_saml$(SO)
@@ -1609,11 +1614,11 @@ mod_auth_saml: apachezxid
 
 MINI_HTTPD_DIR?=mini_httpd-1.19-zxid
 
-$(MINI_HTTPD_DIR)/htpasswd: $(MINI_HTTPD_DIR)/htpasswd.$(OBJ_EXT)
+$(MINI_HTTPD_DIR)/htpasswd: $(MINI_HTTPD_DIR)/htpasswd.$(OE)
 	$(warning MINI_HTTPD COMPILE)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@$(EXE) $< $(LIBS)
 
-$(MINI_HTTPD_DIR)/mini_httpd_zxid$(EXE): $(MINI_HTTPD_DIR)/mini_httpd.$(OBJ_EXT) $(MINI_HTTPD_DIR)/match.$(OBJ_EXT) $(MINI_HTTPD_DIR)/tdate_parse.$(OBJ_EXT) mini_httpd_filter.$(OBJ_EXT) $(LIBZXID_A)
+$(MINI_HTTPD_DIR)/mini_httpd_zxid$(EXE): $(MINI_HTTPD_DIR)/mini_httpd.$(OE) $(MINI_HTTPD_DIR)/match.$(OE) $(MINI_HTTPD_DIR)/tdate_parse.$(OE) mini_httpd_filter.$(OE) $(LIBZXID_A)
 	$(warning MINI_HTTPD LINK)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $^ $(LIBZXID) $(LIBS)
 
@@ -1631,35 +1636,11 @@ $(MINI_HTTPD_DIR)/mime_types.h: $(MINI_HTTPD_DIR)/mime_types.txt
 
 mini_httpd_zxid: $(MINI_HTTPD_DIR)/mini_httpd_zxid $(MINI_HTTPD_DIR)/htpasswd
 
-### Special rules for building some files for zxbusd vs. zxcached
-
-hiios-stomp.$(OBJ_EXT): hiios.c
-	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
-
-hiios-mcdb.$(OBJ_EXT): hiios.c
-	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_MCDB=1 $(CINC)
-
-hiread-stomp.$(OBJ_EXT): hiread.c
-	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
-
-hiread-mcdb.$(OBJ_EXT): hiread.c
-	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_MCDB=1 $(CINC)
-
-hiwrite-stomp.$(OBJ_EXT): hiwrite.c
-	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
-
-stomp.$(OBJ_EXT): stomp.c
-	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_STOMP=1 $(CINC)
-
-mcdb.$(OBJ_EXT): mcdb.c
-	$(CC) -o $@ -c $<  $(CFLAGS) $(CDEF) -DENA_MCDB=1 $(CINC)
-
-
 ###
 ### zxid_httpd (derived from mini_httd).
 ###
 
-zxid_httpd$(EXE): zxid_httpd.$(OBJ_EXT) tdate_parse.$(OBJ_EXT) mini_httpd_filter.$(OBJ_EXT) $(LIBZXID_A)
+zxid_httpd$(EXE): zxid_httpd.$(OE) tdate_parse.$(OE) mini_httpd_filter.$(OE) $(LIBZXID_A)
 	$(warning ZXID_HTTPD LINK)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $^ $(LIBS)
 
@@ -1667,42 +1648,42 @@ zxid_httpd$(EXE): zxid_httpd.$(OBJ_EXT) tdate_parse.$(OBJ_EXT) mini_httpd_filter
 ### Binaries (most binaries are built by implicit rules)
 ###
 
-#zxid$(EXE): zxid.$(OBJ_EXT) $(LIBZXID_A)
+#zxid$(EXE): zxid.$(OE) $(LIBZXID_A)
 
 $(DEFAULT_EXE) $(ALL_EXE): $(LIBZXID_A)
 
-zxcot-static-x64: zxcot.$(OBJ_EXT) $(LIBZXID_A)
+zxcot-static-x64: zxcot.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@$(EXE) $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxdecode-static-x64: zxdecode.$(OBJ_EXT) $(LIBZXID_A)
+zxdecode-static-x64: zxdecode.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@$(EXE) $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxpasswd-static-x64: zxpasswd.$(OBJ_EXT) $(LIBZXID_A)
+zxpasswd-static-x64: zxpasswd.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@$(EXE) $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
 # *** unresolved link problem with __gcov_fork, which is not found in 3.4.6 libgcov.a
 
-zxcall-static-x64: zxcall.$(OBJ_EXT) $(LIBZXID_A)
+zxcall-static-x64: zxcall.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@$(EXE) $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxumacall-static-x64: zxumacall.$(OBJ_EXT) $(LIBZXID_A)
+zxumacall-static-x64: zxumacall.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@$(EXE) $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxidhlo-static-x64: zxidhlo.$(OBJ_EXT) $(LIBZXID_A)
+zxidhlo-static-x64: zxidhlo.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@$(EXE) $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxididp-static$(EXE): zxididp.$(OBJ_EXT) $(LIBZXID_A)
+zxididp-static$(EXE): zxididp.$(OE) $(LIBZXID_A)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< -static $(LIBZXID) $(LIBS)
 
-zxididp-semistatic$(EXE): zxididp.$(OBJ_EXT) $(LIBZXID_A)
+zxididp-semistatic$(EXE): zxididp.$(OE) $(LIBZXID_A)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< -static $(LIBZXID) $(LIBS) -dynamic -lc
 
-zxididp-static-x64: zxididp.$(OBJ_EXT) $(LIBZXID_A)
+zxididp-static-x64: zxididp.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@ $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
 #	diet gcc -o zxididp zxididp.o -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxbench-static-x64: zxbench.$(OBJ_EXT) $(LIBZXID_A)
+zxbench-static-x64: zxbench.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@ $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
 ifeq ($(TARGET),mingw)
@@ -1710,22 +1691,22 @@ zxencdectest:
 	echo "Port this for mingw" > zxencdectest
 endif
 
-zxmqtest-zmq$(EXE): zxmqtest.$(OBJ_EXT) $(LIBZXID_A)
+zxmqtest-zmq$(EXE): zxmqtest.$(OE) $(LIBZXID_A)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@$(EXE) $^ -lzmq $(LIBZXID) $(LIBS)
 
-zxmqtest.$(OBJ_EXT): zxmqtest.c
+zxmqtest.$(OE): zxmqtest.c
 	$(CC)  $(OUTOPT)$@ -c $^ $(CFLAGS) $(CDEF) $(CINC) -DOPENAMQ -I/apps/openamq/std/include
 
-zxmqtest-amq$(EXE): zxmqtest.$(OBJ_EXT) $(LIBZXID_A)
+zxmqtest-amq$(EXE): zxmqtest.$(OE) $(LIBZXID_A)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $^ -L/apps/openamq/std/lib -lamq_wireapi -lamq_common -lsmt -lasl -lipr -licl -lpcre -laprutil -lapr -lcrypt -lm $(LIBZXID) $(LIBS)
 
-zxlogview-static-x64: zxlogview.$(OBJ_EXT) $(LIBZXID_A)
+zxlogview-static-x64: zxlogview.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@ $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxbustailf-static-x64: zxbustailf.$(OBJ_EXT) $(LIBZXID_A)
+zxbustailf-static-x64: zxbustailf.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@ $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
-zxbuslist-static-x64: zxbuslist.$(OBJ_EXT) $(LIBZXID_A)
+zxbuslist-static-x64: zxbuslist.$(OE) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@ $< -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
 zxbusd: $(ZXBUSD_OBJ) $(LIBZXID_A)
@@ -1937,28 +1918,28 @@ tas3copyrel: tas3rel
 ###
 
 ifeq (IGNORE,)
-precheck/chk-zlib$(EXE): precheck/chk-zlib.$(OBJ_EXT)
+precheck/chk-zlib$(EXE): precheck/chk-zlib.$(OE)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< $(LIBS)
 
-precheck/chk-openssl$(EXE): precheck/chk-openssl.$(OBJ_EXT)
+precheck/chk-openssl$(EXE): precheck/chk-openssl.$(OE)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< $(LIBS)
 
-precheck/chk-curl$(EXE): precheck/chk-curl.$(OBJ_EXT)
+precheck/chk-curl$(EXE): precheck/chk-curl.$(OE)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< $(LIBS)
 
 else
 endif
 
-precheck/chk-apache.$(OBJ_EXT): precheck/chk-apache.c
+precheck/chk-apache.$(OE): precheck/chk-apache.c
 	$(CC) $(OUTOPT)$@ -c $< $(CFLAGS) $(APACHE_INC) $(APR_INC)
 
-precheck/chk-apache$(EXE): precheck/chk-apache.$(OBJ_EXT)
+precheck/chk-apache$(EXE): precheck/chk-apache.$(OE)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< $(LIBS)
 
-zxsizeof: zxsizeof.$(OBJ_EXT)
+zxsizeof: zxsizeof.$(OE)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< $(LIBZXID) $(LIBS)
 
-zxsizeof-static-x64: zxsizeof.$(OBJ_EXT)
+zxsizeof-static-x64: zxsizeof.$(OE)
 	diet gcc $(OUTOPT)$@$(EXE) zxsizeof.c -static
 
 xzxsizeof:
@@ -1972,7 +1953,7 @@ zx/zx.h:
 	$(CP) c/*.h zx/c
 
 ifeq ($(CROSS_COMPILE),1)
-precheck: precheck/chk-zlib.$(OBJ_EXT) precheck/chk-zlib$(EXE) precheck/chk-openssl.$(OBJ_EXT) precheck/chk-openssl$(EXE) precheck/chk-curl.$(OBJ_EXT) precheck/chk-curl$(EXE)
+precheck: precheck/chk-zlib.$(OE) precheck/chk-zlib$(EXE) precheck/chk-openssl.$(OE) precheck/chk-openssl$(EXE) precheck/chk-curl.$(OE) precheck/chk-curl$(EXE)
 	@$(ECHO) "Cross compile simplified precheck ok."
 	@$(ECHO)
 else
@@ -1986,7 +1967,7 @@ precheck_prep_win:
 	$(CP) *.h zx/
 	$(CP) c/*.h zx/c/
 
-precheck: $(PRECHECK_PREP) precheck/chk-zlib.$(OBJ_EXT) precheck/chk-zlib$(EXE) precheck/chk-openssl.$(OBJ_EXT) precheck/chk-openssl$(EXE) precheck/chk-curl.$(OBJ_EXT) precheck/chk-curl$(EXE) zx/zx.h
+precheck: $(PRECHECK_PREP) precheck/chk-zlib.$(OE) precheck/chk-zlib$(EXE) precheck/chk-openssl.$(OE) precheck/chk-openssl$(EXE) precheck/chk-curl.$(OE) precheck/chk-curl$(EXE) zx/zx.h
 	@$(ECHO) CC=$(CC)
 	which gcc
 	$(CC) -v
@@ -1999,7 +1980,7 @@ precheck: $(PRECHECK_PREP) precheck/chk-zlib.$(OBJ_EXT) precheck/chk-zlib$(EXE) 
 endif
 
 precheckclean:
-	rm -f precheck/*.$(OBJ_EXT)
+	rm -f precheck/*.$(OE)
 	rm -f precheck/chk-zlib.exe precheck/chk-openssl.exe precheck/chk-curl.exe precheck/chk-apache.exe
 
 ###
@@ -2021,10 +2002,10 @@ t/wsp2cot:
 test: t/cot t/idpcot t/wsp t/wsp2 zxencdectest zxcall zxumacall zxididp
 	$(PERL) zxtest.pl -a
 
-#test: test.$(OBJ_EXT)
+#test: test.$(OE)
 #	$(CC) $(OUTOPT)$@ $< $(LIBZXID) $(LIBS)
 
-win32loadlibtest.exe: win32loadlibtest.$(OBJ_EXT)
+win32loadlibtest.exe: win32loadlibtest.$(OE)
 	$(CC) $(OUTOPT)$@ $<
 
 ### Test dynamic link library loading (on Windows)
@@ -2032,16 +2013,16 @@ win32loadlibtest.exe: win32loadlibtest.$(OBJ_EXT)
 zxidjava/testjni.class: zxidjava/testjni.java
 	cd zxidjava; $(JAVAC) $(JAVAC_FLAGS) test*.java
 
-zxidjava/testjni.$(OBJ_EXT): zxidjava/testjni.c
+zxidjava/testjni.$(OE): zxidjava/testjni.c
 	$(CC) -c $< $(OUTOPT)$@ $(JNI_INC) $(CFLAGS) $(CDEF) $(CINC)
 
-zxidjava/libtestjni.a: zxidjava/testjni.$(OBJ_EXT)
+zxidjava/libtestjni.a: zxidjava/testjni.$(OE)
 	$(ARC) $@ $^
 
 zxidjava/testjni.dll: zxidjava/libtestjni.a
 	$(LD) $(OUTOPT)$@ $(SHARED_FLAGS) $^ $(SHARED_CLOSE)
 
-zxidjava/testmain: zxidjava/testmain.$(OBJ_EXT)
+zxidjava/testmain: zxidjava/testmain.$(OE)
 	$(LD) $(LDFLAGS) $(OUTOPT)$@ $< $(LIBS)
 
 testmain.class: testmain.java
@@ -2056,7 +2037,7 @@ testdll.tar: testdll
 	tar cf $@ zxidjava/testmain zxidjava/testjni.dll testmain.class testmain.java zxidjava/test*.class zxidjava/test*.java
 
 testdllclean:
-	rm -rf testmain.class zxidjava/test*.class zxidjava/test*.$(OBJ_EXT) zxidjava/testmain zxidjava/libtestjni.a zxidjava/test*.dll
+	rm -rf testmain.class zxidjava/test*.class zxidjava/test*.$(OE) zxidjava/testmain zxidjava/libtestjni.a zxidjava/test*.dll
 
 testclean:
 	rm -rf t/*ses t/*user t/*/uid t/*nid t/*log t/*cot t/*pem tmp/*.out tmp/*.err

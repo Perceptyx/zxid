@@ -560,6 +560,10 @@ void hi_accept_book(struct hi_thr* hit, struct hi_io* io, int fd)
   int n_thr;
   struct hi_io* nio;
 
+  ASSERT(io->cur_pdu == 0);
+  if (!(io->cur_pdu = hi_pdu_alloc(hit, io, "cur_pdu-accept")))
+    goto errout;
+
 #ifdef USE_OPENSSL
   io->ssl = 0;
   D("proto(%d), is_tls=%d", io->qel.proto, hi_prototab[io->qel.proto].is_tls);
@@ -613,7 +617,7 @@ void hi_accept_book(struct hi_thr* hit, struct hi_io* io, int fd)
     hi_todo_produce(hit, &io->qel, "accept", 0);  /* schedule a new try */
     return;
   }
-
+    
   nio = hi_add_fd(hit, io, fd, HI_TCP_S);
   UNLOCK(io->qel.mut, "hi_accept");
   if (!nio || nio != io) {
@@ -624,17 +628,25 @@ void hi_accept_book(struct hi_thr* hit, struct hi_io* io, int fd)
   
   switch (io->qel.proto) {
   case HIPROTO_MCDB:
+    io->cur_pdu->need = MCDB_MIN_PDU_SIZE;
     /* *** Go straight to reading pdu without passing through TODO */
     break;
   case HIPROTO_STOMP:
+    io->cur_pdu->need = STOMP_MIN_PDU_SIZE;
     /* *** Go straight to reading STOMP/CONNECT pdu without passing through TODO */
     break;
+  case HIPROTO_HTTP:
+    io->cur_pdu->need = HTTP_MIN_PDU_SIZE;
+    /* *** Go straight to reading request pdu without passing through TODO */
+    break;
   case HIPROTO_SMTP: /* In SMTP, server starts speaking first */
+    io->cur_pdu->need = SMTP_MIN_PDU_SIZE;
     hi_sendf(hit, io, 0, 0, "220 %s smtp ready\r\n", SMTP_GREET_DOMAIN);
     io->ad.smtp.state = SMTP_START;
     break;
 #ifdef ENA_S5066
   case HIPROTO_DTS:
+    io->cur_pdu->need = SIS_MIN_PDU_SIZE;
     {
       struct hi_host_spec* hs;
       ZMALLOC(io->ad.dts);

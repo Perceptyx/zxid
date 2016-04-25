@@ -1873,7 +1873,7 @@ done:
  * qs:: Query string (or POST content)
  * res_len:: Result parameter. If non-null, will be set to the length of the returned string
  * auto_flags:: Automation flags, see zxid-simple.pd for documentation
- * return:: String representing protocol action or SSO attributes
+ * return:: String representing protocol action or SSO attributes, caller frees
  *
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 
@@ -1888,6 +1888,13 @@ char* zxid_simple_cf(zxid_conf* cf, int qs_len, char* qs, int* res_len, int auto
 /*() Process simple configuration and then call simple handler. Strings
  * are length + pointer (no C string nul termination needed).
  * a wrapper for zxid_simple_cf().
+ *
+ * conf_len:: length of the configuration string, or -1 for strlen(3).
+ * conf:: Configuration string that will be modified in place (not const)
+ * qs_len:: Length of the query string, or -1 for strlen(3).
+ * qs:: Query String that will be modified in place (not const)
+ * auto_flags:: Bitmask expressing certain operations to automate
+ * return:: String representing protocol action or SSO attributes, caller frees
  *
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 
@@ -1905,6 +1912,11 @@ char* zxid_simple_len(int conf_len, char* conf, int qs_len, char* qs, int* res_l
 
 /*() Main simple interface. C string nul termination is assumed. Really just
  * a wrapper for zxid_simple_cf().
+ *
+ * conf:: Configuration string that will be modified in place (not const)
+ * qs:: Query String that will be modified in place (not const)
+ * auto_flags:: Bitmask expressing certain operations to automate
+ * return:: String representing protocol action or SSO attributes, caller frees
  *
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 

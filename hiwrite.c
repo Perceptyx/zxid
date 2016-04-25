@@ -218,7 +218,7 @@ void hi_send3(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
 void hi_sendf(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, char* fmt, ...)
 {
   va_list pv;
-  struct hi_pdu* pdu = hi_pdu_alloc(hit, "sendf");
+  struct hi_pdu* pdu = hi_pdu_alloc(hit, io, "sendf");
   if (!pdu) { hi_dump(hit->shf); NEVERNEVER("Out of PDUs in bad place. fmt(%s)", fmt); }
   
   va_start(pv, fmt);
@@ -355,8 +355,7 @@ void hi_free_resp(struct hi_thr* hit, struct hi_pdu* resp, const char* lk1)
 /* Called by:  hi_close x3, hi_free_req_fe, stomp_got_ack, stomp_got_nack, stomp_msg_deliver */
 void hi_free_req(struct hi_thr* hit, struct hi_pdu* req, const char* lk1)
 {
-  struct hi_pdu* pdu;
-  
+  struct hi_pdu* pdu;  
   HI_SANITY(hit->shf, hit);
 
   for (pdu = req->reals; pdu; pdu = pdu->n)  /* free dependent resps */
@@ -420,7 +419,6 @@ void hi_free_req_fe(struct hi_thr* hit, struct hi_pdu* req)
    * hi_free_req_fe() only gets called when its known that the request is in the queue.
    * If it is not, the loop will run off the end and crash with NULL pointer. */
   hi_del_from_reqs(req->fe, req);
-  HI_SANITY(hit->shf, hit);
   hi_free_req(hit, req, "req_fe ");
 }
 

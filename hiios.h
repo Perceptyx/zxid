@@ -230,8 +230,8 @@ struct hi_ad_stomp {
 };
 
 struct hi_ad_mcdb {
-  char  magic;
-  char  op;
+  unsigned char  magic;
+  unsigned char  op;
   unsigned short keylen;
   unsigned char  extraslen;
   char  datatype;
@@ -435,7 +435,7 @@ struct hi_io* hi_add_fd(struct hi_thr* hit, struct hi_io* io, int fd, int kind);
 void hi_del_fd(struct hi_thr* hit, int fd);
 int hi_vfy_peer_ssl_cred(struct hi_thr* hit, struct hi_io* io, const char* eid);
 
-struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, const char* lk);
+struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, struct hi_io* fe, const char* lk);
 void hi_pdu_realloc_m(struct hi_thr* hit, struct hi_pdu* pdu, int newsize, const char* lk);
 void hi_free_req_fe(struct hi_thr* hit, struct hi_pdu* req);
 void hi_send(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, struct hi_pdu* resp);
@@ -473,13 +473,13 @@ void hi_make_iov_nolock(struct hi_io* io);
 extern short hi_color;  /* color used for data structure circularity checks */
 
 int hi_dump(struct hiios* shf);
-int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu);
+int hi_sanity_pdu(int mode, struct hi_pdu* root_pdu, int level);
 int hi_sanity_io(int mode, struct hi_io* root_io);
 int hi_sanity_hit(int mode, struct hi_thr* root_hit);
 int hi_sanity_shf(int mode, struct hiios* root_shf);
 int hi_sanity(int mode, struct hiios* root_shf, struct hi_thr* root_hit, const char* fn, int line);
 
-#define HI_SANITY(shf, hit) if (errmac_debug>2) hi_sanity(255, (shf), (hit), __FUNCTION__, __LINE__)
+#define HI_SANITY(shf, hit) if (errmac_debug&ERRMAC_HIIOS) hi_sanity(255, (shf), (hit), __FUNCTION__, __LINE__)
 #define DHI_SANITY(shf, hit) /* disabled */
 
 #endif /* _hiios_h */
