@@ -58,7 +58,6 @@ if ($op eq 'get') {
 
 __END__
 
-gdb ./zxcached
-r -dd 0x03 -nfd 8 -npdu 4 -p mcdb:127.0.0.1:4442
+gdb ./zxcached r -dd 0x03 -nfd 8 -npdu 4 -p mcdb:127.0.0.1:4442
 
 20160423 ca. 20k gets/sec on single key single connection single thread

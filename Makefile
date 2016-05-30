@@ -839,9 +839,9 @@ endif
 
 endif
 
-ZXBUSD_OBJ=zxbusd.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) testping.$(OE) http.$(OE)
+ZXBUSD_OBJ=zxbusd.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) zxmsgpack.$(OE) testping.$(OE) http.$(OE)
 
-ZXCACHED_OBJ=zxcached.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) testping.$(OE) http.$(OE)
+ZXCACHED_OBJ=zxcached.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) zxmsgpack.$(OE) testping.$(OE) http.$(OE)
 
 #
 # Schemata and potential xml document roots.

@@ -106,13 +106,13 @@ char* zxcache_path = ZXCACHE_PATH;
 char* zxbus_path = "/var/zxid/";
 #endif
 zxid_conf* zx_cf;
-struct zx_hash* zx_gh;  /* the global hash */
+int zx_ghlen = ZXCACHE_KEYS;
+struct zx_gbucket** zx_gh;  /* the global hash */
 int ak_buf_size = 0;
 int verbose = 1;
 extern int errmac_debug;
 int debugpoll = 0;
 int timeout = 0;
-int nkeys = ZXCACHE_KEYS;
 int nfd = 20;
 int npdu = 60;
 int nch = 10;
@@ -269,7 +269,7 @@ void opt(int* argc, char*** argv, char*** env)
 	if ((*argv)[0][3] == 'e' || (*argv)[0][4] == 'y' || (*argv)[0][5] == 's' || !(*argv)[0][6]) {
 	  ++(*argv); --(*argc);
 	  if (!(*argc)) break;
-	  nkeys = atoi((*argv)[0]);
+	  zx_ghlen = atoi((*argv)[0]);
 	  continue;
 	}
 	if ((*argv)[0][3] != 'b' || (*argv)[0][4] != 'u' || (*argv)[0][5] != 'f' || (*argv)[0][6]) break;
@@ -798,10 +798,9 @@ int zxcached_main(int argc, char** argv, char** env)
 
   /* Initialize global hash */
 
-  ERR("sizeof: zx_lstr=%ld zx_val=%ld zx_bucket=%ld zx_gbucket=%ld", sizeof(struct zx_lstr), sizeof(struct zx_val), sizeof(struct zx_bucket), sizeof(struct zx_gbucket));
-  zx_gh = malloc(sizeof(struct zx_hash)+nkeys*sizeof(struct zx_bucket*));
-  memset(zx_gh, 0, sizeof(struct zx_hash)+nkeys*sizeof(struct zx_bucket*));
-  zx_gh->len = nkeys;
+  D("sizeof: zx_val=%ld zx_bucket=%ld zx_gbucket=%ld", sizeof(struct zx_val), sizeof(struct zx_bucket), sizeof(struct zx_gbucket));
+  zx_gh = malloc(zx_ghlen*sizeof(struct zx_gbucket*));
+  memset(zx_gh, 0, zx_ghlen*sizeof(struct zx_gbucket*));
 
   CMDLINE("load_keys");
   //zxcache_load_keys(shuff);

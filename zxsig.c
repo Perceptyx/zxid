@@ -1083,10 +1083,6 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
 
 /* ------------- XML-ENC support -------------- */
 
-// AES256-GCM-SHA384
-//#define AES256GCM "AES-256-GCM"
-#define AES256GCM "aes-256-gcm"
-
 /*() Symmetric key decryption using XML-ENC. The encryption algorithm is
  * auto-detected from the XML-ENC data.
  *

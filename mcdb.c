@@ -398,9 +398,9 @@ static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   }
   /* lookup the value from hash */
   if (bkt = zx_global_get_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key)) {
-    D("get(%.*s) bkt=%p val(%.*s) cpkey=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, bkt, bkt->b.val.ue.ls.len, bkt->b.val.ue.ls.s, cpkey);
+    D("get(%.*s) bkt=%p val(%.*s) cpkey=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, bkt, (int)bkt->b.val.len, bkt->b.val.ue.s, cpkey);
     mcdb_ok(hit, io, req, 4, "\0\0\0\0", cpkey, 0,
-	    bkt->b.val.ue.ls.len, bkt->b.val.ue.ls.s, mcdb_zero_cas);
+	    bkt->b.val.len, bkt->b.val.ue.s, mcdb_zero_cas);
   } else {
     mcdb_err(hit, io, req, MCDB_STATUS_KEY_NOT_FOUND, "miss");
   }
@@ -411,6 +411,7 @@ static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
 /* Called by:  mcdb_decode */
 static void mcdb_got_set(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int quiet)
 {
+  struct zx_gbucket* gb;
   struct zx_val val;
   unsigned char* p;
   int expires;
@@ -424,11 +425,11 @@ static void mcdb_got_set(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   /* store the value in global hash */
   memset(&val, 0, sizeof(val));
   val.kind = ZXVAL_STR;
-  val.ue.ls.len = req->ad.mcdb.vallen;
-  val.ue.ls.s = malloc(req->ad.mcdb.vallen);
-  memcpy(val.ue.ls.s, req->ad.mcdb.val, val.ue.ls.len);
-  zx_global_set_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key, &val);
-  // *** write the value to disk
+  val.len = req->ad.mcdb.vallen;
+  val.ue.s = malloc(req->ad.mcdb.vallen);
+  memcpy(val.ue.s, req->ad.mcdb.val, val.len);
+  gb = zx_global_set_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key, &val);
+  zx_global_write(zx_cf, req->ad.mcdb.keylen, req->ad.mcdb.key, gb->symkey, &val);
   // *** propagate value to replicas
   if (quiet) {
     hi_free_req_fe(hit, req);

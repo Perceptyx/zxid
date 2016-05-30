@@ -32,11 +32,11 @@
 #include "c/zx-data.h"
 
 /* Called by:  zxid_psobj_dec, zxid_psobj_enc */
-static int zxid_psobj_key_setup(zxid_conf* cf, struct zx_str* eid, char* symkey)
+static int zxid_psobj_key_setup(zxid_conf* cf, struct zx_str* eid, unsigned char* symkey)
 {
   if (!cf->psobj_symkey[0])
     zx_get_symkey(cf, "psobj-enc.key", cf->psobj_symkey);
-  zx_raw_digest2(cf->ctx, symkey, "SHA1", strlen(cf->psobj_symkey), cf->psobj_symkey, eid->len, eid->s);
+  zx_raw_digest2(cf->ctx, (char*)symkey, "SHA256", strlen(cf->psobj_symkey), cf->psobj_symkey, eid->len, eid->s);
   return 20;
 }
 
@@ -48,7 +48,7 @@ static int zxid_psobj_key_setup(zxid_conf* cf, struct zx_str* eid, char* symkey)
  * of [PeopleSvc].
  *
  * We adopt solution where psobj issued towards an entity (SP, WSC) is
- * the psobj encrypted (AES-128-CBC) with key consisting of concatenation
+ * the psobj encrypted (AES-256-GCM) with key consisting of concatenation
  * of secret (/var/zxid/pem/psobj-enc.key) known to ps server (i.e. the
  * zxididp) and the Entity ID of the entity. */
 
@@ -56,15 +56,12 @@ static int zxid_psobj_key_setup(zxid_conf* cf, struct zx_str* eid, char* symkey)
 struct zx_str* zxid_psobj_enc(zxid_conf* cf, struct zx_str* eid, const char* prefix, struct zx_str* psobj)
 {
   char* lim;
-  char symkey[20];
-  struct zx_str key;
+  unsigned char symkey[32];
   struct zx_str* ss;
   struct zx_str* rr;
   int prefix_len = strlen(prefix);
   zxid_psobj_key_setup(cf, eid, symkey);
-  key.len = 16;
-  key.s = symkey;
-  ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 1, &key, psobj->len, psobj->s, 16, 0);
+  ss = zx_raw_cipher2(cf->ctx, AES256GCM, 1, 32, symkey, psobj->len, psobj->s, 12, 0);
   if (!ss) {
     ERR("Symmetric encryption failed %d", 0);
     return 0;
@@ -84,8 +81,7 @@ struct zx_str* zxid_psobj_enc(zxid_conf* cf, struct zx_str* eid, const char* pre
 struct zx_str* zxid_psobj_dec(zxid_conf* cf, struct zx_str* eid, const char* prefix, struct zx_str* psobj)
 {
   char* lim;
-  char symkey[20];
-  struct zx_str key;
+  unsigned char symkey[32];
   struct zx_str* ss;
   struct zx_str* rr;
   int prefix_len = strlen(prefix);
@@ -98,12 +94,10 @@ struct zx_str* zxid_psobj_dec(zxid_conf* cf, struct zx_str* eid, const char* pre
     return 0;
   }
   zxid_psobj_key_setup(cf, eid, symkey);
-  key.len = 16;
-  key.s = symkey;
   rr = zx_new_len_str(cf->ctx, SIMPLE_BASE64_PESSIMISTIC_DECODE_LEN(psobj->len));
   lim = unbase64_raw(psobj->s+prefix_len, psobj->s+psobj->len, rr->s, zx_std_index_64);
   rr->len = lim - rr->s;
-  ss = zx_raw_cipher(cf->ctx, "AES-128-CBC", 0, &key, rr->len-16, rr->s+16, 16, rr->s);
+  ss = zx_raw_cipher2(cf->ctx, AES256GCM, 0, 32, symkey, rr->len-12, rr->s+12, 12, rr->s);
   zx_str_free(cf->ctx, rr);
   return ss;
 }

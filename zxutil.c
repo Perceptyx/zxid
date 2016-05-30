@@ -475,7 +475,7 @@ int write_all_path(const char* logkey, const char* path_fmt, const char* prepath
 /*() Write or append all data to a file at the already formatted path.
  * The file is opened for appending, data written, and file closed
  * (flushing the data).  Will perform file locking to ensure
- * consistent results. Will create the file if needed, but will not
+ * consistent results, using fcntl(F_SETLKW). Will create the file if needed, but will not
  * create parent directories. Up to two items of data can
  * be written or appended. If you have only one item, supply null
  * for the second. For overwrite behaviour supply seeky=SEEK_SET and

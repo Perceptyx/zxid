@@ -185,10 +185,11 @@ int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
 #define ZX_DEFAULT_IV   "ZX_DEFAULT_IV ZXID.ORG SAML 2.0 and Liberty ID-WSF by Sampo." /* 60 */
 
 /*() zx_raw_cipher() can encrypt and decrypt, based on encflag, using symmetic cipher algo.
- * If encflag (==1) indicates encryption, the initialization vector will be prepended. */
+ * If encflag (==1) indicates encryption, the initialization vector will be prepended.
+ * If 0 is supplied as iv, then internal ZX_DEFAULT_IV of correct length is used. */
 
 /* Called by:  zxenc_symkey_dec x4, zxenc_symkey_enc, zxid_psobj_dec, zxid_psobj_enc */
-struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, struct zx_str* key, int len, const char* s, int iv_len, const char* iv)
+struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, int keylen, const unsigned char* key, int len, const char* s, int iv_len, const char* iv)
 {
   const char* ivv;
   char* where = "start";
@@ -222,7 +223,7 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
     if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("iv     ", ivv, iv_len, 1024);
   } else
     ivv = 0;
-  if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("symkey ", key->s, key->len, 1024);
+  if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("symkey ", key, keylen, 1024);
   
   /* 20150606, it appears aes-256-gcm reports too short block size, thus we impose a minimum. */
   alloclen = EVP_CIPHER_block_size(evp_cipher);
@@ -241,13 +242,13 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
   else
     iv_len = 0;  /* When decrypting, the iv has already been stripped. */
     
-  if (!EVP_CipherInit_ex(&ctx, evp_cipher, 0 /* engine */, (unsigned char*)key->s, (unsigned char*)ivv, encflag)) {
+  if (!EVP_CipherInit_ex(&ctx, evp_cipher, 0 /* engine */, (unsigned char*)key, (unsigned char*)ivv, encflag)) {
     where = "EVP_CipherInit_ex()";
     goto sslerr;
   }
   
-  if (!EVP_CIPHER_CTX_set_key_length(&ctx, key->len)) {
-    D("key->len=%d", key->len);
+  if (!EVP_CIPHER_CTX_set_key_length(&ctx, keylen)) {
+    D("key->len=%d", keylen);
     where = "wrong key length for algorithm (block ciphers only accept keys of determined length)";
     goto sslerr;
   }
@@ -291,6 +292,11 @@ struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, st
  clean:
   EVP_CIPHER_CTX_cleanup(&ctx);
   return 0;
+}
+
+struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, struct zx_str* key, int len, const char* s, int iv_len, const char* iv)
+{
+  return zx_raw_cipher2(c, algo, encflag, key->len, (unsigned char*)key->s, len, s, iv_len, iv);
 }
 
 /*() RSA public key encryption. See zx_get_rsa_pub_from_cert() for
@@ -457,7 +463,7 @@ RSA* zx_get_rsa_pub_from_cert(X509* cert, char* logkey)
   return rsa_pkey;
 }
 
-/*() ZXID centralized hook for obtaning random numbers. This backends to
+/*() ZXID centralized hook for obtaining random numbers. This backends to
  * OpenSSL random number gnerator and seeds from /dev/urandom where
  * available. If you want to use /dev/random, which may block, you need
  * to recompile with ZXID_TRUE_RAND set to true. */

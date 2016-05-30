@@ -143,7 +143,7 @@ static void opt(int* argc, char*** argv, char*** env)
 	switch ((*argv)[0][3]) {
 	case '\0':
 	  cf->idp_ena = 1;
-	  zxid_parse_conf(cf, buf); /* buf was statically initialised to "PATH=/var/zxid/" */
+	  zxid_parse_conf(cf, buf); /* buf was statically initialised to "CPATH=/var/zxid/" */
 	  continue;
 	}
 	break;

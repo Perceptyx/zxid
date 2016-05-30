@@ -167,6 +167,7 @@ zxcached.c       - Key-Value Cache and Database Daemon
 zxdata.h         - Data structures for Key-Value Cache
 zxdata.c         - Data structures manipulations for Key-Value Cache
 zxdatastore.c    - Data structure persistence
+zxmsgpack.c      - Message Pack (msgpack) serialization and deserialization
 hiios.h          - Header for Hiquu high performance I/O Engine
 hiios.c          - Hiquu high performance I/O Engine main loop
 hiinit.c         - Hiquu high performance I/O Engine initialization

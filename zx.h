@@ -302,6 +302,7 @@ int zx_format_parse_error(struct zx_ctx* ctx, char* buf, int siz, char* logkey);
 char* zx_hmac_sha256(struct zx_ctx* c, int key_len, const char* key, int data_len, const char* data, char* md, int* md_len);
 int zx_raw_raw_digest2(struct zx_ctx* c, char* mdbuf, const EVP_MD* evp_digest, int len, const char* s, int len2, const char* s2);
 int zx_raw_digest2(struct zx_ctx* c, char* mdbuf, const char* algo, int len, const char* s, int len2, const char* s2);
+struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, int keylen, const unsigned char* key, int len, const char* s, int iv_len, const char* iv);
 struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, struct zx_str* key, int len, const char* s, int iv_len, const char* iv);
 struct zx_str* zx_rsa_pub_enc(struct zx_ctx* c, struct zx_str* plain, RSA* rsa_pkey, int pad);
 struct zx_str* zx_rsa_pub_dec(struct zx_ctx* c, struct zx_str* ciphered, RSA* rsa_pkey, int pad);
@@ -422,6 +423,10 @@ struct zx_el_desc* zx_el_desc_lookup(int tok);
 #define ENC_ENCKEY_METH        "http://www.w3.org/2001/04/xmlenc#EncryptedKey"
 #define ENC_TYPE_ELEMENT       "http://www.w3.org/2001/04/xmlenc#Element"
 #define ENC_TYPE_CONTENT       "http://www.w3.org/2001/04/xmlenc#Content"
+
+// AES256-GCM-SHA384
+//#define AES256GCM "AES-256-GCM"
+#define AES256GCM "aes-256-gcm"
 
 #ifdef __cplusplus
 } // extern "C"
