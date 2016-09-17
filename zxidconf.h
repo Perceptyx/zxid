@@ -1456,7 +1456,7 @@
  * If these options are not enough for you, consider simply rendering your own forms. */
 
 /*(c) Whether to show more technical fields in the GUI
- * Normally they are hidden and POST profile is used.
+ * Normally they are hidden.
  * Does not affect metadata. */
 #define ZXID_SHOW_TECH 0
 

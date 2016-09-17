@@ -548,9 +548,13 @@ struct zx_str* zxlog_path(zxid_conf* cf,
   struct stat st;
   int dir_len = strlen(dir);
   int kind_len = strlen(kind);
-  int len = cf->cpath_len + sizeof("log/")-1 + dir_len + 27 + kind_len + 27;
-  char* s = ZX_ALLOC(cf->ctx, len+1);
+  int len;
+  char* s;
   char* p;
+  len = cf->cpath_len + sizeof("log/")-1 + dir_len
+    + 27 /*sha1 entid*/ + kind_len + 27 /*sha1 objid*/;
+  s = ZX_ALLOC(cf->ctx, len+1);
+  D("log_path len=%d", len);
 
   if (!entid) {
     ERR("No EntityID supplied %p dir(%s) kind(%s)", objid, STRNULLCHK(dir), STRNULLCHK(kind));

@@ -16,6 +16,9 @@
  * 12.2.2010,  added pthread locking --Sampo
  *
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
+ *
+ * .ses file format:
+ *    nid|sso_a7n_path|sesix|an_ctx|uid|an_instant
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -37,7 +40,7 @@
 
 /* ============== Sessions ============== */
 
-#define ZXID_MAX_SES (256)      /* Just the session nid and path to assertion */
+#define ZXID_MAX_SES (4096)      /* Just the session nid and path to assertion */
 
 /*() When session is loaded, we only get the reference to assertion. This
  * is to avoid parsing overhead when the assertion really is not needed.
@@ -239,7 +242,7 @@ int zxid_put_ses(zxid_conf* cf, zxid_ses* ses)
   char dir[ZXID_MAX_BUF];
   char* buf;
   struct zx_str* ss;
-  
+
   if (ses->sid) {
     if (strlen(ses->sid) != strspn(ses->sid, safe_basis_64)) {
       ERR("EVIL Session ID(%s)", ses->sid);
@@ -250,14 +253,14 @@ int zxid_put_ses(zxid_conf* cf, zxid_ses* ses)
     ses->sid = ss->s;
     ZX_FREE(cf->ctx, ss);
   }
-  
+
   name_from_path(dir, sizeof(dir), "%s" ZXID_SES_DIR "%s", cf->cpath, ses->sid);
   if (MKDIR(dir, 0777) && errno != EEXIST) {
     ERR("Creating session directory(%s) failed: %d %s; euid=%d egid=%d", dir, errno, STRERROR(errno), geteuid(), getegid());
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "S", "EFILE", dir, "mkdir fail, permissions?");
     return 0;
   }
-  
+
   buf = ZX_ALLOC(cf->ctx, ZXID_MAX_SES);
   if (!write_all_path_fmt("put_ses", ZXID_MAX_SES, buf,
 			  "%s" ZXID_SES_DIR "%s/.ses", cf->cpath, ses->sid,

@@ -425,6 +425,8 @@ int write_all_path_fmt(const char* logkey, int maxlen, char* buf, const char* pa
   
   va_start(ap, data_fmt);
   len = vsnprintf(buf, maxlen-1, data_fmt, ap); /* Format data into buf */
+  if (len >= maxlen)
+    ERR("%s: String trucated len=%d maxlen=%d", logkey, len, maxlen);
   buf[maxlen-1] = 0; /* must terminate manually as on win32 nul is not guaranteed */
   va_end(ap);
   if (len < 0) {
