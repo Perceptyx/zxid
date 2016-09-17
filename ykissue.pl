@@ -11,6 +11,10 @@
 #
 # See also: ~/me/ykissue  -- log file of yk issuance operations, instructions for compiling ykpersonalize
 #
+# To attach yubikey to an idp account:
+#
+#  echo -n 0546adacfd6b6ca1b0e6c181d145c504 | zxpasswd -t y -s alice ukulelej /d/ov-uid
+#
 # ModHex: cbdefghijklnrtuv
 # Hex:    0123456789abcdef
 
