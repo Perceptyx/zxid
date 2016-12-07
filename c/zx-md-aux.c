@@ -663,7 +663,9 @@ void zx_DUP_STRS_md_AttributeAuthorityDescriptor(struct zx_ctx* c, struct zx_md_
   zx_dup_attr(c, x->ID);
   zx_dup_attr(c, x->cacheDuration);
   zx_dup_attr(c, x->errorURL);
+  zx_dup_attr(c, x->graphURL);
   zx_dup_attr(c, x->protocolSupportEnumeration);
+  zx_dup_attr(c, x->tokenURL);
   zx_dup_attr(c, x->validUntil);
 
   for (se = &x->Signature->gg;
@@ -721,7 +723,9 @@ struct zx_md_AttributeAuthorityDescriptor_s* zx_DEEP_CLONE_md_AttributeAuthority
   x->ID = zx_clone_attr(c, x->ID);
   x->cacheDuration = zx_clone_attr(c, x->cacheDuration);
   x->errorURL = zx_clone_attr(c, x->errorURL);
+  x->graphURL = zx_clone_attr(c, x->graphURL);
   x->protocolSupportEnumeration = zx_clone_attr(c, x->protocolSupportEnumeration);
+  x->tokenURL = zx_clone_attr(c, x->tokenURL);
   x->validUntil = zx_clone_attr(c, x->validUntil);
 
   for (enn = 0, e = &x->Signature->gg;
@@ -1219,7 +1223,9 @@ void zx_DUP_STRS_md_AuthnAuthorityDescriptor(struct zx_ctx* c, struct zx_md_Auth
   zx_dup_attr(c, x->ID);
   zx_dup_attr(c, x->cacheDuration);
   zx_dup_attr(c, x->errorURL);
+  zx_dup_attr(c, x->graphURL);
   zx_dup_attr(c, x->protocolSupportEnumeration);
+  zx_dup_attr(c, x->tokenURL);
   zx_dup_attr(c, x->validUntil);
 
   for (se = &x->Signature->gg;
@@ -1272,7 +1278,9 @@ struct zx_md_AuthnAuthorityDescriptor_s* zx_DEEP_CLONE_md_AuthnAuthorityDescript
   x->ID = zx_clone_attr(c, x->ID);
   x->cacheDuration = zx_clone_attr(c, x->cacheDuration);
   x->errorURL = zx_clone_attr(c, x->errorURL);
+  x->graphURL = zx_clone_attr(c, x->graphURL);
   x->protocolSupportEnumeration = zx_clone_attr(c, x->protocolSupportEnumeration);
+  x->tokenURL = zx_clone_attr(c, x->tokenURL);
   x->validUntil = zx_clone_attr(c, x->validUntil);
 
   for (enn = 0, e = &x->Signature->gg;
@@ -2133,6 +2141,8 @@ void zx_DUP_STRS_md_EntityDescriptor(struct zx_ctx* c, struct zx_md_EntityDescri
   /* *** deal with xmlns specifications in exc c14n way */
 
   zx_dup_attr(c, x->ID);
+  zx_dup_attr(c, x->appId);
+  zx_dup_attr(c, x->appSecret);
   zx_dup_attr(c, x->cacheDuration);
   zx_dup_attr(c, x->entityID);
   zx_dup_attr(c, x->validUntil);
@@ -2204,6 +2214,8 @@ struct zx_md_EntityDescriptor_s* zx_DEEP_CLONE_md_EntityDescriptor(struct zx_ctx
   /* *** deal with xmlns specifications in exc c14n way */
 
   x->ID = zx_clone_attr(c, x->ID);
+  x->appId = zx_clone_attr(c, x->appId);
+  x->appSecret = zx_clone_attr(c, x->appSecret);
   x->cacheDuration = zx_clone_attr(c, x->cacheDuration);
   x->entityID = zx_clone_attr(c, x->entityID);
   x->validUntil = zx_clone_attr(c, x->validUntil);
@@ -2653,7 +2665,9 @@ void zx_DUP_STRS_md_IDPSSODescriptor(struct zx_ctx* c, struct zx_md_IDPSSODescri
   zx_dup_attr(c, x->WantAuthnRequestsSigned);
   zx_dup_attr(c, x->cacheDuration);
   zx_dup_attr(c, x->errorURL);
+  zx_dup_attr(c, x->graphURL);
   zx_dup_attr(c, x->protocolSupportEnumeration);
+  zx_dup_attr(c, x->tokenURL);
   zx_dup_attr(c, x->validUntil);
 
   for (se = &x->Signature->gg;
@@ -2728,7 +2742,9 @@ struct zx_md_IDPSSODescriptor_s* zx_DEEP_CLONE_md_IDPSSODescriptor(struct zx_ctx
   x->WantAuthnRequestsSigned = zx_clone_attr(c, x->WantAuthnRequestsSigned);
   x->cacheDuration = zx_clone_attr(c, x->cacheDuration);
   x->errorURL = zx_clone_attr(c, x->errorURL);
+  x->graphURL = zx_clone_attr(c, x->graphURL);
   x->protocolSupportEnumeration = zx_clone_attr(c, x->protocolSupportEnumeration);
+  x->tokenURL = zx_clone_attr(c, x->tokenURL);
   x->validUntil = zx_clone_attr(c, x->validUntil);
 
   for (enn = 0, e = &x->Signature->gg;
@@ -3856,7 +3872,9 @@ void zx_DUP_STRS_md_PDPDescriptor(struct zx_ctx* c, struct zx_md_PDPDescriptor_s
   zx_dup_attr(c, x->ID);
   zx_dup_attr(c, x->cacheDuration);
   zx_dup_attr(c, x->errorURL);
+  zx_dup_attr(c, x->graphURL);
   zx_dup_attr(c, x->protocolSupportEnumeration);
+  zx_dup_attr(c, x->tokenURL);
   zx_dup_attr(c, x->validUntil);
 
   for (se = &x->Signature->gg;
@@ -3909,7 +3927,9 @@ struct zx_md_PDPDescriptor_s* zx_DEEP_CLONE_md_PDPDescriptor(struct zx_ctx* c, s
   x->ID = zx_clone_attr(c, x->ID);
   x->cacheDuration = zx_clone_attr(c, x->cacheDuration);
   x->errorURL = zx_clone_attr(c, x->errorURL);
+  x->graphURL = zx_clone_attr(c, x->graphURL);
   x->protocolSupportEnumeration = zx_clone_attr(c, x->protocolSupportEnumeration);
+  x->tokenURL = zx_clone_attr(c, x->tokenURL);
   x->validUntil = zx_clone_attr(c, x->validUntil);
 
   for (enn = 0, e = &x->Signature->gg;
@@ -4241,7 +4261,9 @@ void zx_DUP_STRS_md_RoleDescriptor(struct zx_ctx* c, struct zx_md_RoleDescriptor
   zx_dup_attr(c, x->ID);
   zx_dup_attr(c, x->cacheDuration);
   zx_dup_attr(c, x->errorURL);
+  zx_dup_attr(c, x->graphURL);
   zx_dup_attr(c, x->protocolSupportEnumeration);
+  zx_dup_attr(c, x->tokenURL);
   zx_dup_attr(c, x->validUntil);
 
   for (se = &x->Signature->gg;
@@ -4285,7 +4307,9 @@ struct zx_md_RoleDescriptor_s* zx_DEEP_CLONE_md_RoleDescriptor(struct zx_ctx* c,
   x->ID = zx_clone_attr(c, x->ID);
   x->cacheDuration = zx_clone_attr(c, x->cacheDuration);
   x->errorURL = zx_clone_attr(c, x->errorURL);
+  x->graphURL = zx_clone_attr(c, x->graphURL);
   x->protocolSupportEnumeration = zx_clone_attr(c, x->protocolSupportEnumeration);
+  x->tokenURL = zx_clone_attr(c, x->tokenURL);
   x->validUntil = zx_clone_attr(c, x->validUntil);
 
   for (enn = 0, e = &x->Signature->gg;
@@ -4455,7 +4479,9 @@ void zx_DUP_STRS_md_SPSSODescriptor(struct zx_ctx* c, struct zx_md_SPSSODescript
   zx_dup_attr(c, x->WantAssertionsSigned);
   zx_dup_attr(c, x->cacheDuration);
   zx_dup_attr(c, x->errorURL);
+  zx_dup_attr(c, x->graphURL);
   zx_dup_attr(c, x->protocolSupportEnumeration);
+  zx_dup_attr(c, x->tokenURL);
   zx_dup_attr(c, x->validUntil);
 
   for (se = &x->Signature->gg;
@@ -4522,7 +4548,9 @@ struct zx_md_SPSSODescriptor_s* zx_DEEP_CLONE_md_SPSSODescriptor(struct zx_ctx* 
   x->WantAssertionsSigned = zx_clone_attr(c, x->WantAssertionsSigned);
   x->cacheDuration = zx_clone_attr(c, x->cacheDuration);
   x->errorURL = zx_clone_attr(c, x->errorURL);
+  x->graphURL = zx_clone_attr(c, x->graphURL);
   x->protocolSupportEnumeration = zx_clone_attr(c, x->protocolSupportEnumeration);
+  x->tokenURL = zx_clone_attr(c, x->tokenURL);
   x->validUntil = zx_clone_attr(c, x->validUntil);
 
   for (enn = 0, e = &x->Signature->gg;

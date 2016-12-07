@@ -988,56 +988,57 @@ static void SWIG_Php_SetModule(swig_module_info *pointer) {
 #define SWIGTYPE_p_stomp_hdr swig_types[13]
 #define SWIGTYPE_p_time_t swig_types[14]
 #define SWIGTYPE_p_timeval swig_types[15]
-#define SWIGTYPE_p_void swig_types[16]
-#define SWIGTYPE_p_zx_a_EndpointReference_s swig_types[17]
-#define SWIGTYPE_p_zx_at_tok swig_types[18]
-#define SWIGTYPE_p_zx_attr_s swig_types[19]
-#define SWIGTYPE_p_zx_ctx swig_types[20]
-#define SWIGTYPE_p_zx_ds_Reference_s swig_types[21]
-#define SWIGTYPE_p_zx_e_Body_s swig_types[22]
-#define SWIGTYPE_p_zx_e_Envelope_s swig_types[23]
-#define SWIGTYPE_p_zx_e_Fault_s swig_types[24]
-#define SWIGTYPE_p_zx_e_Header_s swig_types[25]
-#define SWIGTYPE_p_zx_el_desc swig_types[26]
-#define SWIGTYPE_p_zx_el_tok swig_types[27]
-#define SWIGTYPE_p_zx_elem_s swig_types[28]
-#define SWIGTYPE_p_zx_ff12_Assertion_s swig_types[29]
-#define SWIGTYPE_p_zx_lock swig_types[30]
-#define SWIGTYPE_p_zx_lu_Status_s swig_types[31]
-#define SWIGTYPE_p_zx_md_EntityDescriptor_s swig_types[32]
-#define SWIGTYPE_p_zx_ns_s swig_types[33]
-#define SWIGTYPE_p_zx_root_s swig_types[34]
-#define SWIGTYPE_p_zx_sa11_Assertion_s swig_types[35]
-#define SWIGTYPE_p_zx_sa_Assertion_s swig_types[36]
-#define SWIGTYPE_p_zx_sa_Attribute_s swig_types[37]
-#define SWIGTYPE_p_zx_sa_EncryptedAssertion_s swig_types[38]
-#define SWIGTYPE_p_zx_sa_EncryptedID_s swig_types[39]
-#define SWIGTYPE_p_zx_sa_Issuer_s swig_types[40]
-#define SWIGTYPE_p_zx_sa_NameID_s swig_types[41]
-#define SWIGTYPE_p_zx_sec_Token_s swig_types[42]
-#define SWIGTYPE_p_zx_sp_NewEncryptedID_s swig_types[43]
-#define SWIGTYPE_p_zx_sp_Status_s swig_types[44]
-#define SWIGTYPE_p_zx_str swig_types[45]
-#define SWIGTYPE_p_zx_tas3_Status_s swig_types[46]
-#define SWIGTYPE_p_zx_xenc_EncryptedData_s swig_types[47]
-#define SWIGTYPE_p_zx_xenc_EncryptedKey_s swig_types[48]
-#define SWIGTYPE_p_zxid_atsrc swig_types[49]
-#define SWIGTYPE_p_zxid_attr swig_types[50]
-#define SWIGTYPE_p_zxid_bus_url swig_types[51]
-#define SWIGTYPE_p_zxid_cgi swig_types[52]
-#define SWIGTYPE_p_zxid_conf swig_types[53]
-#define SWIGTYPE_p_zxid_cstr_list swig_types[54]
-#define SWIGTYPE_p_zxid_entity_s swig_types[55]
-#define SWIGTYPE_p_zxid_invite swig_types[56]
-#define SWIGTYPE_p_zxid_map swig_types[57]
-#define SWIGTYPE_p_zxid_need swig_types[58]
-#define SWIGTYPE_p_zxid_obl_list swig_types[59]
-#define SWIGTYPE_p_zxid_perm swig_types[60]
-#define SWIGTYPE_p_zxid_psobj swig_types[61]
-#define SWIGTYPE_p_zxid_ses swig_types[62]
-#define SWIGTYPE_p_zxsig_ref swig_types[63]
-static swig_type_info *swig_types[65];
-static swig_module_info swig_module = {swig_types, 64, 0, 0, 0, 0};
+#define SWIGTYPE_p_unsigned_char swig_types[16]
+#define SWIGTYPE_p_void swig_types[17]
+#define SWIGTYPE_p_zx_a_EndpointReference_s swig_types[18]
+#define SWIGTYPE_p_zx_at_tok swig_types[19]
+#define SWIGTYPE_p_zx_attr_s swig_types[20]
+#define SWIGTYPE_p_zx_ctx swig_types[21]
+#define SWIGTYPE_p_zx_ds_Reference_s swig_types[22]
+#define SWIGTYPE_p_zx_e_Body_s swig_types[23]
+#define SWIGTYPE_p_zx_e_Envelope_s swig_types[24]
+#define SWIGTYPE_p_zx_e_Fault_s swig_types[25]
+#define SWIGTYPE_p_zx_e_Header_s swig_types[26]
+#define SWIGTYPE_p_zx_el_desc swig_types[27]
+#define SWIGTYPE_p_zx_el_tok swig_types[28]
+#define SWIGTYPE_p_zx_elem_s swig_types[29]
+#define SWIGTYPE_p_zx_ff12_Assertion_s swig_types[30]
+#define SWIGTYPE_p_zx_lock swig_types[31]
+#define SWIGTYPE_p_zx_lu_Status_s swig_types[32]
+#define SWIGTYPE_p_zx_md_EntityDescriptor_s swig_types[33]
+#define SWIGTYPE_p_zx_ns_s swig_types[34]
+#define SWIGTYPE_p_zx_root_s swig_types[35]
+#define SWIGTYPE_p_zx_sa11_Assertion_s swig_types[36]
+#define SWIGTYPE_p_zx_sa_Assertion_s swig_types[37]
+#define SWIGTYPE_p_zx_sa_Attribute_s swig_types[38]
+#define SWIGTYPE_p_zx_sa_EncryptedAssertion_s swig_types[39]
+#define SWIGTYPE_p_zx_sa_EncryptedID_s swig_types[40]
+#define SWIGTYPE_p_zx_sa_Issuer_s swig_types[41]
+#define SWIGTYPE_p_zx_sa_NameID_s swig_types[42]
+#define SWIGTYPE_p_zx_sec_Token_s swig_types[43]
+#define SWIGTYPE_p_zx_sp_NewEncryptedID_s swig_types[44]
+#define SWIGTYPE_p_zx_sp_Status_s swig_types[45]
+#define SWIGTYPE_p_zx_str swig_types[46]
+#define SWIGTYPE_p_zx_tas3_Status_s swig_types[47]
+#define SWIGTYPE_p_zx_xenc_EncryptedData_s swig_types[48]
+#define SWIGTYPE_p_zx_xenc_EncryptedKey_s swig_types[49]
+#define SWIGTYPE_p_zxid_atsrc swig_types[50]
+#define SWIGTYPE_p_zxid_attr swig_types[51]
+#define SWIGTYPE_p_zxid_bus_url swig_types[52]
+#define SWIGTYPE_p_zxid_cgi swig_types[53]
+#define SWIGTYPE_p_zxid_conf swig_types[54]
+#define SWIGTYPE_p_zxid_cstr_list swig_types[55]
+#define SWIGTYPE_p_zxid_entity_s swig_types[56]
+#define SWIGTYPE_p_zxid_invite swig_types[57]
+#define SWIGTYPE_p_zxid_map swig_types[58]
+#define SWIGTYPE_p_zxid_need swig_types[59]
+#define SWIGTYPE_p_zxid_obl_list swig_types[60]
+#define SWIGTYPE_p_zxid_perm swig_types[61]
+#define SWIGTYPE_p_zxid_psobj swig_types[62]
+#define SWIGTYPE_p_zxid_ses swig_types[63]
+#define SWIGTYPE_p_zxsig_ref swig_types[64]
+static swig_type_info *swig_types[66];
+static swig_module_info swig_module = {swig_types, 65, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -1154,6 +1155,7 @@ static swig_type_info _swigt__p_pthread_t = {"_p_pthread_t", "pthread_t *", 0, 0
 static swig_type_info _swigt__p_stomp_hdr = {"_p_stomp_hdr", "struct stomp_hdr *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_time_t = {"_p_time_t", "time_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_timeval = {"_p_timeval", "struct timeval *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_unsigned_char = {"_p_unsigned_char", "unsigned char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_void = {"_p_void", "void *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_zx_a_EndpointReference_s = {"_p_zx_a_EndpointReference_s", "struct zx_a_EndpointReference_s *|zxid_epr *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_zx_at_tok = {"_p_zx_at_tok", "struct zx_at_tok *", 0, 0, (void*)0, 0};
@@ -1220,6 +1222,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_stomp_hdr,
   &_swigt__p_time_t,
   &_swigt__p_timeval,
+  &_swigt__p_unsigned_char,
   &_swigt__p_void,
   &_swigt__p_zx_a_EndpointReference_s,
   &_swigt__p_zx_at_tok,
@@ -1286,6 +1289,7 @@ static swig_cast_info _swigc__p_pthread_t[] = {  {&_swigt__p_pthread_t, 0, 0, 0}
 static swig_cast_info _swigc__p_stomp_hdr[] = {  {&_swigt__p_stomp_hdr, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_time_t[] = {  {&_swigt__p_time_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_timeval[] = {  {&_swigt__p_timeval, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_unsigned_char[] = {  {&_swigt__p_unsigned_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_void[] = {  {&_swigt__p_void, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_zx_a_EndpointReference_s[] = {  {&_swigt__p_zx_a_EndpointReference_s, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_zx_at_tok[] = {  {&_swigt__p_zx_at_tok, 0, 0, 0},{0, 0, 0, 0}};
@@ -1352,6 +1356,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_stomp_hdr,
   _swigc__p_time_t,
   _swigc__p_timeval,
+  _swigc__p_unsigned_char,
   _swigc__p_void,
   _swigc__p_zx_a_EndpointReference_s,
   _swigc__p_zx_at_tok,
@@ -1428,8 +1433,8 @@ static int le_swig__int=0; /* handle for _int */
 static int le_swig__p_f_p_struct_zx_ctx_p_struct_zx_elem_s__int=0; /* handle for _p_f_p_struct_zx_ctx_p_struct_zx_elem_s__int */
 static int le_swig__p_pthread_t=0; /* handle for _p_pthread_t */
 static int le_swig__p_zxid_perm=0; /* handle for zxid_perm */
-static int le_swig__p_zxid_conf=0; /* handle for _p_zxid_conf */
 static int le_swig__p_zx_at_tok=0; /* handle for zx_at_tok */
+static int le_swig__p_zxid_conf=0; /* handle for _p_zxid_conf */
 static int le_swig__p_zxid_invite=0; /* handle for zxid_invite */
 static int le_swig__p_p_zx_ns_s=0; /* handle for _p_p_zx_ns_s */
 static int le_swig__p_zx_ns_s=0; /* handle for zx_ns_s */
@@ -1451,6 +1456,7 @@ static int le_swig__p_zx_ctx=0; /* handle for zx_ctx */
 static int le_swig__p_zx_xenc_EncryptedData_s=0; /* handle for _p_zx_xenc_EncryptedData_s */
 static int le_swig__p_zx_e_Envelope_s=0; /* handle for _p_zx_e_Envelope_s */
 static int le_swig__p_zx_lock=0; /* handle for zx_lock */
+static int le_swig__p_unsigned_char=0; /* handle for _p_unsigned_char */
 static int le_swig__p_zx_sa_NameID_s=0; /* handle for _p_zx_sa_NameID_s */
 static int le_swig__p_timeval=0; /* handle for _p_timeval */
 static int le_swig__p_zx_sa_Issuer_s=0; /* handle for _p_zx_sa_Issuer_s */
@@ -7032,6 +7038,88 @@ ZEND_NAMED_FUNCTION(_wrap_zx_raw_digest2) {
   result = (int)zx_raw_digest2(arg1,arg2,(char const *)arg3,arg4,(char const *)arg5,arg6,(char const *)arg7);
   {
     ZVAL_LONG(return_value,result);
+  }
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zx_raw_cipher2) {
+  struct zx_ctx *arg1 = (struct zx_ctx *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  int arg4 ;
+  unsigned char *arg5 = (unsigned char *) 0 ;
+  int arg6 ;
+  char *arg7 = (char *) 0 ;
+  int arg8 ;
+  char *arg9 = (char *) 0 ;
+  zval **args[8];
+  struct zx_str *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 8 || zend_get_parameters_array_ex(8, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zx_ctx, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zx_raw_cipher2. Expected SWIGTYPE_p_zx_ctx");
+    }
+  }
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[1])->type==IS_NULL) {
+    arg2 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[1]);
+    arg2 = (char *) Z_STRVAL_PP(args[1]);
+  }
+  /*@SWIG@*/;
+  
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,7,CONVERT_INT_IN@*/
+  convert_to_long_ex(args[2]);
+  arg3 = (int) Z_LVAL_PP(args[2]);
+  /*@SWIG@*/;
+  
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,7,CONVERT_INT_IN@*/
+  convert_to_long_ex(args[3]);
+  arg4 = (int) Z_LVAL_PP(args[3]);
+  /*@SWIG@*/;
+  
+  {
+    if(SWIG_ConvertPtr(*args[4], (void **) &arg5, SWIGTYPE_p_unsigned_char, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 5 of zx_raw_cipher2. Expected SWIGTYPE_p_unsigned_char");
+    }
+  }
+  {
+    arg6 = Z_STRLEN_PP(args[5]);
+    arg7 = Z_STRVAL_PP(args[5]);
+  }
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,7,CONVERT_INT_IN@*/
+  convert_to_long_ex(args[6]);
+  arg8 = (int) Z_LVAL_PP(args[6]);
+  /*@SWIG@*/;
+  
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[7])->type==IS_NULL) {
+    arg9 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[7]);
+    arg9 = (char *) Z_STRVAL_PP(args[7]);
+  }
+  /*@SWIG@*/;
+  
+  result = (struct zx_str *)zx_raw_cipher2(arg1,(char const *)arg2,arg3,arg4,(unsigned char const *)arg5,arg6,(char const *)arg7,arg8,(char const *)arg9);
+  {
+    if (result)
+    ZVAL_STRINGL(return_value, result->s, result->len, 1);
+    /* Do not free underlying zx_str because they are usually returned by reference. */
   }
   return;
 fail:
@@ -23383,6 +23471,150 @@ fail:
 }
 
 
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_denied_scopes_set) {
+  struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+  char *arg2 = (char *) 0 ;
+  zval **args[2];
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 2 || zend_get_parameters_array_ex(2, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_denied_scopes_set. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[1])->type==IS_NULL) {
+    arg2 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[1]);
+    arg2 = (char *) Z_STRVAL_PP(args[1]);
+  }
+  /*@SWIG@*/;
+  
+  {
+    free(arg1->denied_scopes);
+    if (arg2) {
+      arg1->denied_scopes = (char *) malloc(strlen((const char *)arg2)+1);
+      strcpy((char *)arg1->denied_scopes, (const char *)arg2);
+    } else {
+      arg1->denied_scopes = 0;
+    }
+  }
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_denied_scopes_get) {
+  struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+  zval **args[1];
+  char *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_denied_scopes_get. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  result = (char *) ((arg1)->denied_scopes);
+  {
+    if(!result) {
+      ZVAL_NULL(return_value);
+    } else {
+      ZVAL_STRING(return_value, (char *)result, 1);
+    }
+  }
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_granted_scopes_set) {
+  struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+  char *arg2 = (char *) 0 ;
+  zval **args[2];
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 2 || zend_get_parameters_array_ex(2, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_granted_scopes_set. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[1])->type==IS_NULL) {
+    arg2 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[1]);
+    arg2 = (char *) Z_STRVAL_PP(args[1]);
+  }
+  /*@SWIG@*/;
+  
+  {
+    free(arg1->granted_scopes);
+    if (arg2) {
+      arg1->granted_scopes = (char *) malloc(strlen((const char *)arg2)+1);
+      strcpy((char *)arg1->granted_scopes, (const char *)arg2);
+    } else {
+      arg1->granted_scopes = 0;
+    }
+  }
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_granted_scopes_get) {
+  struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+  zval **args[1];
+  char *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_cgi_granted_scopes_get. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  result = (char *) ((arg1)->granted_scopes);
+  {
+    if(!result) {
+      ZVAL_NULL(return_value);
+    } else {
+      ZVAL_STRING(return_value, (char *)result, 1);
+    }
+  }
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
 ZEND_NAMED_FUNCTION(_wrap_zxid_cgi_redirect_uri_set) {
   struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -27656,6 +27888,61 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_ses_curstatus_get) {
   result = (zxid_tas3_status *) ((arg1)->curstatus);
   
   SWIG_SetPointerZval(return_value, (void *)result, SWIGTYPE_p_zx_tas3_Status_s, 0);
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_ses_issuer_meta_set) {
+  struct zxid_ses *arg1 = (struct zxid_ses *) 0 ;
+  zxid_entity *arg2 = (zxid_entity *) 0 ;
+  zval **args[2];
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 2 || zend_get_parameters_array_ex(2, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_ses, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_ses_issuer_meta_set. Expected SWIGTYPE_p_zxid_ses");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  {
+    if(SWIG_ConvertPtr(*args[1], (void **) &arg2, SWIGTYPE_p_zxid_entity_s, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 2 of zxid_ses_issuer_meta_set. Expected SWIGTYPE_p_zxid_entity_s");
+    }
+  }
+  if (arg1) (arg1)->issuer_meta = arg2;
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_ses_issuer_meta_get) {
+  struct zxid_ses *arg1 = (struct zxid_ses *) 0 ;
+  zval **args[1];
+  zxid_entity *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_ses, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_ses_issuer_meta_get. Expected SWIGTYPE_p_zxid_ses");
+    }
+  }
+  if(!arg1) SWIG_PHP_Error(E_ERROR, "this pointer is NULL");
+  result = (zxid_entity *) ((arg1)->issuer_meta);
+  
+  SWIG_SetPointerZval(return_value, (void *)result, SWIGTYPE_p_zxid_entity_s, 0);
   
   return;
 fail:
@@ -41160,8 +41447,8 @@ fail:
 ZEND_NAMED_FUNCTION(_wrap_zxid_mk_oauth_az_req) {
   zxid_conf *arg1 = (zxid_conf *) 0 ;
   zxid_cgi *arg2 = (zxid_cgi *) 0 ;
-  struct zx_str *arg3 = (struct zx_str *) 0 ;
-  char *arg4 = (char *) 0 ;
+  zxid_entity *arg3 = (zxid_entity *) 0 ;
+  struct zx_str *arg4 = (struct zx_str *) 0 ;
   zval **args[4];
   struct zx_str *result = 0 ;
   
@@ -41181,21 +41468,61 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_mk_oauth_az_req) {
     }
   }
   {
-    if(SWIG_ConvertPtr(*args[2], (void **) &arg3, SWIGTYPE_p_zx_str, 0) < 0) {
-      SWIG_PHP_Error(E_ERROR, "Type error in argument 3 of zxid_mk_oauth_az_req. Expected SWIGTYPE_p_zx_str");
+    if(SWIG_ConvertPtr(*args[2], (void **) &arg3, SWIGTYPE_p_zxid_entity_s, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 3 of zxid_mk_oauth_az_req. Expected SWIGTYPE_p_zxid_entity_s");
     }
   }
-  
-  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
-  if ((*args[3])->type==IS_NULL) {
-    arg4 = (char *) 0;
-  } else {
-    convert_to_string_ex(args[3]);
-    arg4 = (char *) Z_STRVAL_PP(args[3]);
+  {
+    if(SWIG_ConvertPtr(*args[3], (void **) &arg4, SWIGTYPE_p_zx_str, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 4 of zxid_mk_oauth_az_req. Expected SWIGTYPE_p_zx_str");
+    }
   }
-  /*@SWIG@*/;
-  
   result = (struct zx_str *)zxid_mk_oauth_az_req(arg1,arg2,arg3,arg4);
+  {
+    if (result)
+    ZVAL_STRINGL(return_value, result->s, result->len, 1);
+    /* Do not free underlying zx_str because they are usually returned by reference. */
+  }
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_zxid_mk_fbc_az_req) {
+  zxid_conf *arg1 = (zxid_conf *) 0 ;
+  zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+  zxid_entity *arg3 = (zxid_entity *) 0 ;
+  struct zx_str *arg4 = (struct zx_str *) 0 ;
+  zval **args[4];
+  struct zx_str *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 4 || zend_get_parameters_array_ex(4, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_conf, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_mk_fbc_az_req. Expected SWIGTYPE_p_zxid_conf");
+    }
+  }
+  {
+    if(SWIG_ConvertPtr(*args[1], (void **) &arg2, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 2 of zxid_mk_fbc_az_req. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  {
+    if(SWIG_ConvertPtr(*args[2], (void **) &arg3, SWIGTYPE_p_zxid_entity_s, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 3 of zxid_mk_fbc_az_req. Expected SWIGTYPE_p_zxid_entity_s");
+    }
+  }
+  {
+    if(SWIG_ConvertPtr(*args[3], (void **) &arg4, SWIGTYPE_p_zx_str, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 4 of zxid_mk_fbc_az_req. Expected SWIGTYPE_p_zx_str");
+    }
+  }
+  result = (struct zx_str *)zxid_mk_fbc_az_req(arg1,arg2,arg3,arg4);
   {
     if (result)
     ZVAL_STRINGL(return_value, result->s, result->len, 1);
@@ -45013,12 +45340,12 @@ static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_pthread_t) {
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zxid_perm) {
   __wrap_delete_zxid_perm(rsrc, SWIGTYPE_p_zxid_perm->name TSRMLS_CC);
 }
+static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zx_at_tok) {
+  __wrap_delete_zx_at_tok(rsrc, SWIGTYPE_p_zx_at_tok->name TSRMLS_CC);
+}
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zxid_conf) {
   /* No destructor for simple type _p_zxid_conf */
   efree(rsrc->ptr);
-}
-static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zx_at_tok) {
-  __wrap_delete_zx_at_tok(rsrc, SWIGTYPE_p_zx_at_tok->name TSRMLS_CC);
 }
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zxid_invite) {
   __wrap_delete_zxid_invite(rsrc, SWIGTYPE_p_zxid_invite->name TSRMLS_CC);
@@ -45094,6 +45421,10 @@ static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zx_e_Envelope_s) {
 }
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zx_lock) {
   __wrap_delete_zx_lock(rsrc, SWIGTYPE_p_zx_lock->name TSRMLS_CC);
+}
+static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_unsigned_char) {
+  /* No destructor for simple type _p_unsigned_char */
+  efree(rsrc->ptr);
 }
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_zx_sa_NameID_s) {
   /* No destructor for simple type _p_zx_sa_NameID_s */
@@ -45341,6 +45672,7 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zx_hmac_sha256,_wrap_zx_hmac_sha256,NULL)
  SWIG_ZEND_NAMED_FE(zx_raw_raw_digest2,_wrap_zx_raw_raw_digest2,NULL)
  SWIG_ZEND_NAMED_FE(zx_raw_digest2,_wrap_zx_raw_digest2,NULL)
+ SWIG_ZEND_NAMED_FE(zx_raw_cipher2,_wrap_zx_raw_cipher2,NULL)
  SWIG_ZEND_NAMED_FE(zx_raw_cipher,_wrap_zx_raw_cipher,NULL)
  SWIG_ZEND_NAMED_FE(zx_rsa_pub_enc,_wrap_zx_rsa_pub_enc,NULL)
  SWIG_ZEND_NAMED_FE(zx_rsa_pub_dec,_wrap_zx_rsa_pub_dec,NULL)
@@ -45841,6 +46173,10 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zxid_cgi_client_id_get,_wrap_zxid_cgi_client_id_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_scope_set,_wrap_zxid_cgi_scope_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_scope_get,_wrap_zxid_cgi_scope_get,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_denied_scopes_set,_wrap_zxid_cgi_denied_scopes_set,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_denied_scopes_get,_wrap_zxid_cgi_denied_scopes_get,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_granted_scopes_set,_wrap_zxid_cgi_granted_scopes_set,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_cgi_granted_scopes_get,_wrap_zxid_cgi_granted_scopes_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_redirect_uri_set,_wrap_zxid_cgi_redirect_uri_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_redirect_uri_get,_wrap_zxid_cgi_redirect_uri_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_cgi_nonce_set,_wrap_zxid_cgi_nonce_set,NULL)
@@ -45970,6 +46306,8 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zxid_ses_curflt_get,_wrap_zxid_ses_curflt_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_ses_curstatus_set,_wrap_zxid_ses_curstatus_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_ses_curstatus_get,_wrap_zxid_ses_curstatus_get,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_ses_issuer_meta_set,_wrap_zxid_ses_issuer_meta_set,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_ses_issuer_meta_get,_wrap_zxid_ses_issuer_meta_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_ses_issuer_set,_wrap_zxid_ses_issuer_set,NULL)
  SWIG_ZEND_NAMED_FE(zxid_ses_issuer_get,_wrap_zxid_ses_issuer_get,NULL)
  SWIG_ZEND_NAMED_FE(zxid_ses_srcts_set,_wrap_zxid_ses_srcts_set,NULL)
@@ -46321,6 +46659,7 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zxid_mk_status,_wrap_zxid_mk_Status,NULL)
  SWIG_ZEND_NAMED_FE(zxid_ok,_wrap_zxid_OK,NULL)
  SWIG_ZEND_NAMED_FE(zxid_mk_oauth_az_req,_wrap_zxid_mk_oauth_az_req,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_mk_fbc_az_req,_wrap_zxid_mk_fbc_az_req,NULL)
  SWIG_ZEND_NAMED_FE(zxid_mk_jwks,_wrap_zxid_mk_jwks,NULL)
  SWIG_ZEND_NAMED_FE(zxid_mk_oauth2_dyn_cli_reg_req,_wrap_zxid_mk_oauth2_dyn_cli_reg_req,NULL)
  SWIG_ZEND_NAMED_FE(zxid_mk_oauth2_dyn_cli_reg_res,_wrap_zxid_mk_oauth2_dyn_cli_reg_res,NULL)
@@ -46720,10 +47059,10 @@ le_swig__p_pthread_t=zend_register_list_destructors_ex(_wrap_destroy_p_pthread_t
 SWIG_TypeClientData(SWIGTYPE_p_pthread_t,&le_swig__p_pthread_t);
 le_swig__p_zxid_perm=zend_register_list_destructors_ex(_wrap_destroy_p_zxid_perm,NULL,(char *)(SWIGTYPE_p_zxid_perm->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_zxid_perm,&le_swig__p_zxid_perm);
-le_swig__p_zxid_conf=zend_register_list_destructors_ex(_wrap_destroy_p_zxid_conf,NULL,(char *)(SWIGTYPE_p_zxid_conf->name),module_number);
-SWIG_TypeClientData(SWIGTYPE_p_zxid_conf,&le_swig__p_zxid_conf);
 le_swig__p_zx_at_tok=zend_register_list_destructors_ex(_wrap_destroy_p_zx_at_tok,NULL,(char *)(SWIGTYPE_p_zx_at_tok->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_zx_at_tok,&le_swig__p_zx_at_tok);
+le_swig__p_zxid_conf=zend_register_list_destructors_ex(_wrap_destroy_p_zxid_conf,NULL,(char *)(SWIGTYPE_p_zxid_conf->name),module_number);
+SWIG_TypeClientData(SWIGTYPE_p_zxid_conf,&le_swig__p_zxid_conf);
 le_swig__p_zxid_invite=zend_register_list_destructors_ex(_wrap_destroy_p_zxid_invite,NULL,(char *)(SWIGTYPE_p_zxid_invite->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_zxid_invite,&le_swig__p_zxid_invite);
 le_swig__p_p_zx_ns_s=zend_register_list_destructors_ex(_wrap_destroy_p_p_zx_ns_s,NULL,(char *)(SWIGTYPE_p_p_zx_ns_s->name),module_number);
@@ -46766,6 +47105,8 @@ le_swig__p_zx_e_Envelope_s=zend_register_list_destructors_ex(_wrap_destroy_p_zx_
 SWIG_TypeClientData(SWIGTYPE_p_zx_e_Envelope_s,&le_swig__p_zx_e_Envelope_s);
 le_swig__p_zx_lock=zend_register_list_destructors_ex(_wrap_destroy_p_zx_lock,NULL,(char *)(SWIGTYPE_p_zx_lock->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_zx_lock,&le_swig__p_zx_lock);
+le_swig__p_unsigned_char=zend_register_list_destructors_ex(_wrap_destroy_p_unsigned_char,NULL,(char *)(SWIGTYPE_p_unsigned_char->name),module_number);
+SWIG_TypeClientData(SWIGTYPE_p_unsigned_char,&le_swig__p_unsigned_char);
 le_swig__p_zx_sa_NameID_s=zend_register_list_destructors_ex(_wrap_destroy_p_zx_sa_NameID_s,NULL,(char *)(SWIGTYPE_p_zx_sa_NameID_s->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_zx_sa_NameID_s,&le_swig__p_zx_sa_NameID_s);
 le_swig__p_timeval=zend_register_list_destructors_ex(_wrap_destroy_p_timeval,NULL,(char *)(SWIGTYPE_p_timeval->name),module_number);
@@ -46876,6 +47217,7 @@ SWIG_STRING_CONSTANT(ENC_KEYTRAN_ALGO, "http://www.w3.org/2001/04/xmlenc#rsa-oae
 SWIG_STRING_CONSTANT(ENC_ENCKEY_METH, "http://www.w3.org/2001/04/xmlenc#EncryptedKey");
 SWIG_STRING_CONSTANT(ENC_TYPE_ELEMENT, "http://www.w3.org/2001/04/xmlenc#Element");
 SWIG_STRING_CONSTANT(ENC_TYPE_CONTENT, "http://www.w3.org/2001/04/xmlenc#Content");
+SWIG_STRING_CONSTANT(AES256GCM, "aes-256-gcm");
 SWIG_STRING_CONSTANT(ZXID_PATH, "/var/zxid/");
 SWIG_STRING_CONSTANT(ZXID_CONF_FILE, "zxid.conf");
 SWIG_STRING_CONSTANT(ZXID_CONF_PATH, "/var/zxid/zxid.conf");
@@ -46977,6 +47319,7 @@ SWIG_LONG_CONSTANT(ZXID_SAML2_REDIR, 6);
 SWIG_LONG_CONSTANT(ZXID_SAML2_URI, 7);
 SWIG_LONG_CONSTANT(ZXID_OIDC1_CODE, 8);
 SWIG_LONG_CONSTANT(ZXID_OIDC1_ID_TOK_TOK, 9);
+SWIG_LONG_CONSTANT(ZXID_FBC_CODE, 10);
 SWIG_LONG_CONSTANT(ZXID_SLO_SVC, 1);
 SWIG_LONG_CONSTANT(ZXID_MNI_SVC, 2);
 SWIG_LONG_CONSTANT(ZXID_ACS_SVC, 3);
@@ -47044,6 +47387,7 @@ SWIG_STRING_CONSTANT(SAML2_POST, "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
 SWIG_STRING_CONSTANT(SAML2_POST_SIMPLE_SIGN, "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign");
 SWIG_STRING_CONSTANT(SAML2_URI, "urn:oasis:names:tc:SAML:2.0:bindings:URI");
 SWIG_STRING_CONSTANT(OAUTH2_REDIR, "urn:zxid:OAUTH:2.0:bindings:HTTP-Redirect");
+SWIG_STRING_CONSTANT(FBC28_REDIR, "urn:fbc:2.8:bindings:HTTP-Redirect");
 SWIG_STRING_CONSTANT(SAML2_AP_BASIC, "urn:oasis:names:tc:SAML:2.0:profiles:attribute:basic");
 SWIG_STRING_CONSTANT(SAML2_AP_X500, "urn:oasis:names:tc:SAML:2.0:profiles:attribute:X500");
 SWIG_STRING_CONSTANT(SAML2_AP_UUID, "urn:oasis:names:tc:SAML:2.0:profiles:attribute:UUID");

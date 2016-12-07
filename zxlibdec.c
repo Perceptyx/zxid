@@ -452,12 +452,13 @@ static int zx_attr_lookup(struct zx_ctx* c, struct zx_elem_s* x)
       zx_xmlns_detected(c, x, data);
       return ZX_TOK_XMLNS;
     }
-    /* Most attributes are namespaceless (or have containing element's namespace). */
+    /* Most attributes are namespaceless (or have containing element's namespace implied). */
   }
   
   attr->g.n = &x->attr->g;
   x->attr = attr;
   zt = zx_attr2tok(name, lim-name);
+  D("attr(%.*s)(%d)=(%.*s)", (int)(lim-name), name, zt?(int)(zt - zx_at_tab):0, (int)attr->g.len, STRNULLCHKQ(attr->g.s));
   if (zt)
     return attr->g.tok |= (zt - zx_at_tab);
   return attr->g.tok |= ZX_TOK_ATTR_NOT_FOUND;

@@ -1,6 +1,6 @@
 /* zxidmeta.c  -  Handwritten functions for metadata parsing and generation as well as CoT handling
  * Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011, 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -27,6 +27,7 @@
  * 10.12.2011, added OAuth2, OpenID Connect, and UMA support --Sampo
  * 11.12.2011, added OrganizationURL support per symlabs-saml-displayname-2008.pdf submitted to OASIS SSTC --Sampo
  * 6.2.2012,   corrected the OrganizationURL to be absolute --Sampo
+ * 4.12.2016,  corrected error path where underlying buffer of zxid_entity would be freed --Sampo
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -145,15 +146,14 @@ static zxid_entity* zxid_mk_ent(zxid_conf* cf, struct zx_md_EntityDescriptor_s* 
     zxid_process_keys(cf, ent, ed->SPSSODescriptor->KeyDescriptor, "SP SSO");
 
   if (!ent->sign_cert && !ent->enc_cert) {
-    ERR("Metadata did not have any certificates! Incomplete metadata? %d",0);
+    ERR("Metadata did not have any certificates! Incomplete metadata? %p", ent);
   } else if (!ent->sign_cert) {
-    INFO("Metadata only had encryption certificate. Using it for signing as well. %d", 0);
+    INFO("Metadata only had encryption certificate. Using it for signing as well. %p", ent);
     ent->sign_cert = ent->enc_cert;
   } else if (!ent->enc_cert) {
-    INFO("Metadata only had signing certificate. Using it for encryption as well. %d", 0);
+    INFO("Metadata only had signing certificate. Using it for encryption as well. %p", ent);
     ent->enc_cert = ent->sign_cert;
   }
-
   return ent;
  bad_md:
   ERR("Bad metadata. EntityDescriptor was corrupt. %d", 0);
@@ -163,7 +163,10 @@ static zxid_entity* zxid_mk_ent(zxid_conf* cf, struct zx_md_EntityDescriptor_s* 
 
 /*() Parse Metadata, see [SAML2meta]. This function is quite low level
  * and assumes it is processing a buffer (which may contain multiple
- * instances of various metadata).
+ * instances of various metadata). The returned data structure is
+ * allocated from the heap, but the references strings will point
+ * to within the buffer. Thus the underling buffes should not be
+ * freed before the data structures that point to it are freed.
  *
  * cf:: ZXID configuration object, used here mainly for memory allocation
  * md:: Value-result parameter. Pointer to char pointer pointing to the
@@ -174,13 +177,17 @@ static zxid_entity* zxid_mk_ent(zxid_conf* cf, struct zx_md_EntityDescriptor_s* 
  *     one EntityDescriptor is found, then a linked list is returned. */
 
 /* Called by:  zxid_addmd, zxid_get_ent_file, zxid_get_meta, zxid_lscot_line */
-zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim)
+zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim, int iter)
 {
   zxid_entity* ee;
   zxid_entity* ent;
   struct zx_md_EntityDescriptor_s* ed;
   struct zx_root_s* r;
 
+  if (!(lim-*md)) {
+    D("Nothing to parse %p-%p", lim, *md);
+    return 0;
+  }
   r = zx_dec_zx_root(cf->ctx, lim-*md, *md, "parse meta");  /* *** n_decode=5 */
   *md = (char*)cf->ctx->p;
   if (!r)
@@ -207,8 +214,10 @@ zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim)
     return ee;
   }
  bad_md:
-  ERR("Bad metadata. EntityDescriptor could not be found or was corrupt. MD(%.*s) %d chars parsed.", ((int)(lim-cf->ctx->bas)), cf->ctx->bas, ((int)(*md - cf->ctx->bas)));
-  zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "BADMD", 0, "chars_parsed(%d)", ((int)(*md - cf->ctx->bas)));
+  if (!iter || (*md - cf->ctx->bas)) {
+    ERR("Bad metadata. No EntityDescriptor could not be found or was corrupt. MD(%.*s) %d chars parsed. %p", ((int)(lim-cf->ctx->bas)), cf->ctx->bas, ((int)(*md - cf->ctx->bas)), r->EntitiesDescriptor);
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "BADMD", 0, "chars_parsed(%d)", ((int)(*md - cf->ctx->bas)));
+  }
   zx_free_elem(cf->ctx, &r->gg, 0);
   return 0;
 }
@@ -281,16 +290,17 @@ zxid_entity* zxid_get_ent_file(zxid_conf* cf, const char* sha1_name, const char*
   DD("md_buf(%.*s) got=%d siz=%d sha1_name(%s)", got, md_buf, got, siz, sha1_name);
   
   p = md_buf;
-  while (p < md_buf+got) {   /* Loop over concatenated descriptors. */
-    ent = zxid_parse_meta(cf, &p, md_buf+got);
+  for (n = 0; p < md_buf+got; ++n) {   /* Loop over concatenated descriptors. */
+    ent = zxid_parse_meta(cf, &p, md_buf+got, n);
     if (!first)
       first = ent;
     DD("++++++++++++sha1_name(%s)", sha1_name);
     if (!ent) {
-      ZX_FREE(cf->ctx, md_buf);
-      ERR("%s: ***** Parsing metadata failed for sha1_name(%s)", logkey, sha1_name);
+      /* ZX_FREE(cf->ctx, md_buf);  DO NOT FREE as first may still refer to it. */
+      ERR("%s: ***** Parsing metadata failed for sha1_name(%s) first=%p", logkey, sha1_name, first);
       return first;
     }
+    D("GOT META sha1_name(%s) eid(%s)", sha1_name, ent?ent->eid:"?");
     LOCK(cf->mx, "add ent to cot");
     while (ent) {
       ee = ent->n;
@@ -299,8 +309,9 @@ zxid_entity* zxid_get_ent_file(zxid_conf* cf, const char* sha1_name, const char*
       ent = ee;
     }
     UNLOCK(cf->mx, "add ent to cot");
-    D("GOT META sha1_name(%s) eid(%s)", sha1_name, ent?ent->eid:"?");
   }
+  /* N.B. md_buf never freed as the entity data structures point inside it.
+   * This is a deliberate leak. */
   return first;
 
 readerr:
@@ -869,6 +880,7 @@ struct zx_attr_s* zxid_my_ent_id_attr(zxid_conf* cf, struct zx_elem_s* father, i
   }
 }
 
+#if 0
 /*() Dynamically determine our Common Domain Cookie (IdP discovery) URL. */
 
 /* Called by: */
@@ -876,6 +888,7 @@ struct zx_str* zxid_my_cdc_url(zxid_conf* cf)
 {
   return zx_strf(cf->ctx, "%s?o=C", cf->cdc_url);
 }
+#endif
 
 /*() Generate Issuer value. Issuer is often same as Entity ID, but sometimes
  * it will be affiliation ID. This function is a low level interface. Usually

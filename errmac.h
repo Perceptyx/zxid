@@ -1,6 +1,6 @@
 /* errmac.h  -  Utility, debugging, and error checking macros
  *
- * Copyright (c) 1998,2001,2006,2010-2014 Sampo Kellomaki <sampo@iki.fi>, All Rights Reserved.
+ * Copyright (c) 1998,2001,2006,2010-2016 Sampo Kellomaki <sampo@iki.fi>, All Rights Reserved.
  * Copyright (c) 2001-2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * This is free software and comes with NO WARRANTY. Licensed under Apache2 license.
  * $Id$
@@ -205,7 +205,7 @@ extern int trace;   /* this gets manipulated by -v or similar flag */
 #define OAEP_LEN 41 /* Overhead of PKCS#1 v2.0 OAEP padding */
 
 /* Perform URL conversion in place
- *   src = dst = buffer_where_data_is;
+ *   src = dst = buf; // where data is
  *   URL_DECODE(src,dst,buf+sizeof(buf));
  *   *dst = 0;   // nul terminate
  *   len = dst - buf;

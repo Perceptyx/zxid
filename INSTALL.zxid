@@ -11,7 +11,10 @@ Quick
 
 These instructions are for the impatient. See 
 <<link:html/zxid-install.html: ZXID Compilation and Installation>>
-aka zxid-install.pd for the complete story.
+aka zxid-install.pd for the complete story. In particular, if
+you made a git clone you will not have the pregenerated files
+that are included in the tar balls and you will need to follow
+section 5 "Compilation for Experts" in zxid-install.pd (or .html).
 
 If you want to try ZXID out immediately, we recommend compiling the
 library and examples and installing one of the examples as a CGI
@@ -207,7 +210,8 @@ Trouble Shooting
 ----------------
 
   # N.B2: We distribute some generated files. If they are missing, you need
-  #       to regenerate them: make cleaner; make dep ENA_GEN=1
+  #       to regenerate them: make cleaner; make dep ENA_GEN=1, see
+  #       section 5 "Compilation for Experts" in zxid-install.pd (or .html)
 
   make dir                # Creates /var/zxid hierarchy
 

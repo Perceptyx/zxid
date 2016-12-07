@@ -60,6 +60,7 @@ int zxid_pick_sso_profile(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta)
   switch (cgi->pr_ix) {
   case ZXID_OIDC1_CODE:       return ZXID_OIDC1_CODE;
   case ZXID_OIDC1_ID_TOK_TOK: return ZXID_OIDC1_ID_TOK_TOK;
+  case ZXID_FBC_CODE:         return ZXID_FBC_CODE;
   }
   /* More sophisticated policy may eventually go here. */
   return ZXID_SAML2_ART;
@@ -174,6 +175,23 @@ void zxid_sso_set_relay_state_to_return_to_this_url(zxid_conf* cf, zxid_cgi* cgi
   }
 }
 
+/*() Scan through the SSO svc list to find the entry that matches the binding.
+ * Returns NULL if none match. */
+
+static struct zx_md_SingleSignOnService_s* zxid_search_idp_sso_desc(zxid_entity* idp_meta, const char* binding)
+{
+  struct zx_md_SingleSignOnService_s* sso_svc;
+  for (sso_svc = idp_meta->ed->IDPSSODescriptor->SingleSignOnService;
+       sso_svc;
+       sso_svc = (struct zx_md_SingleSignOnService_s*)sso_svc->gg.g.n) {
+    if (sso_svc->gg.g.tok != zx_md_SingleSignOnService_ELEM)
+      continue;
+    if (sso_svc->Binding && !memcmp(binding, sso_svc->Binding->g.s, sso_svc->Binding->g.len))
+      break;
+  }
+  return sso_svc;
+}
+
 /*(i) Generate an authentication request and make a URL out of it.
  *
  * cf::     Used for many configuration options and memory allocation
@@ -201,7 +219,8 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
     return 0;
   }
   idp_meta = zxid_get_ent(cf, cgi->eid);
-  if (!idp_meta) {
+  if (!idp_meta || !idp_meta->ed) {
+    ERR("IdP URL incorrect or IdP does not support fetching metadata from that URL. %p", idp_meta);
     cgi->err = "IdP URL incorrect or IdP does not support fetching metadata from that URL.";
     D_DEDENT("start_sso: ");
     return 0;
@@ -218,14 +237,7 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
       D_DEDENT("start_sso: ");
       return 0;
     }
-    for (sso_svc = idp_meta->ed->IDPSSODescriptor->SingleSignOnService;
-	 sso_svc;
-	 sso_svc = (struct zx_md_SingleSignOnService_s*)sso_svc->gg.g.n) {
-      if (sso_svc->gg.g.tok != zx_md_SingleSignOnService_ELEM)
-	continue;
-      if (sso_svc->Binding && !memcmp(SAML2_REDIR, sso_svc->Binding->g.s, sso_svc->Binding->g.len))
-	break;
-    }
+    sso_svc = zxid_search_idp_sso_desc(idp_meta, SAML2_REDIR);
     if (!sso_svc) {
       ERR("IdP Entity(%s) does not have any IdP SSO Service with " SAML2_REDIR " binding (metadata problem)", cgi->eid);
       zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No redir binding");
@@ -233,13 +245,14 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
       D_DEDENT("start_sso: ");
       return 0;
     }
-    DD("HERE3 len=%d (%.*s)", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s);
+    DD("HERE3a len=%d (%.*s)", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s);
     ar = zxid_mk_authn_req(cf, cgi);
     dest = zx_dup_len_attr(cf->ctx, 0, zx_Destination_ATTR, sso_svc->Location->g.len, sso_svc->Location->g.s);
     ZX_ORD_INS_ATTR(ar, Destination, dest);
     ars = zx_easy_enc_elem_opt(cf, &ar->gg);
     D("AuthnReq(%.*s) %p", ars->len, ars->s, dest);
     break;
+
   case ZXID_OIDC1_CODE:
   case ZXID_OIDC1_ID_TOK_TOK:
     if (!idp_meta->ed->IDPSSODescriptor) {
@@ -249,14 +262,7 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
       D_DEDENT("start_sso: ");
       return 0;
     }
-    for (sso_svc = idp_meta->ed->IDPSSODescriptor->SingleSignOnService;
-	 sso_svc;
-	 sso_svc = (struct zx_md_SingleSignOnService_s*)sso_svc->gg.g.n) {
-      if (sso_svc->gg.g.tok != zx_md_SingleSignOnService_ELEM)
-	continue;
-      if (sso_svc->Binding && !memcmp(OAUTH2_REDIR,sso_svc->Binding->g.s,sso_svc->Binding->g.len))
-	break;
-    }
+    sso_svc = zxid_search_idp_sso_desc(idp_meta, OAUTH2_REDIR);
     if (!sso_svc) {
       ERR("IdP Entity(%s) does not have any IdP SSO Service with " OAUTH2_REDIR " binding (metadata problem)", cgi->eid);
       zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No OAUTH2 redir binding");
@@ -264,13 +270,39 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
       D_DEDENT("start_sso: ");
       return 0;
     }
-    DD("HERE3 len=%d (%.*s)", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s);
+    DD("HERE3b len=%d (%.*s)", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s);
     if (cf->log_level>0)
       zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "OANREDIR", cgi->eid, 0);
-    ars = zxid_mk_oauth_az_req(cf, cgi, &sso_svc->Location->g, cgi->rs);
+    ars = zxid_mk_oauth_az_req(cf, cgi, idp_meta, &sso_svc->Location->g);
 
     D_DEDENT("start_sso: ");
     return ars;
+
+  case ZXID_FBC_CODE:  /* Facebook Connect 2.8, based on OAUTH2 but different */
+    if (!idp_meta->ed->IDPSSODescriptor) {
+      ERR("Entity(%s) does not have IdP SSO Descriptor (FBC) (metadata problem)", cgi->eid);
+      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor (FBC)");
+      cgi->err = "Bad IdP metadata (FBC). Try different IdP.";
+      D_DEDENT("start_sso: ");
+      return 0;
+    }
+    sso_svc = zxid_search_idp_sso_desc(idp_meta, FBC28_REDIR);
+    if (!sso_svc) {
+      ERR("IdP Entity(%s) does not have any IdP SSO Service with " FBC28_REDIR " binding (metadata problem)", cgi->eid);
+      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No FBC redir binding");
+      cgi->err = "Bad IdP metadata. Try different IdP.";
+      D_DEDENT("start_sso: ");
+      return 0;
+    }
+    D("HERE3 len=%d (%.*s) %p %p", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s, &sso_svc->Location->g, sso_svc->Location->g.s);
+    if (cf->log_level>0)
+      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "FBCREDIR", cgi->eid, 0);
+    D("HERE4 len=%d (%.*s) %p %p", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s, &sso_svc->Location->g, sso_svc->Location->g.s);
+    ars = zxid_mk_fbc_az_req(cf, cgi, idp_meta, &sso_svc->Location->g);
+
+    D_DEDENT("start_sso: ");
+    return ars;
+
   default:
     NEVER("Inappropriate SSO profile: %d", sso_profile_ix);
     cgi->err = "Inappropriate SSO profile. Bad metadata?";

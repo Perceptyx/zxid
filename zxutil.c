@@ -1,6 +1,6 @@
 /* zxutil.c  -  Utility functions
  * Copyright (c) 2012-2013 Synergetics (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -16,6 +16,7 @@
  * 17.8.2012, added socket specific utilities --Sampo
  * 21.6.2013, added wild card matcher --Sampo
  * 30.11.2013, fixed read 1 past end in base64_fancy_raw() found by valgrind --Sampo
+ * 4.12.2016, added tolerance for ...&name&... cgi arg meaning arg without value (FB) --Sampo
  */
 
 #include "platform.h"
@@ -969,7 +970,7 @@ char* zx_zlib_raw_deflate(struct zx_ctx* c, int in_len, const char* in, int* out
  * c:: zx context for allocation
  * len:: Length of string to process, or -2 to use strlen()
  * s:: String to compress and ascii armour
- * return:: string that has been allocated from zx_ctx. Caller frees. */
+ * return:: string that has been allocated from zx_ctx. Nul terminated. Caller frees. */
 
 /* Called by:  zxid_deflate_safe_b64, zxid_mk_oauth_az_req, zxid_parse_cgi, zxid_simple_show_idp_sel */
 char* zxid_deflate_safe_b64_raw(struct zx_ctx* c, int len, const char* s)
@@ -1164,7 +1165,8 @@ char* zx_url_encode_raw(int in_len, const char* in, char* out)
 /*() Perform URL encoding on buffer. New output buffer is allocated.
  * The low level work is performed by zx_url_encode_raw().
  * Returns the length of the output string (not including nul termination,
- * but nul termination is actually allocated and made).
+ * but nul termination is actually allocated and made). If in_len is
+ * specified as -2, strlen(3) is used to determine the length of the string.
  *
  * N.B. For zx_url_decode() operation see URL_DECODE() macro in errmac.h */
 
@@ -1211,8 +1213,8 @@ char* zx_mk_basic_auth_b64(struct zx_ctx* c, const char* uid, const char* pw)
  * url_decode_val_flag:: 0 = do not decode, 1 = always decode, 2 = decode except SAMLResponse
  * return:: pointer to beginning of the next name (one past the ampersand ending the
  *     previous val, i.e. the nul, unless URL decode made the val shorter)
- *     or to the end of string nul (if nul, outer parsing
- *     loop should terminate). Any error causes null pointer to be returned.
+ *     or to the end of string nul (if nul, outer parsing loop (caller)
+ *     should terminate). Any error causes null pointer to be returned.
  *
  * Typical invocation pattern:
  *
@@ -1241,7 +1243,7 @@ again:
     
   if (*qs == '#') {                              /* Comment line */
 scan_end:
-    qs += strcspn(qs, "&\n\r"); /* Scan until '&' or end of line */
+    qs += strcspn(qs, "&\n\r");                  /* Scan until '&' or end of line */
     goto again;
   }
 
@@ -1253,18 +1255,30 @@ scan_end:
     return 0;
   
   *name = qs;
+#if 1
+  qs += strcspn(qs, "=&\n\r");                   /* Scan name (until '=' or '&' - FB anomaly) */
+  if (!*qs)
+    return 0;
+#else
   qs = strchr(qs, '=');                          /* Scan name (until '=') */
   if (!qs)
     return 0;
+#endif
   if (qs == *name)                               /* Key was an empty string: skip it */
     goto scan_end;
   for (; *name < qs && **name <= ' '; ++*name) ; /* Skip over initial whitespace before name */
   p = q = *name;
+  DD("A p(%s)=%p q(%s)=%p *name(%s)=%p qs(%s)=%p", p, p, q, q, *name, *name, qs, qs);
   URL_DECODE(p, q, qs);                          /* In place mod of name */
-  *p = 0;                                        /* Nul-term *name */
 
-  *val = ++qs;                /* Skip over =    */
-  qs += strcspn(qs, "&\n\r"); /*   and scan val */
+  if (*qs == '=') {
+    *qs = 0;                  /* Nul-term *name */
+    ++qs;                     /* Skip over = */
+  }
+  *val = qs;                  /*  set and    */
+  qs += strcspn(qs, "&\n\r"); /*   scan val  */
+
+  DD("B p(%s)=%p q(%s)=%p *name(%s)=%p *val(%s)=%p qs(%s)=%p", p, p, q, q, *name, *name, *val, *val, qs, qs);
 
   switch (url_decode_val_flag) {
   case 0: p = qs; break;      /* 0 = do not decode */

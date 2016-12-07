@@ -24,7 +24,7 @@
  * config file or on command line you should omit the ZXID_ prefix
  * and use attribute=value syntax separated by newlines or & characters
  * (the parser implements CGI query string syntax with extension that
- * also \n is accepted as separator).
+ * also \n is accepted as a separator).
  *
  * N.B. The options marked as "(compile)" can not be set on command line
  * or configuration file. They require a recompile.
@@ -88,7 +88,7 @@
 
 /*(c) INCLUDE=file  - Include a file into configuration.
  * This is an alternative to VPATH and inheritance for implementing multiple
- * entities that share some common configutation, e.g. CONTACT metadata items. */
+ * entities that share some common configuration, e.g. CONTACT metadata items. */
 
 #define ZXID_INCLUDE 0 /* path */
 

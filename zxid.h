@@ -451,6 +451,8 @@ struct zxid_cgi {
   char* response_type; /* OAuth2 / OpenID-Connect (OIDC1), used to detect An/Az req */
   char* client_id;     /* OAuth2 */
   char* scope;         /* OAuth2 */
+  char* denied_scopes; /* OAuth2, FBC */
+  char* granted_scopes; /* OAuth2, FBC */
   char* redirect_uri;  /* OAuth2, also decoded RelayState in SAML */
   char* nonce;         /* OAuth2 */
   char* state;         /* OAuth2 (like SAML RelayState) */
@@ -539,6 +541,7 @@ struct zxid_ses {
   zxid_epr* deleg_di_epr;  /* If set, see zxid_set_delegated_discovery_epr(), used for disco. */
   zxid_fault* curflt;      /* SOAP fault, if any, reported by zxid_wsp_validate() */
   zxid_tas3_status* curstatus;  /* TAS3 status header, if any. */
+  zxid_entity* issuer_meta;
   struct zx_str* issuer; /* WSP processing: the content of Sender header of request */
   struct timeval srcts;  /* WSP processing: the timestamp of the request */
   char* sesbuf;
@@ -862,7 +865,7 @@ ZXID_DECL char* zxbus_listen_msg(zxid_conf* cf, struct zxid_bus_url* bu);
 ZXID_DECL zxid_entity* zxid_get_ent_file(zxid_conf* cf, const char* sha1_name, const char* logkey);
 ZXID_DECL zxid_entity* zxid_get_ent_cache(zxid_conf* cf, struct zx_str* eid);
 ZXID_DECL int zxid_write_ent_to_cache(zxid_conf* cf, zxid_entity* ent);
-ZXID_DECL zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim);
+  ZXID_DECL zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim, int iter);
 ZXID_DECL zxid_entity* zxid_get_meta_ss(zxid_conf* cf, struct zx_str* url);
 ZXID_DECL zxid_entity* zxid_get_meta(zxid_conf* cf, const char* url);
 ZXID_DECL zxid_entity* zxid_get_ent_ss(zxid_conf* cf, struct zx_str* eid);
@@ -1032,7 +1035,8 @@ ZXID_DECL struct zx_sp_Status_s* zxid_OK(zxid_conf* cf, struct zx_elem_s* father
 
 /* zxidoauth */
 
-ZXID_DECL struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str* loc, char* relay_state);
+ZXID_DECL struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc);
+ZXID_DECL struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc);
 ZXID_DECL char* zxid_mk_jwks(zxid_conf* cf);
 ZXID_DECL char* zxid_mk_oauth2_dyn_cli_reg_req(zxid_conf* cf);
 ZXID_DECL char* zxid_mk_oauth2_dyn_cli_reg_res(zxid_conf* cf, zxid_cgi* cgi);
@@ -1202,6 +1206,7 @@ ZXID_DECL char* zxid_get_idpnid_at_eid(zxid_conf* cf, const char* uid, const cha
 #define ZXID_SAML2_URI 7
 #define ZXID_OIDC1_CODE 8
 #define ZXID_OIDC1_ID_TOK_TOK 9
+#define ZXID_FBC_CODE 10
 
 /* Service enumerators */
 

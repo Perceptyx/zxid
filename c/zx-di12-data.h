@@ -832,7 +832,7 @@ void zx_di12_ResourceID_PUT_id(struct zx_di12_ResourceID_s* x, struct zx_attr_s*
 
 #endif
 /* -------------------------- di12_ResourceOffering -------------------------- */
-/* refby( zx_di12_QueryResponse_s zx_di12_InsertEntry_s zx_sa_AttributeValue_s zx_sa11_AttributeValue_s ) */
+/* refby( zx_di12_QueryResponse_s zx_sa11_AttributeValue_s zx_sa_AttributeValue_s zx_di12_InsertEntry_s ) */
 #ifndef zx_di12_ResourceOffering_EXT
 #define zx_di12_ResourceOffering_EXT
 #endif
@@ -973,7 +973,7 @@ void zx_di12_ServiceInstance_REV_Description(struct zx_di12_ServiceInstance_s* x
 
 #endif
 /* -------------------------- di12_Status -------------------------- */
-/* refby( zx_di12_QueryResponse_s zx_di12_Status_s zx_di12_ModifyResponse_s ) */
+/* refby( zx_di12_Status_s zx_di12_QueryResponse_s zx_di12_ModifyResponse_s ) */
 #ifndef zx_di12_Status_EXT
 #define zx_di12_Status_EXT
 #endif

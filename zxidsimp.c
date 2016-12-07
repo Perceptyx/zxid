@@ -1,6 +1,6 @@
 /* zxidsimp.c  -  Handwritten zxid_simple() API
  * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -28,6 +28,8 @@
  * 1.4.2015,  fixed skin based template path in case it does not have directory --Sampo
  * 6.3.2016,  eliminated some commented out code --Sampo 
  * 16.4.2016, fixed premature nul termination in Location redirects, added cookies ot redirects --Sampo
+ * 8.10.2016, added possibility of specifying default skin in configuration --Sampo
+ * 1.12.2016, added generation of OAUTH2 state --Sampo
  *
  * Login button abbreviations
  * A2 = SAML 2.0 Artifact Profile
@@ -295,14 +297,14 @@ static const char* zxid_map_bangbang(zxid_conf* cf, zxid_cgi* cgi, const char* k
     if (BBMATCH("BURL", key, lim)) return cf->burl;
     break;
   case 'D':
-    if (BBMATCH("DBG", key, lim)) return cgi->dbg;
+    if (BBMATCH("DBG", key, lim))  return cgi->dbg;
     break;
   case 'E':
-    if (BBMATCH("EID", key, lim)) return zxid_my_ent_id_cstr(cf);
-    if (BBMATCH("ERR", key, lim)) return cgi->err;
+    if (BBMATCH("EID", key, lim))  return zxid_my_ent_id_cstr(cf);
+    if (BBMATCH("ERR", key, lim))  return cgi->err;
     break;
   case 'F':
-    if (BBMATCH("FR", key, lim)) return zxid_unbase64_inflate(cf->ctx, -2, cgi->rs, 0);
+    if (BBMATCH("FR", key, lim))   return zxid_unbase64_inflate(cf->ctx, -2, cgi->rs, 0);
     break;
   case 'I':
     if (BBMATCH("IDP_LIST", key, lim)) return zxid_idp_list_cf_cgi(cf, cgi, 0, auto_flags);
@@ -320,29 +322,30 @@ static const char* zxid_map_bangbang(zxid_conf* cf, zxid_cgi* cgi, const char* k
     }
     break;
   case 'M':
-    if (BBMATCH("MSG", key, lim)) return cgi->msg;
+    if (BBMATCH("MSG", key, lim))  return cgi->msg;
     break;
   case 'U':
-    if (BBMATCH("URL", key, lim)) return cf->burl;
+    if (BBMATCH("URL", key, lim))  return cf->burl;
     break;
   case 'R':
-    if (BBMATCH("RS", key, lim)) return cgi->rs;
+    if (BBMATCH("RS", key, lim))   return cgi->rs;
     break;
   case 'S':
     if (BBMATCH("SKIN", key, lim)) return cgi->skin;
-    if (BBMATCH("SIG", key, lim)) return cgi->sig;
-    if (BBMATCH("SP_EID", key, lim)) return cgi->sp_eid;
-    if (BBMATCH("SP_DPY_NAME", key, lim)) return cgi->sp_dpy_name;
+    if (BBMATCH("SIG", key, lim))  return cgi->sig;
+    if (BBMATCH("SP_EID", key, lim))    return cgi->sp_eid;
+    if (BBMATCH("SP_DPY_NAME", key, lim))   return cgi->sp_dpy_name;
     if (BBMATCH("SP_BUTTON_URL", key, lim)) return cgi->sp_button_url;
-    if (BBMATCH("SSOREQ", key, lim)) return cgi->ssoreq;
-    if (BBMATCH("SAML_ART", key, lim)) return cgi->saml_art;
+    if (BBMATCH("SSOREQ", key, lim))    return cgi->ssoreq;
+    if (BBMATCH("STATE", key, lim))     return cgi->state;
+    if (BBMATCH("SAML_ART", key, lim))  return cgi->saml_art;
     if (BBMATCH("SAML_RESP", key, lim)) return cgi->saml_resp;
     break;
   case 'V':
     if (BBMATCH("VERSION", key, lim)) return zxid_version_str();
     break;
   case 'Z':
-    if (BBMATCH("ZXAPP", key, lim)) return cgi->zxapp;
+    if (BBMATCH("ZXAPP", key, lim))   return cgi->zxapp;
     break;
   }
   D("Unmatched bangbang key(%.*s), taken as empty.", ((int)(lim-key)), key);
@@ -425,7 +428,16 @@ struct zx_str* zxid_template_page_cf(zxid_conf* cf, zxid_cgi* cgi, const char* t
 
 /*(i) Generate IdP selection buttons (Login buttons) for the IdPs that are
  * members of our Circle of Trust (CoT). This can be used as component for
- * developing your application specific (HTML) login screen.
+ * developing your application specific (HTML) login screen. For example,
+ * in the IDP_SEL_TEML (default idpsel.html) template you can use bangbang
+ * macro expansions such as !!IDP_LIST, !!IDP_BRAND, !!IDP_BUTTON,
+ * or !!IDP_POPUP to generate htnl for user interface. All these are generated
+ * by this function with some variation in the arguments.
+ *
+ * If, however, you choose, you can also handcraft the login buttons manually as
+ * long as they have the equivalent content. Study this code to see what is needed.
+ *
+ * See also: zxid_idp_select() family of functions for rendering entire IdP selection page.
  *
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 
@@ -577,6 +589,8 @@ char* zxid_idp_list(char* conf, int auto_flags) {
 /*(i) Render entire IdP selection screen. You may use this code, possibly adjusted
  * by some configuration options (see zxidconf.h), or you may choose to develop
  * your own IdP selection screen from scratch.
+ *
+ * See also: zxid_idp_list_cf_cgi()
  *
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 
@@ -990,8 +1004,8 @@ int zxid_decode_ssoreq(zxid_conf* cf, zxid_cgi* cgi)
     return 0;
   cgi->op = 0;
   D("ar/ssoreq decoded(%s) len=%d", p, len);
-  zxid_parse_cgi(cf, cgi, p);  /* cgi->op will be Q due to SAMLRequest inside ssoreq */
-  cgi->op = 'F';
+  zxid_parse_cgi(cf, cgi, p);
+  cgi->op = 'F';  /* cgi->op will be Q due to SAMLRequest inside ssoreq */
   return 1;
 }
 
@@ -1625,7 +1639,7 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
     }
     break;
   case 'A':
-    D("Process artifact(%s) pid=%d", cgi->saml_art, getpid());
+    D("Process artifact(%s)", cgi->saml_art);
     switch (zxid_sp_deref_art(cf, cgi, ses)) {
     case ZXID_REDIR_OK: ERR("*** Odd, redirect on artifact deref. %d", 0); break;
     case ZXID_SSO_OK:
@@ -1633,11 +1647,11 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
     }
     break;
   case 'O':
-    D("Process OAUTH2 / OpenID-Connect1 pid=%d", getpid());
+    D("Process OAUTH2 / OpenID-Connect1 %d", 0);
     ss = zxid_sp_oauth2_dispatch(cf, cgi, ses);
     goto post_dispatch;
   case 'T':
-    D("Process OAUTH2 / OpenID-Connect1 check id pid=%d", getpid());
+    D("Process OAUTH2 / OpenID-Connect1 check id %d", 0);
     return zxid_idp_oauth2_token_and_check_id(cf, cgi, ses, res_len, auto_flags);
   case 'P':    /* POST Profile Responses */
   case 'I':

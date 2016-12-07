@@ -232,7 +232,7 @@ void zx_md_AssertionConsumerService_PUT_isDefault(struct zx_md_AssertionConsumer
 
 #endif
 /* -------------------------- md_AssertionIDRequestService -------------------------- */
-/* refby( zx_md_AttributeAuthorityDescriptor_s zx_md_IDPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_PDPDescriptor_s ) */
+/* refby( zx_md_IDPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_AttributeAuthorityDescriptor_s zx_md_PDPDescriptor_s ) */
 #ifndef zx_md_AssertionIDRequestService_EXT
 #define zx_md_AssertionIDRequestService_EXT
 #endif
@@ -300,7 +300,9 @@ struct zx_md_AttributeAuthorityDescriptor_s {
   struct zx_attr_s* ID;	/* {0,1} attribute xs:ID */
   struct zx_attr_s* cacheDuration;	/* {0,1} attribute xs:duration */
   struct zx_attr_s* errorURL;	/* {0,1} attribute xs:anyURI */
+  struct zx_attr_s* graphURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* protocolSupportEnumeration;	/* {1,1} attribute xs:string */
+  struct zx_attr_s* tokenURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* validUntil;	/* {0,1} attribute xs:dateTime */
 };
 
@@ -319,7 +321,9 @@ int zx_WALK_WO_md_AttributeAuthorityDescriptor(struct zx_ctx* c, struct zx_md_At
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_ID(struct zx_md_AttributeAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_cacheDuration(struct zx_md_AttributeAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_errorURL(struct zx_md_AttributeAuthorityDescriptor_s* x);
+struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_graphURL(struct zx_md_AttributeAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_protocolSupportEnumeration(struct zx_md_AttributeAuthorityDescriptor_s* x);
+struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_tokenURL(struct zx_md_AttributeAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_validUntil(struct zx_md_AttributeAuthorityDescriptor_s* x);
 
 struct zx_ds_Signature_s* zx_md_AttributeAuthorityDescriptor_GET_Signature(struct zx_md_AttributeAuthorityDescriptor_s* x, int n);
@@ -369,7 +373,9 @@ void zx_md_AttributeAuthorityDescriptor_PUSH_Attribute(struct zx_md_AttributeAut
 void zx_md_AttributeAuthorityDescriptor_PUT_ID(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AttributeAuthorityDescriptor_PUT_cacheDuration(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AttributeAuthorityDescriptor_PUT_errorURL(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_AttributeAuthorityDescriptor_PUT_graphURL(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AttributeAuthorityDescriptor_PUT_protocolSupportEnumeration(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_AttributeAuthorityDescriptor_PUT_tokenURL(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AttributeAuthorityDescriptor_PUT_validUntil(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y);
 
 void zx_md_AttributeAuthorityDescriptor_PUT_Signature(struct zx_md_AttributeAuthorityDescriptor_s* x, int n, struct zx_ds_Signature_s* y);
@@ -550,7 +556,9 @@ struct zx_md_AuthnAuthorityDescriptor_s {
   struct zx_attr_s* ID;	/* {0,1} attribute xs:ID */
   struct zx_attr_s* cacheDuration;	/* {0,1} attribute xs:duration */
   struct zx_attr_s* errorURL;	/* {0,1} attribute xs:anyURI */
+  struct zx_attr_s* graphURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* protocolSupportEnumeration;	/* {1,1} attribute xs:string */
+  struct zx_attr_s* tokenURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* validUntil;	/* {0,1} attribute xs:dateTime */
 };
 
@@ -569,7 +577,9 @@ int zx_WALK_WO_md_AuthnAuthorityDescriptor(struct zx_ctx* c, struct zx_md_AuthnA
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_ID(struct zx_md_AuthnAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_cacheDuration(struct zx_md_AuthnAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_errorURL(struct zx_md_AuthnAuthorityDescriptor_s* x);
+struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_graphURL(struct zx_md_AuthnAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_protocolSupportEnumeration(struct zx_md_AuthnAuthorityDescriptor_s* x);
+struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_tokenURL(struct zx_md_AuthnAuthorityDescriptor_s* x);
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_validUntil(struct zx_md_AuthnAuthorityDescriptor_s* x);
 
 struct zx_ds_Signature_s* zx_md_AuthnAuthorityDescriptor_GET_Signature(struct zx_md_AuthnAuthorityDescriptor_s* x, int n);
@@ -611,7 +621,9 @@ void zx_md_AuthnAuthorityDescriptor_PUSH_NameIDFormat(struct zx_md_AuthnAuthorit
 void zx_md_AuthnAuthorityDescriptor_PUT_ID(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AuthnAuthorityDescriptor_PUT_cacheDuration(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AuthnAuthorityDescriptor_PUT_errorURL(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_AuthnAuthorityDescriptor_PUT_graphURL(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AuthnAuthorityDescriptor_PUT_protocolSupportEnumeration(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_AuthnAuthorityDescriptor_PUT_tokenURL(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_AuthnAuthorityDescriptor_PUT_validUntil(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y);
 
 void zx_md_AuthnAuthorityDescriptor_PUT_Signature(struct zx_md_AuthnAuthorityDescriptor_s* x, int n, struct zx_ds_Signature_s* y);
@@ -748,7 +760,7 @@ void zx_md_AuthzService_PUT_isDefault(struct zx_md_AuthzService_s* x, struct zx_
 
 #endif
 /* -------------------------- md_ContactPerson -------------------------- */
-/* refby( zx_md_AttributeAuthorityDescriptor_s zx_md_IDPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_EntityDescriptor_s zx_md_RoleDescriptor_s zx_md_SPSSODescriptor_s zx_md_PDPDescriptor_s ) */
+/* refby( zx_md_IDPSSODescriptor_s zx_md_EntityDescriptor_s zx_md_SPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_AttributeAuthorityDescriptor_s zx_md_PDPDescriptor_s zx_md_RoleDescriptor_s ) */
 #ifndef zx_md_ContactPerson_EXT
 #define zx_md_ContactPerson_EXT
 #endif
@@ -993,6 +1005,8 @@ struct zx_md_EntityDescriptor_s {
   struct zx_md_ContactPerson_s* ContactPerson;	/* {0,-1} nada */
   struct zx_md_AdditionalMetadataLocation_s* AdditionalMetadataLocation;	/* {0,-1} nada */
   struct zx_attr_s* ID;	/* {0,1} attribute xs:ID */
+  struct zx_attr_s* appId;	/* {0,1} attribute xs:string */
+  struct zx_attr_s* appSecret;	/* {0,1} attribute xs:string */
   struct zx_attr_s* cacheDuration;	/* {0,1} attribute xs:duration */
   struct zx_attr_s* entityID;	/* {1,1} attribute md:entityIDType */
   struct zx_attr_s* validUntil;	/* {0,1} attribute xs:dateTime */
@@ -1011,6 +1025,8 @@ int zx_WALK_WO_md_EntityDescriptor(struct zx_ctx* c, struct zx_md_EntityDescript
 
 #ifdef ZX_ENA_GETPUT
 struct zx_attr_s* zx_md_EntityDescriptor_GET_ID(struct zx_md_EntityDescriptor_s* x);
+struct zx_attr_s* zx_md_EntityDescriptor_GET_appId(struct zx_md_EntityDescriptor_s* x);
+struct zx_attr_s* zx_md_EntityDescriptor_GET_appSecret(struct zx_md_EntityDescriptor_s* x);
 struct zx_attr_s* zx_md_EntityDescriptor_GET_cacheDuration(struct zx_md_EntityDescriptor_s* x);
 struct zx_attr_s* zx_md_EntityDescriptor_GET_entityID(struct zx_md_EntityDescriptor_s* x);
 struct zx_attr_s* zx_md_EntityDescriptor_GET_validUntil(struct zx_md_EntityDescriptor_s* x);
@@ -1068,6 +1084,8 @@ void zx_md_EntityDescriptor_PUSH_ContactPerson(struct zx_md_EntityDescriptor_s* 
 void zx_md_EntityDescriptor_PUSH_AdditionalMetadataLocation(struct zx_md_EntityDescriptor_s* x, struct zx_md_AdditionalMetadataLocation_s* y);
 
 void zx_md_EntityDescriptor_PUT_ID(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_EntityDescriptor_PUT_appId(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_EntityDescriptor_PUT_appSecret(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_EntityDescriptor_PUT_cacheDuration(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_EntityDescriptor_PUT_entityID(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_EntityDescriptor_PUT_validUntil(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y);
@@ -1126,7 +1144,7 @@ void zx_md_EntityDescriptor_REV_AdditionalMetadataLocation(struct zx_md_EntityDe
 
 #endif
 /* -------------------------- md_Extensions -------------------------- */
-/* refby( zx_md_EntitiesDescriptor_s zx_md_AttributeAuthorityDescriptor_s zx_md_IDPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_EntityDescriptor_s zx_md_AffiliationDescriptor_s zx_md_ContactPerson_s zx_md_Organization_s zx_md_RoleDescriptor_s zx_md_SPSSODescriptor_s zx_md_PDPDescriptor_s ) */
+/* refby( zx_md_IDPSSODescriptor_s zx_md_EntityDescriptor_s zx_md_SPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_AttributeAuthorityDescriptor_s zx_md_ContactPerson_s zx_md_PDPDescriptor_s zx_md_AffiliationDescriptor_s zx_md_Organization_s zx_md_RoleDescriptor_s zx_md_EntitiesDescriptor_s ) */
 #ifndef zx_md_Extensions_EXT
 #define zx_md_Extensions_EXT
 #endif
@@ -1211,7 +1229,9 @@ struct zx_md_IDPSSODescriptor_s {
   struct zx_attr_s* WantAuthnRequestsSigned;	/* {0,1} attribute xs:boolean */
   struct zx_attr_s* cacheDuration;	/* {0,1} attribute xs:duration */
   struct zx_attr_s* errorURL;	/* {0,1} attribute xs:anyURI */
+  struct zx_attr_s* graphURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* protocolSupportEnumeration;	/* {1,1} attribute xs:string */
+  struct zx_attr_s* tokenURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* validUntil;	/* {0,1} attribute xs:dateTime */
 };
 
@@ -1231,7 +1251,9 @@ struct zx_attr_s* zx_md_IDPSSODescriptor_GET_ID(struct zx_md_IDPSSODescriptor_s*
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_WantAuthnRequestsSigned(struct zx_md_IDPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_cacheDuration(struct zx_md_IDPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_errorURL(struct zx_md_IDPSSODescriptor_s* x);
+struct zx_attr_s* zx_md_IDPSSODescriptor_GET_graphURL(struct zx_md_IDPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_protocolSupportEnumeration(struct zx_md_IDPSSODescriptor_s* x);
+struct zx_attr_s* zx_md_IDPSSODescriptor_GET_tokenURL(struct zx_md_IDPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_validUntil(struct zx_md_IDPSSODescriptor_s* x);
 
 struct zx_ds_Signature_s* zx_md_IDPSSODescriptor_GET_Signature(struct zx_md_IDPSSODescriptor_s* x, int n);
@@ -1298,7 +1320,9 @@ void zx_md_IDPSSODescriptor_PUT_ID(struct zx_md_IDPSSODescriptor_s* x, struct zx
 void zx_md_IDPSSODescriptor_PUT_WantAuthnRequestsSigned(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_IDPSSODescriptor_PUT_cacheDuration(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_IDPSSODescriptor_PUT_errorURL(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y);
+void zx_md_IDPSSODescriptor_PUT_graphURL(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_IDPSSODescriptor_PUT_protocolSupportEnumeration(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y);
+void zx_md_IDPSSODescriptor_PUT_tokenURL(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_IDPSSODescriptor_PUT_validUntil(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y);
 
 void zx_md_IDPSSODescriptor_PUT_Signature(struct zx_md_IDPSSODescriptor_s* x, int n, struct zx_ds_Signature_s* y);
@@ -1363,7 +1387,7 @@ void zx_md_IDPSSODescriptor_REV_Attribute(struct zx_md_IDPSSODescriptor_s* x);
 
 #endif
 /* -------------------------- md_KeyDescriptor -------------------------- */
-/* refby( zx_md_AttributeAuthorityDescriptor_s zx_md_IDPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_AffiliationDescriptor_s zx_md_RoleDescriptor_s zx_md_SPSSODescriptor_s zx_md_PDPDescriptor_s zx_di_Keys_s ) */
+/* refby( zx_md_IDPSSODescriptor_s zx_md_SPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_AttributeAuthorityDescriptor_s zx_md_PDPDescriptor_s zx_di_Keys_s zx_md_AffiliationDescriptor_s zx_md_RoleDescriptor_s ) */
 #ifndef zx_md_KeyDescriptor_EXT
 #define zx_md_KeyDescriptor_EXT
 #endif
@@ -1513,7 +1537,7 @@ void zx_md_NameIDMappingService_PUT_isDefault(struct zx_md_NameIDMappingService_
 
 #endif
 /* -------------------------- md_Organization -------------------------- */
-/* refby( zx_md_AttributeAuthorityDescriptor_s zx_md_IDPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_EntityDescriptor_s zx_md_RoleDescriptor_s zx_md_SPSSODescriptor_s zx_md_PDPDescriptor_s ) */
+/* refby( zx_md_IDPSSODescriptor_s zx_md_EntityDescriptor_s zx_md_SPSSODescriptor_s zx_md_AuthnAuthorityDescriptor_s zx_md_AttributeAuthorityDescriptor_s zx_md_PDPDescriptor_s zx_md_RoleDescriptor_s ) */
 #ifndef zx_md_Organization_EXT
 #define zx_md_Organization_EXT
 #endif
@@ -1708,7 +1732,9 @@ struct zx_md_PDPDescriptor_s {
   struct zx_attr_s* ID;	/* {0,1} attribute xs:ID */
   struct zx_attr_s* cacheDuration;	/* {0,1} attribute xs:duration */
   struct zx_attr_s* errorURL;	/* {0,1} attribute xs:anyURI */
+  struct zx_attr_s* graphURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* protocolSupportEnumeration;	/* {1,1} attribute xs:string */
+  struct zx_attr_s* tokenURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* validUntil;	/* {0,1} attribute xs:dateTime */
 };
 
@@ -1727,7 +1753,9 @@ int zx_WALK_WO_md_PDPDescriptor(struct zx_ctx* c, struct zx_md_PDPDescriptor_s* 
 struct zx_attr_s* zx_md_PDPDescriptor_GET_ID(struct zx_md_PDPDescriptor_s* x);
 struct zx_attr_s* zx_md_PDPDescriptor_GET_cacheDuration(struct zx_md_PDPDescriptor_s* x);
 struct zx_attr_s* zx_md_PDPDescriptor_GET_errorURL(struct zx_md_PDPDescriptor_s* x);
+struct zx_attr_s* zx_md_PDPDescriptor_GET_graphURL(struct zx_md_PDPDescriptor_s* x);
 struct zx_attr_s* zx_md_PDPDescriptor_GET_protocolSupportEnumeration(struct zx_md_PDPDescriptor_s* x);
+struct zx_attr_s* zx_md_PDPDescriptor_GET_tokenURL(struct zx_md_PDPDescriptor_s* x);
 struct zx_attr_s* zx_md_PDPDescriptor_GET_validUntil(struct zx_md_PDPDescriptor_s* x);
 
 struct zx_ds_Signature_s* zx_md_PDPDescriptor_GET_Signature(struct zx_md_PDPDescriptor_s* x, int n);
@@ -1769,7 +1797,9 @@ void zx_md_PDPDescriptor_PUSH_NameIDFormat(struct zx_md_PDPDescriptor_s* x, stru
 void zx_md_PDPDescriptor_PUT_ID(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_PDPDescriptor_PUT_cacheDuration(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_PDPDescriptor_PUT_errorURL(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_PDPDescriptor_PUT_graphURL(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_PDPDescriptor_PUT_protocolSupportEnumeration(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_PDPDescriptor_PUT_tokenURL(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_PDPDescriptor_PUT_validUntil(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y);
 
 void zx_md_PDPDescriptor_PUT_Signature(struct zx_md_PDPDescriptor_s* x, int n, struct zx_ds_Signature_s* y);
@@ -1879,7 +1909,9 @@ struct zx_md_RoleDescriptor_s {
   struct zx_attr_s* ID;	/* {0,1} attribute xs:ID */
   struct zx_attr_s* cacheDuration;	/* {0,1} attribute xs:duration */
   struct zx_attr_s* errorURL;	/* {0,1} attribute xs:anyURI */
+  struct zx_attr_s* graphURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* protocolSupportEnumeration;	/* {1,1} attribute xs:string */
+  struct zx_attr_s* tokenURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* validUntil;	/* {0,1} attribute xs:dateTime */
 };
 
@@ -1898,7 +1930,9 @@ int zx_WALK_WO_md_RoleDescriptor(struct zx_ctx* c, struct zx_md_RoleDescriptor_s
 struct zx_attr_s* zx_md_RoleDescriptor_GET_ID(struct zx_md_RoleDescriptor_s* x);
 struct zx_attr_s* zx_md_RoleDescriptor_GET_cacheDuration(struct zx_md_RoleDescriptor_s* x);
 struct zx_attr_s* zx_md_RoleDescriptor_GET_errorURL(struct zx_md_RoleDescriptor_s* x);
+struct zx_attr_s* zx_md_RoleDescriptor_GET_graphURL(struct zx_md_RoleDescriptor_s* x);
 struct zx_attr_s* zx_md_RoleDescriptor_GET_protocolSupportEnumeration(struct zx_md_RoleDescriptor_s* x);
+struct zx_attr_s* zx_md_RoleDescriptor_GET_tokenURL(struct zx_md_RoleDescriptor_s* x);
 struct zx_attr_s* zx_md_RoleDescriptor_GET_validUntil(struct zx_md_RoleDescriptor_s* x);
 
 struct zx_ds_Signature_s* zx_md_RoleDescriptor_GET_Signature(struct zx_md_RoleDescriptor_s* x, int n);
@@ -1928,7 +1962,9 @@ void zx_md_RoleDescriptor_PUSH_ContactPerson(struct zx_md_RoleDescriptor_s* x, s
 void zx_md_RoleDescriptor_PUT_ID(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_RoleDescriptor_PUT_cacheDuration(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_RoleDescriptor_PUT_errorURL(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_RoleDescriptor_PUT_graphURL(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_RoleDescriptor_PUT_protocolSupportEnumeration(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y);
+void zx_md_RoleDescriptor_PUT_tokenURL(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y);
 void zx_md_RoleDescriptor_PUT_validUntil(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y);
 
 void zx_md_RoleDescriptor_PUT_Signature(struct zx_md_RoleDescriptor_s* x, int n, struct zx_ds_Signature_s* y);
@@ -1980,7 +2016,9 @@ struct zx_md_SPSSODescriptor_s {
   struct zx_attr_s* WantAssertionsSigned;	/* {0,1} attribute xs:boolean */
   struct zx_attr_s* cacheDuration;	/* {0,1} attribute xs:duration */
   struct zx_attr_s* errorURL;	/* {0,1} attribute xs:anyURI */
+  struct zx_attr_s* graphURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* protocolSupportEnumeration;	/* {1,1} attribute xs:string */
+  struct zx_attr_s* tokenURL;	/* {0,1} attribute xs:anyURI */
   struct zx_attr_s* validUntil;	/* {0,1} attribute xs:dateTime */
 };
 
@@ -2001,7 +2039,9 @@ struct zx_attr_s* zx_md_SPSSODescriptor_GET_ID(struct zx_md_SPSSODescriptor_s* x
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_WantAssertionsSigned(struct zx_md_SPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_cacheDuration(struct zx_md_SPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_errorURL(struct zx_md_SPSSODescriptor_s* x);
+struct zx_attr_s* zx_md_SPSSODescriptor_GET_graphURL(struct zx_md_SPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_protocolSupportEnumeration(struct zx_md_SPSSODescriptor_s* x);
+struct zx_attr_s* zx_md_SPSSODescriptor_GET_tokenURL(struct zx_md_SPSSODescriptor_s* x);
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_validUntil(struct zx_md_SPSSODescriptor_s* x);
 
 struct zx_ds_Signature_s* zx_md_SPSSODescriptor_GET_Signature(struct zx_md_SPSSODescriptor_s* x, int n);
@@ -2057,7 +2097,9 @@ void zx_md_SPSSODescriptor_PUT_ID(struct zx_md_SPSSODescriptor_s* x, struct zx_a
 void zx_md_SPSSODescriptor_PUT_WantAssertionsSigned(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_SPSSODescriptor_PUT_cacheDuration(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_SPSSODescriptor_PUT_errorURL(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y);
+void zx_md_SPSSODescriptor_PUT_graphURL(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_SPSSODescriptor_PUT_protocolSupportEnumeration(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y);
+void zx_md_SPSSODescriptor_PUT_tokenURL(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y);
 void zx_md_SPSSODescriptor_PUT_validUntil(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y);
 
 void zx_md_SPSSODescriptor_PUT_Signature(struct zx_md_SPSSODescriptor_s* x, int n, struct zx_ds_Signature_s* y);

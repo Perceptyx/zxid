@@ -129,6 +129,8 @@ JNI_INC?=-I/usr/lib/jvm/java-6-openjdk-amd64/include -I/usr/lib/jvm/java-6-openj
 SERVLET_PATH=/usr/share/tomcat6/lib/servlet-api.jar
 #SERVLET_PATH=../apache-tomcat-5.5.20/common/lib/servlet-api.jar
 #SERVLET_PATH=../apache-tomcat-6.0.18/lib/servlet-api.jar
+#SERVLET_PATH=/usr/share/java/servlet-api-3.0.jar
+#SERVLET_PATH=/usr/share/tomcat7/lib/servlet-api-3.0.jar
 
 ### You may supply additional include paths on command line.
 ### For example if you compiled the openssl and libcurl from original
@@ -1281,6 +1283,7 @@ perlcleaner: perlclean
 
 ###
 ###  PHP Module
+###  Tested with php5. Ubuntu 16 with php7 gives error about "rsrc" missing.
 ###
 
 ifeq ($(ENA_GEN),1)
@@ -2098,7 +2101,8 @@ tags:
 
 #SSL=/aino/openssl-0.9.8g
 #SSL=/aino/openssl-1.0.0c
-SSL=/home/sampo/openssl-1.0.1m
+SSL=/home/sampo/openssl-1.0.2j
+CURL=/home/sampo/curl-7.51.0
 BB=/aino/busybox-1.11.1
 #DS=~/ds
 #DS=/d/sampo/ds4/ds
@@ -2108,7 +2112,9 @@ PD=/home/sampo/pd
 APACHE=/aino/httpd-2.2.8
 
 megatags:
-	etags *.[hc] c/*.[hc] c/*.ds  mini_httpd-1.19-zxid/*.[hc] $(SSL)/*/*.[hc] $(SSL)/*/*/*.[hc] $(PD)/xsd2sg.pl $(PD)/pd2tex $(BB)/*/*.[hc] $(BB)/*/*/*.[hc] $(BB)/*/*/*/*.[hc]
+	etags *.[hc] c/*.[hc] c/*.ds  mini_httpd-1.19-zxid/*.[hc] $(SSL)/*/*.[hc] $(SSL)/*/*/*.[hc] $(CURL)/*/*.[hc] $(CURL)/*/*/*.[hc] $(PD)/xsd2sg.pl $(PD)/pd2tex
+
+# $(BB)/*/*.[hc] $(BB)/*/*/*.[hc] $(BB)/*/*/*/*.[hc]
 
 # $(DS)/*/*.[hc] $(DS)/*/*.ds $(DS)/io/dsproxy-test.pl $(SLIM)/*/*.ds $(SLIM)/conf/*/*.ds
 # $(APACHE)/*/*.[hc] $(APACHE)/*/*/*.[hc] $(APACHE)/*/*/*/*.[hc] $(APACHE)/*/*/*/*/*.[hc] $(APACHE)/*/*/*/*/*/*.[hc]

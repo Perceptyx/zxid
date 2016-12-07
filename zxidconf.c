@@ -1403,11 +1403,11 @@ void zx_free_ctx(struct zx_ctx* ctx)
   free(ctx);
 }
 
-/*() Minimal initialization of
- * the context is performed. Certificate and key operations as well as
+/*() Minimal initialization of the context is performed.
+ * Certificate and key operations as well as
  * CURL initialization are omitted. However the zx_ctx is installed so
  * that memory allocation against the context should work.
- * Supplying zxid_path merely initializes the PATH config option,
+ * Supplying zxid_path merely initializes the CPATH config option,
  * but does not cause configuration file to be read.
  *
  * Just initializes the config object to factory defaults (see zxidconf.h).

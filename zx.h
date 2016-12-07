@@ -199,6 +199,8 @@ int   zx_str_ends_in(struct zx_str* ss, int len, const char* suffix);
 #define ZX_GET_CONTENT_LEN(e) ((e) && ZX_ELEM_S(e)->kids && ZX_ELEM_S(e)->kids->g.tok == ZX_TOK_DATA ? ZX_ELEM_S(e)->kids->g.len : 0)
 #define ZX_GET_CONTENT_S(e) ((e) && ZX_ELEM_S(e)->kids && ZX_ELEM_S(e)->kids->g.tok == ZX_TOK_DATA ? ZX_ELEM_S(e)->kids->g.s : 0)
 
+#define ZX_ATTR_HAS_VALUE(a) ((a) && (a)->g.len && (a)->g.s && (a)->g.s[0])
+
 char* zx_memmem(const char* haystack, int haystack_len, const char* needle, int needle_len);
 void* zx_alloc(struct zx_ctx* c, int size);
 void* zx_zalloc(struct zx_ctx* c, int size);

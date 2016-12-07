@@ -88,6 +88,10 @@
 
 #define OAUTH2_REDIR   "urn:zxid:OAUTH:2.0:bindings:HTTP-Redirect"
 
+/* Facebook Connect 2.8 specifics */
+
+#define FBC28_REDIR   "urn:fbc:2.8:bindings:HTTP-Redirect"
+
 /* Attribute types describe how attributes are encoded. */
 
 #define SAML2_AP_BASIC "urn:oasis:names:tc:SAML:2.0:profiles:attribute:basic"

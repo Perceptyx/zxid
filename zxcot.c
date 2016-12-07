@@ -534,7 +534,7 @@ static int zxid_addmd(zxid_conf* cf, char* mdurl, int dry_run, const char* dcot)
     read_all_fd(fdstdin, buf, sizeof(buf)-1, &got);
     buf[got] = 0;
     p = buf;
-    ent = zxid_parse_meta(cf, &p, buf+got);
+    ent = zxid_parse_meta(cf, &p, buf+got, 0);
   }
   
   if (!ent) {
@@ -602,7 +602,7 @@ static int zxid_lscot_line(zxid_conf* cf, int col_swap, const char* dcot, const 
     return 1;
   }
   p = buf;
-  ent = zxid_parse_meta(cf, &p, buf+got);
+  ent = zxid_parse_meta(cf, &p, buf+got, 0);
   if (!ent) {
     ERR("***** Parsing metadata failed for(%s%s)", dcot, den);
     return 2;

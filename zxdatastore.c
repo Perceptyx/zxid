@@ -49,7 +49,9 @@ extern char* zxcache_path;
  * ghkeylen:: Length of globalhash key
  * ghkey:: Globalhash key
  * symkey:: Symmetric encryption key, typically from global hash bucket
- * val:: Value to be written, typically from global hash val field.
+ * val:: Value to be written, typically from global hash val field. Can be
+ *     a complex value such as second level hash table containing other
+ *     complex values. msgpack coding will serialize the data structure.
  * return:: 0 on failure, positive on success
  */
 

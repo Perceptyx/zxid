@@ -1,6 +1,6 @@
 /* zxidcgi.c  -  Handwritten functions for parsing SP specific CGI options
  * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -17,6 +17,7 @@
  * 20.10.2012, made the fr to rs copy cause deflate safe base64 encode --Sampo
  * 14.3.2013   added language/skin dependent templates --Sampo
  * 28.3.2016,  fixed alp.x and alp.y decoding problems --Sampo
+ * 4.12.2016,  added tolerance for ...&name&... meaning name does not have value --Sampo
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  */
 
@@ -129,13 +130,14 @@ set_eid:
 	goto set_eid;
       }
       if (!strcmp(n, "display")) { cgi->display = v; break; }
+      if (!strcmp(n, "denied_scopes"))  { cgi->denied_scopes = v; break; }   /* OAUTH2, FBC */
       goto unknown;
     case 'l':
       /* Login button names are like lP<eid>, where "l" is literal ell, P is
-       * protocol profile designator, and <eid> is Entity ID of the IdP.
+       * protocol profile designator numeral or letter, and <eid> is Entity ID of the IdP.
        * N.B. If eid is omitted from button name, it may be provided using
        * d or e fields (see above). */
-      cgi->pr_ix = n[1]-'0';
+      cgi->pr_ix = HEX(n[1]);  /* a=10, f=15, g=16... (works beyond traditional hex range) */
       if (n[2]) {
 	cgi->eid = n+2;
 	/*if (cf->idp_list_meth == ZXID_IDP_LIST_BRAND)*/
@@ -148,7 +150,7 @@ set_eid:
 	}
       }
       cgi->op = 'L';
-      D("cgi: login eid=%p eid(%s)", cgi->eid, cgi->eid);
+      D("cgi: login eid(%s)=%p", cgi->eid, cgi->eid);
       break;
     case 'k':
       DD("k CGI field(%s) val(%s) cgi=%p", n, v, cgi);
@@ -188,10 +190,8 @@ set_eid:
     case 'g':  /* management (gestion) form fields or query string arguments */
       switch (n[1]) {
       case 'r': /* gr - single logout redirect */
-	if (!strcmp(n, "grant_type")) {    /* OAUTH2 */
-	  cgi->grant_type = v;
-	  break;
-	}
+	if (!strcmp(n, "grant_type"))      { cgi->grant_type = v;     break; }   /* OAUTH2 */
+	if (!strcmp(n, "granted_scopes"))  { cgi->granted_scopes = v; break; }   /* OAUTH2, FBC */
       case 'l': /* gl - local logout */
       case 's': /* gs - single logout SOAP */
       case 't': /* gt - defederate redir */

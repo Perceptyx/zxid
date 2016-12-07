@@ -2022,10 +2022,18 @@ void zx_md_AttributeAuthorityDescriptor_PUT_cacheDuration(struct zx_md_Attribute
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_errorURL(struct zx_md_AttributeAuthorityDescriptor_s* x) { return x->errorURL; }
 /* FUNC(zx_md_AttributeAuthorityDescriptor_PUT_errorURL) */
 void zx_md_AttributeAuthorityDescriptor_PUT_errorURL(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->errorURL = y; }
+/* FUNC(zx_md_AttributeAuthorityDescriptor_GET_graphURL) */
+struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_graphURL(struct zx_md_AttributeAuthorityDescriptor_s* x) { return x->graphURL; }
+/* FUNC(zx_md_AttributeAuthorityDescriptor_PUT_graphURL) */
+void zx_md_AttributeAuthorityDescriptor_PUT_graphURL(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->graphURL = y; }
 /* FUNC(zx_md_AttributeAuthorityDescriptor_GET_protocolSupportEnumeration) */
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_protocolSupportEnumeration(struct zx_md_AttributeAuthorityDescriptor_s* x) { return x->protocolSupportEnumeration; }
 /* FUNC(zx_md_AttributeAuthorityDescriptor_PUT_protocolSupportEnumeration) */
 void zx_md_AttributeAuthorityDescriptor_PUT_protocolSupportEnumeration(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->protocolSupportEnumeration = y; }
+/* FUNC(zx_md_AttributeAuthorityDescriptor_GET_tokenURL) */
+struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_tokenURL(struct zx_md_AttributeAuthorityDescriptor_s* x) { return x->tokenURL; }
+/* FUNC(zx_md_AttributeAuthorityDescriptor_PUT_tokenURL) */
+void zx_md_AttributeAuthorityDescriptor_PUT_tokenURL(struct zx_md_AttributeAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->tokenURL = y; }
 /* FUNC(zx_md_AttributeAuthorityDescriptor_GET_validUntil) */
 struct zx_attr_s* zx_md_AttributeAuthorityDescriptor_GET_validUntil(struct zx_md_AttributeAuthorityDescriptor_s* x) { return x->validUntil; }
 /* FUNC(zx_md_AttributeAuthorityDescriptor_PUT_validUntil) */
@@ -3559,10 +3567,18 @@ void zx_md_AuthnAuthorityDescriptor_PUT_cacheDuration(struct zx_md_AuthnAuthorit
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_errorURL(struct zx_md_AuthnAuthorityDescriptor_s* x) { return x->errorURL; }
 /* FUNC(zx_md_AuthnAuthorityDescriptor_PUT_errorURL) */
 void zx_md_AuthnAuthorityDescriptor_PUT_errorURL(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->errorURL = y; }
+/* FUNC(zx_md_AuthnAuthorityDescriptor_GET_graphURL) */
+struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_graphURL(struct zx_md_AuthnAuthorityDescriptor_s* x) { return x->graphURL; }
+/* FUNC(zx_md_AuthnAuthorityDescriptor_PUT_graphURL) */
+void zx_md_AuthnAuthorityDescriptor_PUT_graphURL(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->graphURL = y; }
 /* FUNC(zx_md_AuthnAuthorityDescriptor_GET_protocolSupportEnumeration) */
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_protocolSupportEnumeration(struct zx_md_AuthnAuthorityDescriptor_s* x) { return x->protocolSupportEnumeration; }
 /* FUNC(zx_md_AuthnAuthorityDescriptor_PUT_protocolSupportEnumeration) */
 void zx_md_AuthnAuthorityDescriptor_PUT_protocolSupportEnumeration(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->protocolSupportEnumeration = y; }
+/* FUNC(zx_md_AuthnAuthorityDescriptor_GET_tokenURL) */
+struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_tokenURL(struct zx_md_AuthnAuthorityDescriptor_s* x) { return x->tokenURL; }
+/* FUNC(zx_md_AuthnAuthorityDescriptor_PUT_tokenURL) */
+void zx_md_AuthnAuthorityDescriptor_PUT_tokenURL(struct zx_md_AuthnAuthorityDescriptor_s* x, struct zx_attr_s* y) { x->tokenURL = y; }
 /* FUNC(zx_md_AuthnAuthorityDescriptor_GET_validUntil) */
 struct zx_attr_s* zx_md_AuthnAuthorityDescriptor_GET_validUntil(struct zx_md_AuthnAuthorityDescriptor_s* x) { return x->validUntil; }
 /* FUNC(zx_md_AuthnAuthorityDescriptor_PUT_validUntil) */
@@ -6881,6 +6897,14 @@ void zx_md_EntityDescriptor_DEL_AdditionalMetadataLocation(struct zx_md_EntityDe
 struct zx_attr_s* zx_md_EntityDescriptor_GET_ID(struct zx_md_EntityDescriptor_s* x) { return x->ID; }
 /* FUNC(zx_md_EntityDescriptor_PUT_ID) */
 void zx_md_EntityDescriptor_PUT_ID(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y) { x->ID = y; }
+/* FUNC(zx_md_EntityDescriptor_GET_appId) */
+struct zx_attr_s* zx_md_EntityDescriptor_GET_appId(struct zx_md_EntityDescriptor_s* x) { return x->appId; }
+/* FUNC(zx_md_EntityDescriptor_PUT_appId) */
+void zx_md_EntityDescriptor_PUT_appId(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y) { x->appId = y; }
+/* FUNC(zx_md_EntityDescriptor_GET_appSecret) */
+struct zx_attr_s* zx_md_EntityDescriptor_GET_appSecret(struct zx_md_EntityDescriptor_s* x) { return x->appSecret; }
+/* FUNC(zx_md_EntityDescriptor_PUT_appSecret) */
+void zx_md_EntityDescriptor_PUT_appSecret(struct zx_md_EntityDescriptor_s* x, struct zx_attr_s* y) { x->appSecret = y; }
 /* FUNC(zx_md_EntityDescriptor_GET_cacheDuration) */
 struct zx_attr_s* zx_md_EntityDescriptor_GET_cacheDuration(struct zx_md_EntityDescriptor_s* x) { return x->cacheDuration; }
 /* FUNC(zx_md_EntityDescriptor_PUT_cacheDuration) */
@@ -9197,10 +9221,18 @@ void zx_md_IDPSSODescriptor_PUT_cacheDuration(struct zx_md_IDPSSODescriptor_s* x
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_errorURL(struct zx_md_IDPSSODescriptor_s* x) { return x->errorURL; }
 /* FUNC(zx_md_IDPSSODescriptor_PUT_errorURL) */
 void zx_md_IDPSSODescriptor_PUT_errorURL(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y) { x->errorURL = y; }
+/* FUNC(zx_md_IDPSSODescriptor_GET_graphURL) */
+struct zx_attr_s* zx_md_IDPSSODescriptor_GET_graphURL(struct zx_md_IDPSSODescriptor_s* x) { return x->graphURL; }
+/* FUNC(zx_md_IDPSSODescriptor_PUT_graphURL) */
+void zx_md_IDPSSODescriptor_PUT_graphURL(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y) { x->graphURL = y; }
 /* FUNC(zx_md_IDPSSODescriptor_GET_protocolSupportEnumeration) */
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_protocolSupportEnumeration(struct zx_md_IDPSSODescriptor_s* x) { return x->protocolSupportEnumeration; }
 /* FUNC(zx_md_IDPSSODescriptor_PUT_protocolSupportEnumeration) */
 void zx_md_IDPSSODescriptor_PUT_protocolSupportEnumeration(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y) { x->protocolSupportEnumeration = y; }
+/* FUNC(zx_md_IDPSSODescriptor_GET_tokenURL) */
+struct zx_attr_s* zx_md_IDPSSODescriptor_GET_tokenURL(struct zx_md_IDPSSODescriptor_s* x) { return x->tokenURL; }
+/* FUNC(zx_md_IDPSSODescriptor_PUT_tokenURL) */
+void zx_md_IDPSSODescriptor_PUT_tokenURL(struct zx_md_IDPSSODescriptor_s* x, struct zx_attr_s* y) { x->tokenURL = y; }
 /* FUNC(zx_md_IDPSSODescriptor_GET_validUntil) */
 struct zx_attr_s* zx_md_IDPSSODescriptor_GET_validUntil(struct zx_md_IDPSSODescriptor_s* x) { return x->validUntil; }
 /* FUNC(zx_md_IDPSSODescriptor_PUT_validUntil) */
@@ -11189,10 +11221,18 @@ void zx_md_PDPDescriptor_PUT_cacheDuration(struct zx_md_PDPDescriptor_s* x, stru
 struct zx_attr_s* zx_md_PDPDescriptor_GET_errorURL(struct zx_md_PDPDescriptor_s* x) { return x->errorURL; }
 /* FUNC(zx_md_PDPDescriptor_PUT_errorURL) */
 void zx_md_PDPDescriptor_PUT_errorURL(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y) { x->errorURL = y; }
+/* FUNC(zx_md_PDPDescriptor_GET_graphURL) */
+struct zx_attr_s* zx_md_PDPDescriptor_GET_graphURL(struct zx_md_PDPDescriptor_s* x) { return x->graphURL; }
+/* FUNC(zx_md_PDPDescriptor_PUT_graphURL) */
+void zx_md_PDPDescriptor_PUT_graphURL(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y) { x->graphURL = y; }
 /* FUNC(zx_md_PDPDescriptor_GET_protocolSupportEnumeration) */
 struct zx_attr_s* zx_md_PDPDescriptor_GET_protocolSupportEnumeration(struct zx_md_PDPDescriptor_s* x) { return x->protocolSupportEnumeration; }
 /* FUNC(zx_md_PDPDescriptor_PUT_protocolSupportEnumeration) */
 void zx_md_PDPDescriptor_PUT_protocolSupportEnumeration(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y) { x->protocolSupportEnumeration = y; }
+/* FUNC(zx_md_PDPDescriptor_GET_tokenURL) */
+struct zx_attr_s* zx_md_PDPDescriptor_GET_tokenURL(struct zx_md_PDPDescriptor_s* x) { return x->tokenURL; }
+/* FUNC(zx_md_PDPDescriptor_PUT_tokenURL) */
+void zx_md_PDPDescriptor_PUT_tokenURL(struct zx_md_PDPDescriptor_s* x, struct zx_attr_s* y) { x->tokenURL = y; }
 /* FUNC(zx_md_PDPDescriptor_GET_validUntil) */
 struct zx_attr_s* zx_md_PDPDescriptor_GET_validUntil(struct zx_md_PDPDescriptor_s* x) { return x->validUntil; }
 /* FUNC(zx_md_PDPDescriptor_PUT_validUntil) */
@@ -12039,10 +12079,18 @@ void zx_md_RoleDescriptor_PUT_cacheDuration(struct zx_md_RoleDescriptor_s* x, st
 struct zx_attr_s* zx_md_RoleDescriptor_GET_errorURL(struct zx_md_RoleDescriptor_s* x) { return x->errorURL; }
 /* FUNC(zx_md_RoleDescriptor_PUT_errorURL) */
 void zx_md_RoleDescriptor_PUT_errorURL(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y) { x->errorURL = y; }
+/* FUNC(zx_md_RoleDescriptor_GET_graphURL) */
+struct zx_attr_s* zx_md_RoleDescriptor_GET_graphURL(struct zx_md_RoleDescriptor_s* x) { return x->graphURL; }
+/* FUNC(zx_md_RoleDescriptor_PUT_graphURL) */
+void zx_md_RoleDescriptor_PUT_graphURL(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y) { x->graphURL = y; }
 /* FUNC(zx_md_RoleDescriptor_GET_protocolSupportEnumeration) */
 struct zx_attr_s* zx_md_RoleDescriptor_GET_protocolSupportEnumeration(struct zx_md_RoleDescriptor_s* x) { return x->protocolSupportEnumeration; }
 /* FUNC(zx_md_RoleDescriptor_PUT_protocolSupportEnumeration) */
 void zx_md_RoleDescriptor_PUT_protocolSupportEnumeration(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y) { x->protocolSupportEnumeration = y; }
+/* FUNC(zx_md_RoleDescriptor_GET_tokenURL) */
+struct zx_attr_s* zx_md_RoleDescriptor_GET_tokenURL(struct zx_md_RoleDescriptor_s* x) { return x->tokenURL; }
+/* FUNC(zx_md_RoleDescriptor_PUT_tokenURL) */
+void zx_md_RoleDescriptor_PUT_tokenURL(struct zx_md_RoleDescriptor_s* x, struct zx_attr_s* y) { x->tokenURL = y; }
 /* FUNC(zx_md_RoleDescriptor_GET_validUntil) */
 struct zx_attr_s* zx_md_RoleDescriptor_GET_validUntil(struct zx_md_RoleDescriptor_s* x) { return x->validUntil; }
 /* FUNC(zx_md_RoleDescriptor_PUT_validUntil) */
@@ -13546,10 +13594,18 @@ void zx_md_SPSSODescriptor_PUT_cacheDuration(struct zx_md_SPSSODescriptor_s* x, 
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_errorURL(struct zx_md_SPSSODescriptor_s* x) { return x->errorURL; }
 /* FUNC(zx_md_SPSSODescriptor_PUT_errorURL) */
 void zx_md_SPSSODescriptor_PUT_errorURL(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y) { x->errorURL = y; }
+/* FUNC(zx_md_SPSSODescriptor_GET_graphURL) */
+struct zx_attr_s* zx_md_SPSSODescriptor_GET_graphURL(struct zx_md_SPSSODescriptor_s* x) { return x->graphURL; }
+/* FUNC(zx_md_SPSSODescriptor_PUT_graphURL) */
+void zx_md_SPSSODescriptor_PUT_graphURL(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y) { x->graphURL = y; }
 /* FUNC(zx_md_SPSSODescriptor_GET_protocolSupportEnumeration) */
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_protocolSupportEnumeration(struct zx_md_SPSSODescriptor_s* x) { return x->protocolSupportEnumeration; }
 /* FUNC(zx_md_SPSSODescriptor_PUT_protocolSupportEnumeration) */
 void zx_md_SPSSODescriptor_PUT_protocolSupportEnumeration(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y) { x->protocolSupportEnumeration = y; }
+/* FUNC(zx_md_SPSSODescriptor_GET_tokenURL) */
+struct zx_attr_s* zx_md_SPSSODescriptor_GET_tokenURL(struct zx_md_SPSSODescriptor_s* x) { return x->tokenURL; }
+/* FUNC(zx_md_SPSSODescriptor_PUT_tokenURL) */
+void zx_md_SPSSODescriptor_PUT_tokenURL(struct zx_md_SPSSODescriptor_s* x, struct zx_attr_s* y) { x->tokenURL = y; }
 /* FUNC(zx_md_SPSSODescriptor_GET_validUntil) */
 struct zx_attr_s* zx_md_SPSSODescriptor_GET_validUntil(struct zx_md_SPSSODescriptor_s* x) { return x->validUntil; }
 /* FUNC(zx_md_SPSSODescriptor_PUT_validUntil) */

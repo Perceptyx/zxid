@@ -180,7 +180,9 @@ int zx_DEC_ATTR_md_AttributeAuthorityDescriptor(struct zx_ctx* c, struct zx_md_A
     case zx_ID_ATTR:  x->ID = x->gg.attr; return 1;
     case zx_cacheDuration_ATTR:  x->cacheDuration = x->gg.attr; return 1;
     case zx_errorURL_ATTR:  x->errorURL = x->gg.attr; return 1;
+    case zx_graphURL_ATTR:  x->graphURL = x->gg.attr; return 1;
     case zx_protocolSupportEnumeration_ATTR:  x->protocolSupportEnumeration = x->gg.attr; return 1;
+    case zx_tokenURL_ATTR:  x->tokenURL = x->gg.attr; return 1;
     case zx_validUntil_ATTR:  x->validUntil = x->gg.attr; return 1;
 
   default: return 0;
@@ -304,7 +306,9 @@ int zx_DEC_ATTR_md_AuthnAuthorityDescriptor(struct zx_ctx* c, struct zx_md_Authn
     case zx_ID_ATTR:  x->ID = x->gg.attr; return 1;
     case zx_cacheDuration_ATTR:  x->cacheDuration = x->gg.attr; return 1;
     case zx_errorURL_ATTR:  x->errorURL = x->gg.attr; return 1;
+    case zx_graphURL_ATTR:  x->graphURL = x->gg.attr; return 1;
     case zx_protocolSupportEnumeration_ATTR:  x->protocolSupportEnumeration = x->gg.attr; return 1;
+    case zx_tokenURL_ATTR:  x->tokenURL = x->gg.attr; return 1;
     case zx_validUntil_ATTR:  x->validUntil = x->gg.attr; return 1;
 
   default: return 0;
@@ -523,6 +527,8 @@ int zx_DEC_ATTR_md_EntityDescriptor(struct zx_ctx* c, struct zx_md_EntityDescrip
 {
   switch (x->gg.attr->g.tok) {
     case zx_ID_ATTR:  x->ID = x->gg.attr; return 1;
+    case zx_appId_ATTR:  x->appId = x->gg.attr; return 1;
+    case zx_appSecret_ATTR:  x->appSecret = x->gg.attr; return 1;
     case zx_cacheDuration_ATTR:  x->cacheDuration = x->gg.attr; return 1;
     case zx_entityID_ATTR:  x->entityID = x->gg.attr; return 1;
     case zx_validUntil_ATTR:  x->validUntil = x->gg.attr; return 1;
@@ -630,7 +636,9 @@ int zx_DEC_ATTR_md_IDPSSODescriptor(struct zx_ctx* c, struct zx_md_IDPSSODescrip
     case zx_WantAuthnRequestsSigned_ATTR:  x->WantAuthnRequestsSigned = x->gg.attr; return 1;
     case zx_cacheDuration_ATTR:  x->cacheDuration = x->gg.attr; return 1;
     case zx_errorURL_ATTR:  x->errorURL = x->gg.attr; return 1;
+    case zx_graphURL_ATTR:  x->graphURL = x->gg.attr; return 1;
     case zx_protocolSupportEnumeration_ATTR:  x->protocolSupportEnumeration = x->gg.attr; return 1;
+    case zx_tokenURL_ATTR:  x->tokenURL = x->gg.attr; return 1;
     case zx_validUntil_ATTR:  x->validUntil = x->gg.attr; return 1;
 
   default: return 0;
@@ -889,7 +897,9 @@ int zx_DEC_ATTR_md_PDPDescriptor(struct zx_ctx* c, struct zx_md_PDPDescriptor_s*
     case zx_ID_ATTR:  x->ID = x->gg.attr; return 1;
     case zx_cacheDuration_ATTR:  x->cacheDuration = x->gg.attr; return 1;
     case zx_errorURL_ATTR:  x->errorURL = x->gg.attr; return 1;
+    case zx_graphURL_ATTR:  x->graphURL = x->gg.attr; return 1;
     case zx_protocolSupportEnumeration_ATTR:  x->protocolSupportEnumeration = x->gg.attr; return 1;
+    case zx_tokenURL_ATTR:  x->tokenURL = x->gg.attr; return 1;
     case zx_validUntil_ATTR:  x->validUntil = x->gg.attr; return 1;
 
   default: return 0;
@@ -974,7 +984,9 @@ int zx_DEC_ATTR_md_RoleDescriptor(struct zx_ctx* c, struct zx_md_RoleDescriptor_
     case zx_ID_ATTR:  x->ID = x->gg.attr; return 1;
     case zx_cacheDuration_ATTR:  x->cacheDuration = x->gg.attr; return 1;
     case zx_errorURL_ATTR:  x->errorURL = x->gg.attr; return 1;
+    case zx_graphURL_ATTR:  x->graphURL = x->gg.attr; return 1;
     case zx_protocolSupportEnumeration_ATTR:  x->protocolSupportEnumeration = x->gg.attr; return 1;
+    case zx_tokenURL_ATTR:  x->tokenURL = x->gg.attr; return 1;
     case zx_validUntil_ATTR:  x->validUntil = x->gg.attr; return 1;
 
   default: return 0;
@@ -1021,7 +1033,9 @@ int zx_DEC_ATTR_md_SPSSODescriptor(struct zx_ctx* c, struct zx_md_SPSSODescripto
     case zx_WantAssertionsSigned_ATTR:  x->WantAssertionsSigned = x->gg.attr; return 1;
     case zx_cacheDuration_ATTR:  x->cacheDuration = x->gg.attr; return 1;
     case zx_errorURL_ATTR:  x->errorURL = x->gg.attr; return 1;
+    case zx_graphURL_ATTR:  x->graphURL = x->gg.attr; return 1;
     case zx_protocolSupportEnumeration_ATTR:  x->protocolSupportEnumeration = x->gg.attr; return 1;
+    case zx_tokenURL_ATTR:  x->tokenURL = x->gg.attr; return 1;
     case zx_validUntil_ATTR:  x->validUntil = x->gg.attr; return 1;
 
   default: return 0;

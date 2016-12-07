@@ -1493,56 +1493,57 @@ SWIG_Perl_SetModule(swig_module_info *module) {
 #define SWIGTYPE_p_stomp_hdr swig_types[11]
 #define SWIGTYPE_p_time_t swig_types[12]
 #define SWIGTYPE_p_timeval swig_types[13]
-#define SWIGTYPE_p_void swig_types[14]
-#define SWIGTYPE_p_zx_a_EndpointReference_s swig_types[15]
-#define SWIGTYPE_p_zx_at_tok swig_types[16]
-#define SWIGTYPE_p_zx_attr_s swig_types[17]
-#define SWIGTYPE_p_zx_ctx swig_types[18]
-#define SWIGTYPE_p_zx_ds_Reference_s swig_types[19]
-#define SWIGTYPE_p_zx_e_Body_s swig_types[20]
-#define SWIGTYPE_p_zx_e_Envelope_s swig_types[21]
-#define SWIGTYPE_p_zx_e_Fault_s swig_types[22]
-#define SWIGTYPE_p_zx_e_Header_s swig_types[23]
-#define SWIGTYPE_p_zx_el_desc swig_types[24]
-#define SWIGTYPE_p_zx_el_tok swig_types[25]
-#define SWIGTYPE_p_zx_elem_s swig_types[26]
-#define SWIGTYPE_p_zx_ff12_Assertion_s swig_types[27]
-#define SWIGTYPE_p_zx_lock swig_types[28]
-#define SWIGTYPE_p_zx_lu_Status_s swig_types[29]
-#define SWIGTYPE_p_zx_md_EntityDescriptor_s swig_types[30]
-#define SWIGTYPE_p_zx_ns_s swig_types[31]
-#define SWIGTYPE_p_zx_root_s swig_types[32]
-#define SWIGTYPE_p_zx_sa11_Assertion_s swig_types[33]
-#define SWIGTYPE_p_zx_sa_Assertion_s swig_types[34]
-#define SWIGTYPE_p_zx_sa_Attribute_s swig_types[35]
-#define SWIGTYPE_p_zx_sa_EncryptedAssertion_s swig_types[36]
-#define SWIGTYPE_p_zx_sa_EncryptedID_s swig_types[37]
-#define SWIGTYPE_p_zx_sa_Issuer_s swig_types[38]
-#define SWIGTYPE_p_zx_sa_NameID_s swig_types[39]
-#define SWIGTYPE_p_zx_sec_Token_s swig_types[40]
-#define SWIGTYPE_p_zx_sp_NewEncryptedID_s swig_types[41]
-#define SWIGTYPE_p_zx_sp_Status_s swig_types[42]
-#define SWIGTYPE_p_zx_str swig_types[43]
-#define SWIGTYPE_p_zx_tas3_Status_s swig_types[44]
-#define SWIGTYPE_p_zx_xenc_EncryptedData_s swig_types[45]
-#define SWIGTYPE_p_zx_xenc_EncryptedKey_s swig_types[46]
-#define SWIGTYPE_p_zxid_atsrc swig_types[47]
-#define SWIGTYPE_p_zxid_attr swig_types[48]
-#define SWIGTYPE_p_zxid_bus_url swig_types[49]
-#define SWIGTYPE_p_zxid_cgi swig_types[50]
-#define SWIGTYPE_p_zxid_conf swig_types[51]
-#define SWIGTYPE_p_zxid_cstr_list swig_types[52]
-#define SWIGTYPE_p_zxid_entity_s swig_types[53]
-#define SWIGTYPE_p_zxid_invite swig_types[54]
-#define SWIGTYPE_p_zxid_map swig_types[55]
-#define SWIGTYPE_p_zxid_need swig_types[56]
-#define SWIGTYPE_p_zxid_obl_list swig_types[57]
-#define SWIGTYPE_p_zxid_perm swig_types[58]
-#define SWIGTYPE_p_zxid_psobj swig_types[59]
-#define SWIGTYPE_p_zxid_ses swig_types[60]
-#define SWIGTYPE_p_zxsig_ref swig_types[61]
-static swig_type_info *swig_types[63];
-static swig_module_info swig_module = {swig_types, 62, 0, 0, 0, 0};
+#define SWIGTYPE_p_unsigned_char swig_types[14]
+#define SWIGTYPE_p_void swig_types[15]
+#define SWIGTYPE_p_zx_a_EndpointReference_s swig_types[16]
+#define SWIGTYPE_p_zx_at_tok swig_types[17]
+#define SWIGTYPE_p_zx_attr_s swig_types[18]
+#define SWIGTYPE_p_zx_ctx swig_types[19]
+#define SWIGTYPE_p_zx_ds_Reference_s swig_types[20]
+#define SWIGTYPE_p_zx_e_Body_s swig_types[21]
+#define SWIGTYPE_p_zx_e_Envelope_s swig_types[22]
+#define SWIGTYPE_p_zx_e_Fault_s swig_types[23]
+#define SWIGTYPE_p_zx_e_Header_s swig_types[24]
+#define SWIGTYPE_p_zx_el_desc swig_types[25]
+#define SWIGTYPE_p_zx_el_tok swig_types[26]
+#define SWIGTYPE_p_zx_elem_s swig_types[27]
+#define SWIGTYPE_p_zx_ff12_Assertion_s swig_types[28]
+#define SWIGTYPE_p_zx_lock swig_types[29]
+#define SWIGTYPE_p_zx_lu_Status_s swig_types[30]
+#define SWIGTYPE_p_zx_md_EntityDescriptor_s swig_types[31]
+#define SWIGTYPE_p_zx_ns_s swig_types[32]
+#define SWIGTYPE_p_zx_root_s swig_types[33]
+#define SWIGTYPE_p_zx_sa11_Assertion_s swig_types[34]
+#define SWIGTYPE_p_zx_sa_Assertion_s swig_types[35]
+#define SWIGTYPE_p_zx_sa_Attribute_s swig_types[36]
+#define SWIGTYPE_p_zx_sa_EncryptedAssertion_s swig_types[37]
+#define SWIGTYPE_p_zx_sa_EncryptedID_s swig_types[38]
+#define SWIGTYPE_p_zx_sa_Issuer_s swig_types[39]
+#define SWIGTYPE_p_zx_sa_NameID_s swig_types[40]
+#define SWIGTYPE_p_zx_sec_Token_s swig_types[41]
+#define SWIGTYPE_p_zx_sp_NewEncryptedID_s swig_types[42]
+#define SWIGTYPE_p_zx_sp_Status_s swig_types[43]
+#define SWIGTYPE_p_zx_str swig_types[44]
+#define SWIGTYPE_p_zx_tas3_Status_s swig_types[45]
+#define SWIGTYPE_p_zx_xenc_EncryptedData_s swig_types[46]
+#define SWIGTYPE_p_zx_xenc_EncryptedKey_s swig_types[47]
+#define SWIGTYPE_p_zxid_atsrc swig_types[48]
+#define SWIGTYPE_p_zxid_attr swig_types[49]
+#define SWIGTYPE_p_zxid_bus_url swig_types[50]
+#define SWIGTYPE_p_zxid_cgi swig_types[51]
+#define SWIGTYPE_p_zxid_conf swig_types[52]
+#define SWIGTYPE_p_zxid_cstr_list swig_types[53]
+#define SWIGTYPE_p_zxid_entity_s swig_types[54]
+#define SWIGTYPE_p_zxid_invite swig_types[55]
+#define SWIGTYPE_p_zxid_map swig_types[56]
+#define SWIGTYPE_p_zxid_need swig_types[57]
+#define SWIGTYPE_p_zxid_obl_list swig_types[58]
+#define SWIGTYPE_p_zxid_perm swig_types[59]
+#define SWIGTYPE_p_zxid_psobj swig_types[60]
+#define SWIGTYPE_p_zxid_ses swig_types[61]
+#define SWIGTYPE_p_zxsig_ref swig_types[62]
+static swig_type_info *swig_types[64];
+static swig_module_info swig_module = {swig_types, 63, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -8404,6 +8405,108 @@ XS(_wrap_zx_raw_digest2) {
     if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
     
     if (alloc7 == SWIG_NEWOBJ) free((char*)buf7);
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zx_raw_cipher2) {
+  {
+    struct zx_ctx *arg1 = (struct zx_ctx *) 0 ;
+    char *arg2 = (char *) 0 ;
+    int arg3 ;
+    int arg4 ;
+    unsigned char *arg5 = (unsigned char *) 0 ;
+    int arg6 ;
+    char *arg7 = (char *) 0 ;
+    int arg8 ;
+    char *arg9 = (char *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    int res2 ;
+    char *buf2 = 0 ;
+    int alloc2 = 0 ;
+    int val3 ;
+    int ecode3 = 0 ;
+    int val4 ;
+    int ecode4 = 0 ;
+    void *argp5 = 0 ;
+    int res5 = 0 ;
+    int val8 ;
+    int ecode8 = 0 ;
+    int res9 ;
+    char *buf9 = 0 ;
+    int alloc9 = 0 ;
+    int argvi = 0;
+    struct zx_str *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 8) || (items > 8)) {
+      SWIG_croak("Usage: zx_raw_cipher2(c,algo,encflag,keylen,key,len,s,iv_len,iv);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zx_ctx, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zx_raw_cipher2" "', argument " "1"" of type '" "struct zx_ctx *""'"); 
+    }
+    arg1 = (struct zx_ctx *)(argp1);
+    res2 = SWIG_AsCharPtrAndSize(ST(1), &buf2, NULL, &alloc2);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zx_raw_cipher2" "', argument " "2"" of type '" "char const *""'");
+    }
+    arg2 = (char *)(buf2);
+    ecode3 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(2), &val3);
+    if (!SWIG_IsOK(ecode3)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "zx_raw_cipher2" "', argument " "3"" of type '" "int""'");
+    } 
+    arg3 = (int)(val3);
+    ecode4 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(3), &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "zx_raw_cipher2" "', argument " "4"" of type '" "int""'");
+    } 
+    arg4 = (int)(val4);
+    res5 = SWIG_ConvertPtr(ST(4), &argp5,SWIGTYPE_p_unsigned_char, 0 |  0 );
+    if (!SWIG_IsOK(res5)) {
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "zx_raw_cipher2" "', argument " "5"" of type '" "unsigned char const *""'"); 
+    }
+    arg5 = (unsigned char *)(argp5);
+    {
+      arg7 = SvPV(ST(5), arg6);
+    }
+    ecode8 = SWIG_AsVal_int SWIG_PERL_CALL_ARGS_2(ST(6), &val8);
+    if (!SWIG_IsOK(ecode8)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "zx_raw_cipher2" "', argument " "8"" of type '" "int""'");
+    } 
+    arg8 = (int)(val8);
+    res9 = SWIG_AsCharPtrAndSize(ST(7), &buf9, NULL, &alloc9);
+    if (!SWIG_IsOK(res9)) {
+      SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "zx_raw_cipher2" "', argument " "9"" of type '" "char const *""'");
+    }
+    arg9 = (char *)(buf9);
+    result = (struct zx_str *)zx_raw_cipher2(arg1,(char const *)arg2,arg3,arg4,(unsigned char const *)arg5,arg6,(char const *)arg7,arg8,(char const *)arg9);
+    {
+      if (argvi >= items) {
+        EXTEND(sp,1);
+      }
+      ST(argvi) = result?newSVpv(result->s, result->len):&PL_sv_undef;  /* newSV(0) */
+      /* Do not free underlying zx_str because they are usually returned by reference. */
+      ++argvi;
+    }
+    
+    if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+    
+    
+    
+    
+    if (alloc9 == SWIG_NEWOBJ) free((char*)buf9);
+    XSRETURN(argvi);
+  fail:
+    
+    if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+    
+    
+    
+    
+    if (alloc9 == SWIG_NEWOBJ) free((char*)buf9);
     SWIG_croak_null();
   }
 }
@@ -26043,6 +26146,150 @@ XS(_wrap_zxid_cgi_scope_get) {
 }
 
 
+XS(_wrap_zxid_cgi_denied_scopes_set) {
+  {
+    struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+    char *arg2 = (char *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    int res2 ;
+    char *buf2 = 0 ;
+    int alloc2 = 0 ;
+    int argvi = 0;
+    dXSARGS;
+    
+    if ((items < 2) || (items > 2)) {
+      SWIG_croak("Usage: zxid_cgi_denied_scopes_set(self,denied_scopes);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_cgi_denied_scopes_set" "', argument " "1"" of type '" "struct zxid_cgi *""'"); 
+    }
+    arg1 = (struct zxid_cgi *)(argp1);
+    res2 = SWIG_AsCharPtrAndSize(ST(1), &buf2, NULL, &alloc2);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_cgi_denied_scopes_set" "', argument " "2"" of type '" "char *""'");
+    }
+    arg2 = (char *)(buf2);
+    if (arg1->denied_scopes) free((char*)arg1->denied_scopes);
+    if (arg2) {
+      size_t size = strlen((const char *)(arg2)) + 1;
+      arg1->denied_scopes = (char *)(char *)memcpy((char *)malloc((size)*sizeof(char)), (const char *)(arg2), sizeof(char)*(size));
+    } else {
+      arg1->denied_scopes = 0;
+    }
+    ST(argvi) = sv_newmortal();
+    
+    if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+    XSRETURN(argvi);
+  fail:
+    
+    if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_cgi_denied_scopes_get) {
+  {
+    struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 1) || (items > 1)) {
+      SWIG_croak("Usage: zxid_cgi_denied_scopes_get(self);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_cgi_denied_scopes_get" "', argument " "1"" of type '" "struct zxid_cgi *""'"); 
+    }
+    arg1 = (struct zxid_cgi *)(argp1);
+    result = (char *) ((arg1)->denied_scopes);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    XSRETURN(argvi);
+  fail:
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_cgi_granted_scopes_set) {
+  {
+    struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+    char *arg2 = (char *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    int res2 ;
+    char *buf2 = 0 ;
+    int alloc2 = 0 ;
+    int argvi = 0;
+    dXSARGS;
+    
+    if ((items < 2) || (items > 2)) {
+      SWIG_croak("Usage: zxid_cgi_granted_scopes_set(self,granted_scopes);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_cgi_granted_scopes_set" "', argument " "1"" of type '" "struct zxid_cgi *""'"); 
+    }
+    arg1 = (struct zxid_cgi *)(argp1);
+    res2 = SWIG_AsCharPtrAndSize(ST(1), &buf2, NULL, &alloc2);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_cgi_granted_scopes_set" "', argument " "2"" of type '" "char *""'");
+    }
+    arg2 = (char *)(buf2);
+    if (arg1->granted_scopes) free((char*)arg1->granted_scopes);
+    if (arg2) {
+      size_t size = strlen((const char *)(arg2)) + 1;
+      arg1->granted_scopes = (char *)(char *)memcpy((char *)malloc((size)*sizeof(char)), (const char *)(arg2), sizeof(char)*(size));
+    } else {
+      arg1->granted_scopes = 0;
+    }
+    ST(argvi) = sv_newmortal();
+    
+    if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+    XSRETURN(argvi);
+  fail:
+    
+    if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_cgi_granted_scopes_get) {
+  {
+    struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    int argvi = 0;
+    char *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 1) || (items > 1)) {
+      SWIG_croak("Usage: zxid_cgi_granted_scopes_get(self);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_cgi_granted_scopes_get" "', argument " "1"" of type '" "struct zxid_cgi *""'"); 
+    }
+    arg1 = (struct zxid_cgi *)(argp1);
+    result = (char *) ((arg1)->granted_scopes);
+    ST(argvi) = SWIG_FromCharPtr((const char *)result); argvi++ ;
+    
+    XSRETURN(argvi);
+  fail:
+    
+    SWIG_croak_null();
+  }
+}
+
+
 XS(_wrap_zxid_cgi_redirect_uri_set) {
   {
     struct zxid_cgi *arg1 = (struct zxid_cgi *) 0 ;
@@ -30540,6 +30787,71 @@ XS(_wrap_zxid_ses_curstatus_get) {
     arg1 = (struct zxid_ses *)(argp1);
     result = (zxid_tas3_status *) ((arg1)->curstatus);
     ST(argvi) = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_zx_tas3_Status_s, 0 | 0); argvi++ ;
+    
+    XSRETURN(argvi);
+  fail:
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_ses_issuer_meta_set) {
+  {
+    struct zxid_ses *arg1 = (struct zxid_ses *) 0 ;
+    zxid_entity *arg2 = (zxid_entity *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    int argvi = 0;
+    dXSARGS;
+    
+    if ((items < 2) || (items > 2)) {
+      SWIG_croak("Usage: zxid_ses_issuer_meta_set(self,issuer_meta);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_ses, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_ses_issuer_meta_set" "', argument " "1"" of type '" "struct zxid_ses *""'"); 
+    }
+    arg1 = (struct zxid_ses *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_entity_s, SWIG_POINTER_DISOWN |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_ses_issuer_meta_set" "', argument " "2"" of type '" "zxid_entity *""'"); 
+    }
+    arg2 = (zxid_entity *)(argp2);
+    if (arg1) (arg1)->issuer_meta = arg2;
+    ST(argvi) = sv_newmortal();
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_ses_issuer_meta_get) {
+  {
+    struct zxid_ses *arg1 = (struct zxid_ses *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    int argvi = 0;
+    zxid_entity *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 1) || (items > 1)) {
+      SWIG_croak("Usage: zxid_ses_issuer_meta_get(self);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_ses, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_ses_issuer_meta_get" "', argument " "1"" of type '" "struct zxid_ses *""'"); 
+    }
+    arg1 = (struct zxid_ses *)(argp1);
+    result = (zxid_entity *) ((arg1)->issuer_meta);
+    ST(argvi) = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_zxid_entity_s, 0 | SWIG_SHADOW); argvi++ ;
     
     XSRETURN(argvi);
   fail:
@@ -45842,23 +46154,22 @@ XS(_wrap_zxid_mk_oauth_az_req) {
   {
     zxid_conf *arg1 = (zxid_conf *) 0 ;
     zxid_cgi *arg2 = (zxid_cgi *) 0 ;
-    struct zx_str *arg3 = (struct zx_str *) 0 ;
-    char *arg4 = (char *) 0 ;
+    zxid_entity *arg3 = (zxid_entity *) 0 ;
+    struct zx_str *arg4 = (struct zx_str *) 0 ;
     void *argp1 = 0 ;
     int res1 = 0 ;
     void *argp2 = 0 ;
     int res2 = 0 ;
     void *argp3 = 0 ;
     int res3 = 0 ;
-    int res4 ;
-    char *buf4 = 0 ;
-    int alloc4 = 0 ;
+    void *argp4 = 0 ;
+    int res4 = 0 ;
     int argvi = 0;
     struct zx_str *result = 0 ;
     dXSARGS;
     
     if ((items < 4) || (items > 4)) {
-      SWIG_croak("Usage: zxid_mk_oauth_az_req(cf,cgi,loc,relay_state);");
+      SWIG_croak("Usage: zxid_mk_oauth_az_req(cf,cgi,idp_meta,loc);");
     }
     res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
     if (!SWIG_IsOK(res1)) {
@@ -45870,16 +46181,16 @@ XS(_wrap_zxid_mk_oauth_az_req) {
       SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_mk_oauth_az_req" "', argument " "2"" of type '" "zxid_cgi *""'"); 
     }
     arg2 = (zxid_cgi *)(argp2);
-    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_zx_str, 0 |  0 );
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_zxid_entity_s, 0 |  0 );
     if (!SWIG_IsOK(res3)) {
-      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_mk_oauth_az_req" "', argument " "3"" of type '" "struct zx_str *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_mk_oauth_az_req" "', argument " "3"" of type '" "zxid_entity *""'"); 
     }
-    arg3 = (struct zx_str *)(argp3);
-    res4 = SWIG_AsCharPtrAndSize(ST(3), &buf4, NULL, &alloc4);
+    arg3 = (zxid_entity *)(argp3);
+    res4 = SWIG_ConvertPtr(ST(3), &argp4,SWIGTYPE_p_zx_str, 0 |  0 );
     if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "zxid_mk_oauth_az_req" "', argument " "4"" of type '" "char *""'");
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "zxid_mk_oauth_az_req" "', argument " "4"" of type '" "struct zx_str *""'"); 
     }
-    arg4 = (char *)(buf4);
+    arg4 = (struct zx_str *)(argp4);
     result = (struct zx_str *)zxid_mk_oauth_az_req(arg1,arg2,arg3,arg4);
     {
       if (argvi >= items) {
@@ -45892,13 +46203,78 @@ XS(_wrap_zxid_mk_oauth_az_req) {
     
     
     
-    if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
+    
     XSRETURN(argvi);
   fail:
     
     
     
-    if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
+    
+    SWIG_croak_null();
+  }
+}
+
+
+XS(_wrap_zxid_mk_fbc_az_req) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    zxid_entity *arg3 = (zxid_entity *) 0 ;
+    struct zx_str *arg4 = (struct zx_str *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    void *argp4 = 0 ;
+    int res4 = 0 ;
+    int argvi = 0;
+    struct zx_str *result = 0 ;
+    dXSARGS;
+    
+    if ((items < 4) || (items > 4)) {
+      SWIG_croak("Usage: zxid_mk_fbc_az_req(cf,cgi,idp_meta,loc);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_mk_fbc_az_req" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_mk_fbc_az_req" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_zxid_entity_s, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_mk_fbc_az_req" "', argument " "3"" of type '" "zxid_entity *""'"); 
+    }
+    arg3 = (zxid_entity *)(argp3);
+    res4 = SWIG_ConvertPtr(ST(3), &argp4,SWIGTYPE_p_zx_str, 0 |  0 );
+    if (!SWIG_IsOK(res4)) {
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "zxid_mk_fbc_az_req" "', argument " "4"" of type '" "struct zx_str *""'"); 
+    }
+    arg4 = (struct zx_str *)(argp4);
+    result = (struct zx_str *)zxid_mk_fbc_az_req(arg1,arg2,arg3,arg4);
+    {
+      if (argvi >= items) {
+        EXTEND(sp,1);
+      }
+      ST(argvi) = result?newSVpv(result->s, result->len):&PL_sv_undef;  /* newSV(0) */
+      /* Do not free underlying zx_str because they are usually returned by reference. */
+      ++argvi;
+    }
+    
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    
     SWIG_croak_null();
   }
 }
@@ -50309,6 +50685,7 @@ static swig_type_info _swigt__p_pthread_t = {"_p_pthread_t", "pthread_t *", 0, 0
 static swig_type_info _swigt__p_stomp_hdr = {"_p_stomp_hdr", "struct stomp_hdr *|stomp_hdr *", 0, 0, (void*)"Net::SAML::stomp_hdr", 0};
 static swig_type_info _swigt__p_time_t = {"_p_time_t", "time_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_timeval = {"_p_timeval", "struct timeval *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_unsigned_char = {"_p_unsigned_char", "unsigned char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_void = {"_p_void", "void *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_zx_a_EndpointReference_s = {"_p_zx_a_EndpointReference_s", "struct zx_a_EndpointReference_s *|zxid_epr *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_zx_at_tok = {"_p_zx_at_tok", "struct zx_at_tok *|zx_at_tok *", 0, 0, (void*)"Net::SAML::zx_at_tok", 0};
@@ -50373,6 +50750,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_stomp_hdr,
   &_swigt__p_time_t,
   &_swigt__p_timeval,
+  &_swigt__p_unsigned_char,
   &_swigt__p_void,
   &_swigt__p_zx_a_EndpointReference_s,
   &_swigt__p_zx_at_tok,
@@ -50437,6 +50815,7 @@ static swig_cast_info _swigc__p_pthread_t[] = {  {&_swigt__p_pthread_t, 0, 0, 0}
 static swig_cast_info _swigc__p_stomp_hdr[] = {  {&_swigt__p_stomp_hdr, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_time_t[] = {  {&_swigt__p_time_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_timeval[] = {  {&_swigt__p_timeval, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_unsigned_char[] = {  {&_swigt__p_unsigned_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_void[] = {  {&_swigt__p_void, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_zx_a_EndpointReference_s[] = {  {&_swigt__p_zx_a_EndpointReference_s, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_zx_at_tok[] = {  {&_swigt__p_zx_at_tok, 0, 0, 0},{0, 0, 0, 0}};
@@ -50501,6 +50880,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_stomp_hdr,
   _swigc__p_time_t,
   _swigc__p_timeval,
+  _swigc__p_unsigned_char,
   _swigc__p_void,
   _swigc__p_zx_a_EndpointReference_s,
   _swigc__p_zx_at_tok,
@@ -50741,6 +51121,7 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zx_hmac_sha256", _wrap_zx_hmac_sha256},
 {"Net::SAMLc::zx_raw_raw_digest2", _wrap_zx_raw_raw_digest2},
 {"Net::SAMLc::zx_raw_digest2", _wrap_zx_raw_digest2},
+{"Net::SAMLc::zx_raw_cipher2", _wrap_zx_raw_cipher2},
 {"Net::SAMLc::zx_raw_cipher", _wrap_zx_raw_cipher},
 {"Net::SAMLc::zx_rsa_pub_enc", _wrap_zx_rsa_pub_enc},
 {"Net::SAMLc::zx_rsa_pub_dec", _wrap_zx_rsa_pub_dec},
@@ -51243,6 +51624,10 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zxid_cgi_client_id_get", _wrap_zxid_cgi_client_id_get},
 {"Net::SAMLc::zxid_cgi_scope_set", _wrap_zxid_cgi_scope_set},
 {"Net::SAMLc::zxid_cgi_scope_get", _wrap_zxid_cgi_scope_get},
+{"Net::SAMLc::zxid_cgi_denied_scopes_set", _wrap_zxid_cgi_denied_scopes_set},
+{"Net::SAMLc::zxid_cgi_denied_scopes_get", _wrap_zxid_cgi_denied_scopes_get},
+{"Net::SAMLc::zxid_cgi_granted_scopes_set", _wrap_zxid_cgi_granted_scopes_set},
+{"Net::SAMLc::zxid_cgi_granted_scopes_get", _wrap_zxid_cgi_granted_scopes_get},
 {"Net::SAMLc::zxid_cgi_redirect_uri_set", _wrap_zxid_cgi_redirect_uri_set},
 {"Net::SAMLc::zxid_cgi_redirect_uri_get", _wrap_zxid_cgi_redirect_uri_get},
 {"Net::SAMLc::zxid_cgi_nonce_set", _wrap_zxid_cgi_nonce_set},
@@ -51373,6 +51758,8 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zxid_ses_curflt_get", _wrap_zxid_ses_curflt_get},
 {"Net::SAMLc::zxid_ses_curstatus_set", _wrap_zxid_ses_curstatus_set},
 {"Net::SAMLc::zxid_ses_curstatus_get", _wrap_zxid_ses_curstatus_get},
+{"Net::SAMLc::zxid_ses_issuer_meta_set", _wrap_zxid_ses_issuer_meta_set},
+{"Net::SAMLc::zxid_ses_issuer_meta_get", _wrap_zxid_ses_issuer_meta_get},
 {"Net::SAMLc::zxid_ses_issuer_set", _wrap_zxid_ses_issuer_set},
 {"Net::SAMLc::zxid_ses_issuer_get", _wrap_zxid_ses_issuer_get},
 {"Net::SAMLc::zxid_ses_srcts_set", _wrap_zxid_ses_srcts_set},
@@ -51737,6 +52124,7 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zxid_mk_Status", _wrap_zxid_mk_Status},
 {"Net::SAMLc::zxid_OK", _wrap_zxid_OK},
 {"Net::SAMLc::zxid_mk_oauth_az_req", _wrap_zxid_mk_oauth_az_req},
+{"Net::SAMLc::zxid_mk_fbc_az_req", _wrap_zxid_mk_fbc_az_req},
 {"Net::SAMLc::zxid_mk_jwks", _wrap_zxid_mk_jwks},
 {"Net::SAMLc::zxid_mk_oauth2_dyn_cli_reg_req", _wrap_zxid_mk_oauth2_dyn_cli_reg_req},
 {"Net::SAMLc::zxid_mk_oauth2_dyn_cli_reg_res", _wrap_zxid_mk_oauth2_dyn_cli_reg_res},
@@ -52455,6 +52843,11 @@ XS(SWIG_init) {
     SvREADONLY_on(sv);
   } while(0) /*@SWIG@*/;
   /*@SWIG:/usr/share/swig2.0/perl5/perltypemaps.swg,65,%set_constant@*/ do {
+    SV *sv = get_sv((char*) SWIG_prefix "AES256GCM", TRUE | 0x2 | GV_ADDMULTI);
+    sv_setsv(sv, SWIG_FromCharPtr("aes-256-gcm"));
+    SvREADONLY_on(sv);
+  } while(0) /*@SWIG@*/;
+  /*@SWIG:/usr/share/swig2.0/perl5/perltypemaps.swg,65,%set_constant@*/ do {
     SV *sv = get_sv((char*) SWIG_prefix "ZXID_PATH", TRUE | 0x2 | GV_ADDMULTI);
     sv_setsv(sv, SWIG_FromCharPtr("/var/zxid/"));
     SvREADONLY_on(sv);
@@ -52976,6 +53369,11 @@ XS(SWIG_init) {
     SvREADONLY_on(sv);
   } while(0) /*@SWIG@*/;
   /*@SWIG:/usr/share/swig2.0/perl5/perltypemaps.swg,65,%set_constant@*/ do {
+    SV *sv = get_sv((char*) SWIG_prefix "ZXID_FBC_CODE", TRUE | 0x2 | GV_ADDMULTI);
+    sv_setsv(sv, SWIG_From_int  SWIG_PERL_CALL_ARGS_1((int)(10)));
+    SvREADONLY_on(sv);
+  } while(0) /*@SWIG@*/;
+  /*@SWIG:/usr/share/swig2.0/perl5/perltypemaps.swg,65,%set_constant@*/ do {
     SV *sv = get_sv((char*) SWIG_prefix "ZXID_SLO_SVC", TRUE | 0x2 | GV_ADDMULTI);
     sv_setsv(sv, SWIG_From_int  SWIG_PERL_CALL_ARGS_1((int)(1)));
     SvREADONLY_on(sv);
@@ -53308,6 +53706,11 @@ XS(SWIG_init) {
   /*@SWIG:/usr/share/swig2.0/perl5/perltypemaps.swg,65,%set_constant@*/ do {
     SV *sv = get_sv((char*) SWIG_prefix "OAUTH2_REDIR", TRUE | 0x2 | GV_ADDMULTI);
     sv_setsv(sv, SWIG_FromCharPtr("urn:zxid:OAUTH:2.0:bindings:HTTP-Redirect"));
+    SvREADONLY_on(sv);
+  } while(0) /*@SWIG@*/;
+  /*@SWIG:/usr/share/swig2.0/perl5/perltypemaps.swg,65,%set_constant@*/ do {
+    SV *sv = get_sv((char*) SWIG_prefix "FBC28_REDIR", TRUE | 0x2 | GV_ADDMULTI);
+    sv_setsv(sv, SWIG_FromCharPtr("urn:fbc:2.8:bindings:HTTP-Redirect"));
     SvREADONLY_on(sv);
   } while(0) /*@SWIG@*/;
   /*@SWIG:/usr/share/swig2.0/perl5/perltypemaps.swg,65,%set_constant@*/ do {

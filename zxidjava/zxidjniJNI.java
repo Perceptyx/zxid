@@ -199,6 +199,7 @@ public class zxidjniJNI {
   public final static native String zx_hmac_sha256(long jarg1, int jarg2, String jarg3, int jarg4, String jarg5, String jarg6, long jarg7);
   public final static native int zx_raw_raw_digest2(long jarg1, String jarg2, long jarg3, int jarg4, int jarg6, String jarg7);
   public final static native int zx_raw_digest2(long jarg1, String jarg2, String jarg3, int jarg4, int jarg6, String jarg7);
+  public final static native String zx_raw_cipher2(long jarg1, String jarg2, int jarg3, int jarg4, long jarg5, int jarg6, int jarg8, String jarg9);
   public final static native String zx_raw_cipher(long jarg1, String jarg2, int jarg3, String jarg4, int jarg5, int jarg7, String jarg8);
   public final static native String zx_rsa_pub_enc(long jarg1, String jarg2, long jarg3, int jarg4);
   public final static native String zx_rsa_pub_dec(long jarg1, String jarg2, long jarg3, int jarg4);
@@ -284,6 +285,7 @@ public class zxidjniJNI {
   public final static native String ENC_ENCKEY_METH_get();
   public final static native String ENC_TYPE_ELEMENT_get();
   public final static native String ENC_TYPE_CONTENT_get();
+  public final static native String AES256GCM_get();
   public final static native String ZXID_PATH_get();
   public final static native String ZXID_CONF_FILE_get();
   public final static native String ZXID_CONF_PATH_get();
@@ -762,6 +764,10 @@ public class zxidjniJNI {
   public final static native String zxid_cgi_client_id_get(long jarg1);
   public final static native void zxid_cgi_scope_set(long jarg1, String jarg2);
   public final static native String zxid_cgi_scope_get(long jarg1);
+  public final static native void zxid_cgi_denied_scopes_set(long jarg1, String jarg2);
+  public final static native String zxid_cgi_denied_scopes_get(long jarg1);
+  public final static native void zxid_cgi_granted_scopes_set(long jarg1, String jarg2);
+  public final static native String zxid_cgi_granted_scopes_get(long jarg1);
   public final static native void zxid_cgi_redirect_uri_set(long jarg1, String jarg2);
   public final static native String zxid_cgi_redirect_uri_get(long jarg1);
   public final static native void zxid_cgi_nonce_set(long jarg1, String jarg2);
@@ -892,6 +898,8 @@ public class zxidjniJNI {
   public final static native long zxid_ses_curflt_get(long jarg1);
   public final static native void zxid_ses_curstatus_set(long jarg1, long jarg2);
   public final static native long zxid_ses_curstatus_get(long jarg1);
+  public final static native void zxid_ses_issuer_meta_set(long jarg1, long jarg2);
+  public final static native long zxid_ses_issuer_meta_get(long jarg1);
   public final static native void zxid_ses_issuer_set(long jarg1, String jarg2);
   public final static native String zxid_ses_issuer_get(long jarg1);
   public final static native void zxid_ses_srcts_set(long jarg1, long jarg2);
@@ -1329,7 +1337,8 @@ public class zxidjniJNI {
   public final static native long zxid_find_attribute(long jarg1, int jarg2, String jarg3, int jarg4, String jarg5, int jarg6, String jarg7, int jarg8);
   public final static native long zxid_mk_Status(long jarg1, long jarg2, String jarg3, String jarg4, String jarg5);
   public final static native long zxid_OK(long jarg1, long jarg2);
-  public final static native String zxid_mk_oauth_az_req(long jarg1, long jarg2, String jarg3, String jarg4);
+  public final static native String zxid_mk_oauth_az_req(long jarg1, long jarg2, long jarg3, String jarg4);
+  public final static native String zxid_mk_fbc_az_req(long jarg1, long jarg2, long jarg3, String jarg4);
   public final static native String zxid_mk_jwks(long jarg1);
   public final static native String zxid_mk_oauth2_dyn_cli_reg_req(long jarg1);
   public final static native String zxid_mk_oauth2_dyn_cli_reg_res(long jarg1, long jarg2);
@@ -1428,6 +1437,7 @@ public class zxidjniJNI {
   public final static native int ZXID_SAML2_URI_get();
   public final static native int ZXID_OIDC1_CODE_get();
   public final static native int ZXID_OIDC1_ID_TOK_TOK_get();
+  public final static native int ZXID_FBC_CODE_get();
   public final static native int ZXID_SLO_SVC_get();
   public final static native int ZXID_MNI_SVC_get();
   public final static native int ZXID_ACS_SVC_get();
@@ -1497,6 +1507,7 @@ public class zxidjniJNI {
   public final static native String SAML2_POST_SIMPLE_SIGN_get();
   public final static native String SAML2_URI_get();
   public final static native String OAUTH2_REDIR_get();
+  public final static native String FBC28_REDIR_get();
   public final static native String SAML2_AP_BASIC_get();
   public final static native String SAML2_AP_X500_get();
   public final static native String SAML2_AP_UUID_get();

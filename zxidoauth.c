@@ -1,5 +1,5 @@
 /* zxidoauth.c  -  Handwritten nitty-gritty functions for constructing OAUTH URLs
- * Copyright (c) 2011-2014 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2011-2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -18,10 +18,24 @@
  * RFC6750 OAuth2 Bearer Token Usage
  *
  * 11.12.2011, created --Sampo
- * 9.10.2014, UMA related addtionas, JWK, dynamic client registration, etc. --Sampo
+ * 9.10.2014,  UMA related addtionas, JWK, dynamic client registration, etc. --Sampo
+ * 30.11.2016, tweaked to make real life Facebook OAUTH pass --Sampo
+ * 2.12.2016,  separated Facebook Connect to a separate flow --Sampo
  */
 
 #include "platform.h"
+#include <fcntl.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef USE_OPENSSL
+#include <openssl/bn.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
+#endif
 #include "errmac.h"
 #include "zx.h"
 #include "zxid.h"
@@ -31,9 +45,6 @@
 #include "saml2.h"   /* for bindings like OAUTH2_REDIR */
 #include "c/zx-data.h"
 #include "c/zxidvers.h"
-#include <openssl/bn.h>
-#include <openssl/rsa.h>
-#include <openssl/x509.h>
 
 #if 1
 
@@ -278,10 +289,10 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
 #endif
 
 /*() Interpret ZXID standard form fields to construct an OAuth2 Authorization request,
- * Which is a redirection URL */
+ * which is a redirection URL. */
 
 /* Called by:  zxid_start_sso_url */
-struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str* loc, char* relay_state)
+struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc)
 {
   struct zx_str* ss;
   struct zx_str* nonce;
@@ -291,21 +302,45 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str*
   char* state_b64;
   char* prompt;
   char* display;
+  char* st;
+  int st_len;
 
-  if (!loc) {
-    ERR("Redirection location URL missing. %d", 0);
+  if (!loc || !loc->len || !loc->s || !loc->s[0]) {
+    ERR("Redirection location URL missing. %p", loc);
     return 0;
   }
   
   redir_url_enc = zx_url_encode(cf->ctx, strlen(cf->burl), cf->burl, 0);
-  eid = zxid_my_ent_id(cf);
-  eid_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
-  zx_str_free(cf->ctx, eid);
-  
-  if (relay_state)
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, strlen(relay_state), relay_state);
-  else
-    state_b64 = 0;
+  if (idp_meta->ed && idp_meta->ed->appId && idp_meta->ed->appId->g.len && idp_meta->ed->appId->g.s && idp_meta->ed->appId->g.s[0]) {
+    /* Per IdP app_id (aka client_id) instead of SP chosen eid */
+    eid_url_enc = zx_url_encode(cf->ctx, idp_meta->ed->appId->g.len, idp_meta->ed->appId->g.s, 0);
+  } else {
+    eid = zxid_my_ent_id(cf);
+    eid_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
+    zx_str_free(cf->ctx, eid);
+  }
+
+  /* The chosen IdP's Entity ID is in cgi->eid and we need to encode this to state
+   * as OAuth2, or at least Facebook Connect, does not have any other guaranteed
+   * way of receiving the issuer information (this is a defect in OAUTH2 and/or
+   * Facebook Connect). */
+
+  if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP scenario */
+    if (cgi->rs) {
+      ERR("RelayState(%s) supplied in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
+    }
+    /* Carry the original authn req in state */
+    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ssoreq=%s", cgi->eid, cgi->ssoreq);
+    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
+    D("Middle IdP of Proxy IdP flow state(%s)", STRNULLCHK(st));
+    ZX_FREE(cf->ctx, st);
+  } else {
+    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
+    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
+    D("Primary OAUTH state(%s)", STRNULLCHK(st));
+    ZX_FREE(cf->ctx, st);
+    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, strlen(cgi->rs), cgi->rs);
+  }
   nonce = zxid_mk_id(cf, "OA", ZXID_ID_BITS);
   prompt = BOOL_STR_TEST(cgi->force_authn) ? "login" : 0;
   prompt = BOOL_STR_TEST(cgi->consent && cgi->consent[0]) ? (prompt?"login+consent":"consent") : prompt;
@@ -314,7 +349,7 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str*
   ss = zx_strf(cf->ctx,
 	       "%.*s%cresponse_type=%s"
 	       "&client_id=%s"
-	       "&scope=openid+profile+email+address"
+	       "&scope=openid+profile+email+address+public_profile"
 	       "&redirect_uri=%s%%3fo=O"
 	       "&nonce=%.*s"
 	       "%s%s"           /* &state= */
@@ -332,7 +367,94 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str*
   D("OAUTH2 AZ REQ(%.*s)", ss->len, ss->s);
   if (errmac_debug & ERRMAC_INOUT) INFO("%.*s", ss->len, ss->s);
   zx_str_free(cf->ctx, nonce);
-  ZX_FREE(cf->ctx, state_b64);
+  if (state_b64) ZX_FREE(cf->ctx, state_b64);
+  ZX_FREE(cf->ctx, eid_url_enc);
+  ZX_FREE(cf->ctx, redir_url_enc);
+  return ss;
+}
+
+/*() Interpret ZXID standard form fields to construct a Facebook Connect 2.8
+ * Authorization request, which is a redirection URL. */
+
+/* Called by:  zxid_start_sso_url */
+struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc)
+{
+  struct zx_str* ss;
+  //struct zx_str* nonce;
+  struct zx_str* eid;
+  char* eid_url_enc;
+  char* redir_url_enc;
+  char* state_b64;
+  char* prompt;
+  char* display;
+  char* st;
+  int st_len;
+
+  if (!loc || !loc->len || !loc->s || !loc->s[0]) {
+    ERR("FBC Redirection location URL missing. %p", loc);
+    return 0;
+  }
+
+  D("redir loc(%.*s) %p %p", loc->len, loc->s, loc, loc->s);
+  redir_url_enc = zx_url_encode(cf->ctx, strlen(cf->burl), cf->burl, 0);
+  if (idp_meta->ed && idp_meta->ed->appId && idp_meta->ed->appId->g.len && idp_meta->ed->appId->g.s && idp_meta->ed->appId->g.s[0]) {
+    /* Per IdP app_id (aka client_id) instead of SP chosen eid */
+    D("appId(%.*s)", idp_meta->ed->appId->g.len, idp_meta->ed->appId->g.s);
+    eid_url_enc = zx_url_encode(cf->ctx, idp_meta->ed->appId->g.len, idp_meta->ed->appId->g.s, 0);
+  } else {
+    eid = zxid_my_ent_id(cf);
+    eid_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
+    zx_str_free(cf->ctx, eid);
+  }
+
+  /* The chosen IdP's Entity ID is in cgi->eid and we need to encode this to state
+   * as OAuth2, or at least Facebook Connect, does not have any other guaranteed
+   * way of receiving the issuer information (this is a defect in OAUTH2 and/or
+   * Facebook Connect). */
+
+  if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP scenario */
+    if (cgi->rs) {
+      D("FBC RelayState(%s) supplied in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
+    }
+    /* Carry the original authn req in state */
+    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ssoreq=%s", cgi->eid, cgi->ssoreq);
+    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
+    D("FBC middle IdP of Proxy IdP flow state(%s)", STRNULLCHK(st));
+    ZX_FREE(cf->ctx, st);
+  } else {
+    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
+    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
+    D("FBC primary OAUTH state(%s)", STRNULLCHK(st));
+    ZX_FREE(cf->ctx, st);
+    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, strlen(cgi->rs), cgi->rs);
+  }
+  //nonce = zxid_mk_id(cf, "FB", ZXID_ID_BITS);
+  prompt = BOOL_STR_TEST(cgi->force_authn) ? "login" : 0;
+  prompt = BOOL_STR_TEST(cgi->consent && cgi->consent[0]) ? (prompt?"login+consent":"consent") : prompt;
+  display = BOOL_STR_TEST(cgi->ispassive) ? "none" : 0;
+  
+  ss = zx_strf(cf->ctx,
+	       "%.*s%cresponse_type=%s"
+	       "&client_id=%s"
+	       "&scope=public_profile,email"
+	       "&redirect_uri=%s%%3fo=O"
+	       //"&nonce=%.*s"
+	       "%s%s"           /* &state= */
+	       "%s%s"           /* &display= */
+	       "%s%s",          /* &prompt= */
+	       loc->len, loc->s, (memchr(loc->s, '?', loc->len)?'&':'?'),
+	       "code%20granted_scopes",
+	       eid_url_enc,
+	       redir_url_enc,
+	       //nonce->len, nonce->s,
+	       state_b64?"&state=":"", STRNULLCHK(state_b64),
+	       display?"&display=":"", STRNULLCHK(display),
+	       prompt?"&prompt=":"", STRNULLCHK(prompt)
+	       );
+  D("FBC AZ REQ(%.*s)", ss->len, ss->s);
+  if (errmac_debug & ERRMAC_INOUT) INFO("%.*s", ss->len, ss->s);
+  //zx_str_free(cf->ctx, nonce);
+  if (state_b64) ZX_FREE(cf->ctx, state_b64);
   ZX_FREE(cf->ctx, eid_url_enc);
   ZX_FREE(cf->ctx, redir_url_enc);
   return ss;
@@ -946,7 +1068,7 @@ int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const
     ss = zx_strf(cf->ctx, "%.*s%c_uma_authn=%s", ss->len, ss->s, (memchr(ss->s, '?', ss->len)?'&':'?'), _uma_authn);
   cgi->pr_ix = ZXID_OIDC1_ID_TOK_TOK; //"id_token token";
   D("loc(%.*s)", ss->len, ss->s);
-  req = zxid_mk_oauth_az_req(cf, cgi, ss, 0);
+  req = zxid_mk_oauth_az_req(cf, cgi, idp_meta, ss);
   D("req(%.*s)", req->len, req->s);
   res = zxid_http_cli(cf, req->len, req->s, 0,0, 0, 0, 0x03);  /* do not follow redir */
   zx_str_free(cf->ctx, req);
@@ -959,15 +1081,63 @@ int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const
   return 1;
 }
 
-/*() Call OAUTH2 / UMA1 / OIDC1 Token Endpoint and return a token
- * *** still needs a lot of work to turn more generic */
+/*() Get app secret from a special file.
+ * The reason why we do not use metadata appSecret attribute is that
+ * the usage pattern of metadata files is rather promiscuous and there
+ * would be high risk of leaking the secret. By having it in its
+ * own file allows it to be protected by filesystem permissions.
+ * It is also located in the pem subdirectory where we keep other
+ * sensitive key material.
+ */
+
+static char* zxid_get_app_secret(zxid_conf* cf, const char* sha1_name, const char* logkey)
+{
+  fdtype fd;
+  int n,siz,got;
+  char* buf;
+  fd = open_fd_from_path(O_RDONLY, 0, logkey, 1, "%s" ZXID_PEM_DIR "%s.appsec", cf->cpath, sha1_name);
+  if (fd == BADFD) {
+    perror("open app secret to read");
+    D("No app secret file found for sha1_name(%s)", sha1_name);
+    return 0;
+  }
+  siz = get_file_size(fd);
+  buf = ZX_ALLOC(cf->ctx, siz+1);
+  n = read_all_fd(fd, buf, siz, &got);
+  DD("==========sha1_name(%s)", sha1_name);
+  if (n == -1)
+    goto readerr;
+  close_file(fd, (const char*)__FUNCTION__);
+  return buf;
+
+readerr:
+  perror("read app secret");
+  D("%s: Failed to read app secret for sha1_name(%s)", logkey, sha1_name);
+  close_file(fd, (const char*)__FUNCTION__);
+  return 0;
+}
+
+/*() Call OAUTH2 / UMA1 / OIDC1 / Facebook Connect Token Endpoint and return a token
+ * N.B. The cgi->eid was populated by caller from the information in state.
+ * The token endpoint is determined from remote IdP's metadata in out cot/
+ * directory. It must have IDPSSODescriptor/@tokenURL attribute (this is an
+ * extension to the regular SAML metadata).
+ */
 
 static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 {
-  char* endpoint = "http://idp.tas3.pt:8081/zxididp?o=T";  // *** proper metadata lookup
-  char buf[4096];
+  zxid_entity* idp_meta;
+  //char* endpoint = "http://idp.tas3.pt:8081/zxididp?o=T";  // *** proper metadata lookup
+  struct zx_str* url;
+  struct zx_str* appId;
   struct zx_str* res;
+  char* appSecret;
+  char* appSecret_url_enc;
+  char* redir_url_enc;
+  char* eid_url_enc;
   char* azhdr;
+  char* buf;
+  int len,olen;
 #if 0  
   if (iat) {
     azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", client_secret);
@@ -975,10 +1145,89 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
 #endif
     azhdr = 0;
 
+  D_INDENT("call_tok_ept: ");
+
+  if (!cgi->eid || !cgi->eid[0]) {
+    ERR("Entity ID missing. Corrupt state field? %p", cgi->eid);
+    cgi->err = "IdP entity id missing or incorrect.";
+    D_DEDENT("call_tok_ept: ");
+    return 0;
+  }
+
+  ses->issuer_meta = idp_meta = zxid_get_ent(cf, cgi->eid);
+  if (!idp_meta || !idp_meta->ed || !idp_meta->ed->entityID || !idp_meta->ed->IDPSSODescriptor) {
+    ERR("IdP URL incorrect or IdP does not support fetching metadata from that URL. Corrupt state field? eid(%s) %p", cgi->eid, idp_meta);
+    cgi->err = "IdP URL incorrect or IdP does not support fetching metadata from that URL.";
+    D_DEDENT("call_tok_ept: ");
+    return 0;
+  }
+  ses->issuer = &idp_meta->ed->entityID->g;
+#if 1
+  if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->IDPSSODescriptor->tokenURL)) {
+    ERR("IdP metadata is missing tokenURL field. eid(%s) %p", cgi->eid, idp_meta->ed->IDPSSODescriptor->tokenURL);
+    cgi->err = "IdP metadata not prepared for resolving code to access_token. Lacks tokenURL.";
+    D_DEDENT("call_tok_ept: ");
+    return 0;
+  }
+  if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->appId)) {
+    ERR("IdP metadata is missing appId field. eid(%s) %p", cgi->eid, idp_meta->ed->appId);
+    cgi->err = "IdP metadata not prepared for resolving code to access_token. Lacks appId.";
+    D_DEDENT("call_tok_ept: ");
+    return 0;
+  }
+
+  url = &idp_meta->ed->IDPSSODescriptor->tokenURL->g;
+  appId = &idp_meta->ed->appId->g;
+  appSecret = zxid_get_app_secret(cf, idp_meta->sha1_name, "call_tok_ept");
+  if (!appSecret) {
+    if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->appSecret)) {
+      ERR("IdP is missing app secret file (and appSecret field). eid(%s) %p", cgi->eid, idp_meta->ed->appSecret);
+      cgi->err = "IdP not prepared for resolving code to access_token. Lacks app secret.";
+      D_DEDENT("call_tok_ept: ");
+      return 0;
+    }
+    appSecret = zx_dup_len_cstr(cf->ctx, idp_meta->ed->appSecret->g.len, idp_meta->ed->appSecret->g.s);
+  }
+  appSecret_url_enc = zx_url_encode(cf->ctx, -2, appSecret, 0);
+  ZX_FREE(cf->ctx, appSecret);
+  redir_url_enc = zx_url_encode(cf->ctx, -2, cf->burl, 0);
+  /* Per IdP app_id (aka client_id) instead of SP chosen eid */
+  eid_url_enc = zx_url_encode(cf->ctx, appId->len, appId->s, 0);
+  //{ eid = zxid_my_ent_id(cf);
+  //  eid_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
+  //  zx_str_free(cf->ctx, eid);  }
+  
+  for (olen = 2047 /* just initial guess */; 1; olen=len) {
+    buf = ZX_ALLOC(cf->ctx, olen+1);
+    len = snprintf(buf, olen,
+		   "%.*s%c"
+		   "client_id=%s"
+		   "&redirect_uri=%s%%3fo=O"
+		   "&client_secret=%s"
+		   "&code=%s",
+		   url->len, url->s, (memchr(url->s, '?', url->len)?'&':'?'),
+		   eid_url_enc,
+		   redir_url_enc,
+		   appSecret_url_enc,
+		   cgi->code);
+    if (len <= olen)
+      break;  /* fits */
+    /* Did not fit, try again (second iteration will always be successful) */
+    ZX_FREE(cf->ctx, buf);
+  }
+  buf[len] = 0;  /* MS snprintf() bug */
+  
+  ZX_FREE(cf->ctx, eid_url_enc);
+  ZX_FREE(cf->ctx, redir_url_enc);
+  ZX_FREE(cf->ctx, appSecret_url_enc);
+  res = zxid_http_cli(cf, -1, buf, 0, 0, 0, azhdr, 0);
+  ZX_FREE(cf->ctx, buf);
+#else
   snprintf(buf, sizeof(buf),
 	   "grant_type=authorization_code&code=%s&redirect_uri=%s",
 	   cgi->code, cgi->redirect_uri);
   res = zxid_http_cli(cf, -1, endpoint, -1, buf, 0, azhdr, 0);
+#endif
   D("%.*s", res->len, res->s);
   
   /* Extract the fields as if it had been implicit mode SSO */
@@ -987,7 +1236,97 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
   ses->token_type = zx_json_extract_dup(cf->ctx, res->s, "\"token_type\"");
   ses->expires_in = zx_json_extract_int(res->s, "\"expires_in\"");
   ses->id_token = zx_json_extract_dup(cf->ctx, res->s, "\"id_token\"");
+  if (ses->access_token)
+    cgi->access_token = ses->access_token;
+  if (ses->id_token)
+    cgi->id_token = ses->id_token;
   // *** check validity
+  zx_str_free(cf->ctx, res);
+  D_DEDENT("call_tok_ept: ");
+  return 1;
+}
+
+/*() Call Facebook graph /me endpoint using OAUTH2 and extract
+ * from the response id (the pseudonym) and other fields (if available).
+ * N.B. The ses->access_token was populated by caller from response to call
+ * to token endpoint, see above.
+ * The graph endpoint is determined from remote IdP's metadata in out cot/
+ * directory. It must have IDPSSODescriptor/@graphURL attribute (this is an
+ * extension to the regular SAML metadata). */
+
+static int zxid_oauth_call_fb_graph_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* graph_path, const char* more_fields)
+{
+  zxid_entity* idp_meta;
+  struct zx_str* url;
+  struct zx_str* res;
+  char* azhdr;
+  char* buf;
+  int len,olen;
+#if 0  
+  if (iat) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", client_secret);
+  } else
+#endif
+    azhdr = 0;
+
+  D_INDENT("call_graph_ept: ");
+
+  idp_meta = ses->issuer_meta;
+  if (!idp_meta || !idp_meta->ed || !idp_meta->ed->IDPSSODescriptor) {
+    ERR("Issuer IdP not set or does not support graph API. %p", idp_meta);
+    cgi->err = "Issuer IdP not set or does not support graph API";
+    D_DEDENT("call_graph_ept: ");
+    return 0;
+  }
+  
+  if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->IDPSSODescriptor->graphURL)) {
+    ERR("IdP metadata is missing graphURL field. eid(%s) %p", cgi->eid, idp_meta->ed->IDPSSODescriptor->graphURL);
+    cgi->err = "IdP metadata lacks graphURL.";
+    D_DEDENT("call_graph_ept: ");
+    return 0;
+  }
+
+  url = &idp_meta->ed->IDPSSODescriptor->graphURL->g;
+  
+  for (olen = 1023 /* just initial guess */; 1; olen=len) {
+    buf = ZX_ALLOC(cf->ctx, olen+1);
+    len = snprintf(buf, olen,
+		   "%.*s%s%c"
+		   "access_token=%s"
+		   "%s",
+		   url->len, url->s, graph_path, (memchr(url->s, '?', url->len)?'&':'?'),
+		   ses->access_token,
+		   STRNULLCHK(more_fields));
+    if (len <= olen)
+      break;  /* fits */
+    /* Did not fit, try again (second iteration will always be successful) */
+    ZX_FREE(cf->ctx, buf);
+  }
+  buf[len] = 0;  /* MS snprintf() bug */
+  
+  res = zxid_http_cli(cf, -1, buf, 0, 0, 0, azhdr, 0);
+  ZX_FREE(cf->ctx, buf);
+
+  D("%.*s", res->len, res->s);
+  
+  /* Extract the fields as if it had been implicit mode SSO */
+  ses->nid = zx_json_extract_dup(cf->ctx, res->s, "\"id\"");  /* facebook persistent pseudonym */
+  D("remote idp addigned nid(%s)", STRNULLCHKD(ses->nid));
+
+#if 0
+  ses->access_token = zx_json_extract_dup(cf->ctx, res->s, "\"access_token\"");
+  ses->refresh_token = zx_json_extract_dup(cf->ctx, res->s, "\"refresh_token\"");
+  ses->token_type = zx_json_extract_dup(cf->ctx, res->s, "\"token_type\"");
+  ses->expires_in = zx_json_extract_int(res->s, "\"expires_in\"");
+  ses->id_token = zx_json_extract_dup(cf->ctx, res->s, "\"id_token\"");
+  if (ses->access_token)
+    cgi->access_token = ses->access_token;
+  if (ses->id_token)
+    cgi->id_token = ses->id_token;
+  // *** check validity
+#endif
+  zx_str_free(cf->ctx, res);
+  D_DEDENT("call_graph_ept: ");
   return 1;
 }
 
@@ -1114,7 +1453,37 @@ static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
   return 0;
 }
 
+/*() Decode OAUTH2 state parameter
+ * We use state to represent two things:
+ *
+ * 1. EntityID (eid) of the called IdP. This is necessary as at least Facebook
+ *    does not include any issuer information in the responses.
+ * 2. SSOREQ or original RelayState
+ *
+ * The two are represented as query string "eid=EID&ssoreq=SSOREQ" and then
+ * deflated and safe_base64 encoded. Here we need to unpack this
+ * and populate it back to cgi context.
+ */
+
+/* Called by:  zxid_simple_idp_pw_authn, zxid_simple_idp_show_an, zxid_sp_sso_finalize */
+static int zxid_decode_oauth2_state(zxid_conf* cf, zxid_cgi* cgi)
+{
+  int len;
+  char* p;
+  if (!cgi->state || !cgi->state[0])
+    return 1;
+  p = zxid_unbase64_inflate(cf->ctx, -2, cgi->state, &len);
+  if (!p)
+    return 0;
+  D("state decoded(%s) len=%d", p, len);
+  zxid_parse_cgi(cf, cgi, p); /* in particular this will populate cgi->eid and cgi->ssoreq */
+  return 1;
+}
+
 /*() Dispatch, on RP/SP side, OAUTH2 redir or artifact binding requests.
+ *
+ * The state field contains eid and other information that is normally missing
+ * OAUTH2 or at least Facebook Connect.
  *
  * return:: a string (such as Location: header) and let the caller output it.
  *     Sometimes a dummy string is just output to indicate status, e.g.
@@ -1128,10 +1497,15 @@ static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
 struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 {
   int ret;
+  struct zx_str ss;
+  struct timeval ourts;
+  struct timeval srcts = {0,501000};
 
+  ret = zxid_decode_oauth2_state(cf, cgi); /* Recover cgi->eid and cgi->ssoreq */  
   if (cgi->code) {  /* OAUTH2 artifact / Authorization Code biding, aka OpenID-Connect1 */
     D("Dereference code(%s)", cgi->code);
-    zxid_oauth_call_token_endpoint(cf, cgi, ses);  /* populates cgi->id_token */
+    zxid_oauth_call_token_endpoint(cf, cgi, ses);
+    /* populates cgi->id_token and/or cgi->access_token as well as ses->issuer_meta */
   }
   
   if (cgi->id_token) {  /* OAUTH2 implicit binding (token inline in redir), aka OpenID-Connect1 */
@@ -1147,6 +1521,71 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
       return zx_dup_str(cf->ctx, "* ERR");
     }
     return zx_dup_str(cf->ctx, "M");  /* Management screen, please. */
+  }
+  
+  if (cgi->access_token) {
+    zxid_oauth_call_fb_graph_endpoint(cf, cgi, ses, "me", "&fields=id,name,email");
+    /* The data returned by /me will include id which can be used as pseudonym */
+    // ***
+
+    GETTIMEOFDAY(&ourts, 0);
+
+    ses->nidfmt = 1;  /* Assume federation */
+    ses->tgt = ses->nid;
+    ses->tgtfmt = 1;  /* Assume federation */
+    // *** should some signature validation happen here, using issuer (idp) meta?
+    cgi->sigval = "N";
+    cgi->sigmsg = "Facebook Connect response was not signed.";
+    ses->sigres = ZXSIG_NO_SIG;
+  
+#if 0
+    if (cf->log_rely_a7n) {
+      DD("Logging rely... %d", 0);
+      ss.s = (char*)jwt; ss.len = strlen(jwt);
+      logpath = zxlog_path(cf, ses->issuer, &ss, ZXLOG_RELY_DIR, ZXLOG_JWT_KIND, 1);
+      if (logpath) {
+	ses->sso_a7n_path = ses->tgt_a7n_path = zx_str_to_c(cf->ctx, logpath);
+	if (zxlog_dup_check(cf, logpath, "SSO JWT")) {
+	  if (cf->dup_a7n_fatal) {
+	    err = "C";
+	    zxlog_blob(cf, cf->log_rely_a7n, logpath, &ss, "sp_sso_finalize_fbc dup err");
+	    goto erro;
+	  }
+	}
+	zxlog_blob(cf, cf->log_rely_a7n, logpath, &ss, "sp_sso_finalize_fbc");
+      }
+    }
+#endif
+    DD("Creating session... %d", 0);
+    ses->ssores = 0;
+    zxid_put_ses(cf, ses);
+    //*** zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest attributes and bootstrap(s) */
+    cgi->msg = "SSO completed and session created.";
+    cgi->op = '-';  /* Make sure management screen does not try to redispatch. */
+    zxid_put_user(cf, 0, 0, 0, zx_ref_str(cf->ctx, ses->nid), 0);
+    DD("Logging... %d", 0);
+    ss.s = ses->nid; ss.len = strlen(ss.s);
+    zxlog(cf, &ourts, &srcts, 0, ses->issuer, 0, 0, &ss,
+	  cgi->sigval, "K", "NEWSESFBC", ses->sid, "sesix(%s)", STRNULLCHKD(ses->sesix));
+    zxlog(cf, &ourts, &srcts, 0, ses->issuer, 0, 0, &ss,
+	  cgi->sigval, "K", ses->nidfmt?"FEDSSOFBC":"TMPSSOFBC", STRNULLCHKD(ses->sesix), 0);
+
+#if 0
+    if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP flow */
+      if (cgi->rs && cgi->rs[0]) {
+	D("ProxyIdP got RelayState(%s) ar(%s)", cgi->rs, STRNULLCHK(cgi->ssoreq));
+	cgi->saml_resp = 0;  /* Clear Response to prevent re-interpretation. We want Request. */
+	cgi->ssoreq = cgi->rs;
+	zxid_decode_ssoreq(cf, cgi);
+	cgi->op = 'V';
+	D_DEDENT("ssof: ");
+	return ZXID_IDP_REQ; /* Cause zxid_simple_idp_an_ok_do_rest() to be called from zxid_sp_dispatch(); */
+      } else {
+	INFO("Middle IdP of Proxy IdP flow did not receive RelayState from upstream IdP %p", cgi->rs);
+      }
+    }
+#endif
+    return zx_dup_str(cf->ctx, "O");  /* ZXID_SSO_OK */
   }
   
   if (cf->log_level > 0)

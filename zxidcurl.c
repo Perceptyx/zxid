@@ -1,6 +1,6 @@
 /* zxidcurl.c  -  libcurl interface for making SOAP calls and getting metadata
  * Copyright (c) 2013-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011, 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -18,6 +18,7 @@
  * 12.3.2014,  added partial mime multipart support --Sampo
  * 27.5.2014,  Added feature to stop parsing after end of first top level tag has been seen --Sampo
  * 8.6.2015,   Fixed bug relating to unset action header --Sampo
+ * 5.12.2016,  Make use of CURLOPT_ERRORBUFFER feature --Sampo
  *
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  *           http://curl.haxx.se/libcurl/
@@ -123,12 +124,17 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
 {
 #ifdef USE_CURL
   struct zx_str* ret;
+  char errbuf[CURL_ERROR_SIZE+1];
   CURLcode res;
   struct zxid_curl_ctx rc;
   struct zxid_curl_ctx wc;
   struct curl_slist content_type_curl;
   struct curl_slist headers_curl;
   char* urli;
+  curl_version_info_data *vinfo = curl_version_info( CURLVERSION_NOW ); 
+  if(!(vinfo->features & CURL_VERSION_SSL)) {
+    ERR("libcurl: SSL/TLS support lacking. Trying anyways. 0x%x", vinfo->features);
+  }
   rc.buf = rc.p = ZX_ALLOC(cf->ctx, ZXID_INIT_SOAP_BUF+1);
   rc.lim = rc.buf + ZXID_INIT_SOAP_BUF;
 
@@ -142,12 +148,23 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
    * objects.
    */
 
+  memset(errbuf, 0, sizeof(errbuf));
+  curl_easy_setopt(cf->curl, CURLOPT_ERRORBUFFER, errbuf);
+  if (errmac_debug & CURL_INOUT) {
+    curl_easy_setopt(cf->curl, CURLOPT_VERBOSE, 1);
+    /* consider CURLOPT_DEBUGFUNCTION */
+  }
+  curl_easy_setopt(cf->curl, CURLOPT_VERBOSE, 1);
+  
 #if 0
-  cf->curl = curl_easy_init();
-  curl_easy_reset(cf->curl);
+  /* Full init is not needed as init is already done at cf creation level. */
   LOCK_INIT(cf->curl_mx);
   LOCK(cf->curl_mx, "curl-cli");
+  cf->curl = curl_easy_init();
+  curl_easy_reset(cf->curl);
 #else
+  /* Reset should be enough, as init is already done at cf creation level,
+   * and is more efficient as various caches are preserved. */
   LOCK(cf->curl_mx, "curl-cli");
   curl_easy_reset(cf->curl);
 #endif
@@ -155,8 +172,8 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
   curl_easy_setopt(cf->curl, CURLOPT_WRITEDATA, &rc);
   curl_easy_setopt(cf->curl, CURLOPT_WRITEFUNCTION, zxid_curl_write_data);
   curl_easy_setopt(cf->curl, CURLOPT_NOPROGRESS, 1);
-  curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYPEER, 0);  /* *** arrange verification */
-  curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYHOST, 0);  /* *** arrange verification */
+  //curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYPEER, 0);  /* *** arrange verification */
+  //curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYHOST, 0);  /* *** arrange verification */
   //curl_easy_setopt(cf->curl, CURLOPT_CERTINFO, 1);
 
   if (!(flags & 0x02)) {
@@ -204,14 +221,14 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
     }
   }
   
-  INFO("----------- call(%s) -----------", urli);
+  INFO("----------- call(%s) ----------- %p", urli, data);
   DD("HTTP_CLI post(%.*s) len=%d\n", len, STRNULLCHK(data), len);
   D_XML_BLOB(cf, "HTTP_CLI POST", len, STRNULLCHK(data));
   res = curl_easy_perform(cf->curl);  /* <========= Actual call, blocks. */
   switch (res) {
   case 0: break;
   case CURLE_SSL_CONNECT_ERROR:
-    ERR("Is the URL(%s) really an https url? Check that certificate of the server is valid and that certification authority is known to the client. CURLcode(%d) CURLerr(%s)", urli, res, CURL_EASY_STRERR(res));
+    ERR("Is the URL(%s) really an https url? Check that certificate of the server is valid and that certification authority is known to the client. CURLcode(%d) CURLerr(%s) errbuf(%s)", urli, res, CURL_EASY_STRERR(res), errbuf);
     DD("buf(%.*s)", rc.lim-rc.buf, rc.buf);
 #if 0
     struct curl_certinfo* ci;
@@ -227,7 +244,7 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
 #endif
     break;
   default:
-    ERR("Failed post to url(%s) CURLcode(%d) CURLerr(%s)", urli, res, CURL_EASY_STRERR(res));
+    ERR("Failed http req to url(%s) CURLcode(%d) CURLerr(%s) errbuf(%s)", urli, res, CURL_EASY_STRERR(res), errbuf);
     DD("buf(%.*s)", rc.lim-rc.buf, rc.buf);
   }
 
@@ -288,7 +305,7 @@ zxid_entity* zxid_get_meta(zxid_conf* cf, const char* url)
   }
   buf = md = res->s;
   lim = res->s + res->len;
-  ent = zxid_parse_meta(cf, &md, lim);
+  ent = zxid_parse_meta(cf, &md, lim, 0);
   if (!ent) {
     ERR("Failed to parse metadata response url(%s) buf(%.*s)",	url, ((int)(lim-buf)), buf);
     ZX_FREE(cf->ctx, buf);

@@ -1,6 +1,6 @@
 /* zxdecode.c  -  SAML Decoding tool
  * Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2008-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2008-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -11,6 +11,7 @@
  * 4.10.2010, added -s and ss modes, as well as -i N selector --Sampo
  * 25.1.2011, added -wsc and -wsp validation options --Sampo
  * 7.2.2012,  improved decoding encrypted SAML responses --Sampo
+ * 3.10.2016, added -E (encoding) feature --Sampo
  */
 
 #include <string.h>
@@ -33,7 +34,7 @@
 char* help =
 "zxdecode  -  Decode SAML Redirect and POST Messages R" ZXID_REL "\n\
 Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.\n\
-Copyright (c) 2008-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
+Copyright (c) 2008-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
 NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0\n\
 See http://www.apache.org/licenses/LICENSE-2.0\n\
 Send well researched bug reports to the author. Home: zxid.org\n\
@@ -52,6 +53,9 @@ Usage: zxdecode [options] <message >decoded\n\
   -wspd            Call zxid_wsp_decorate() on SOAP response\n\
   -wscv            Call zxid_wsc_valid_resp() on SOAP response\n\
   -sha1            Compute sha1 over input and print as base64. For debugging canon.\n\
+  -E               Encode instead of decode. If -Z is specified, the input is first\n\
+                   deflate compressed. If -B is specified, then safe base64 encoding is\n\
+                   applied. Userful for producing fr strings, e.g. -E -Z -B\n\
   -v               Verbose messages.\n\
   -q               Be extra quiet.\n\
   -d               Turn on debugging.\n\
@@ -61,6 +65,7 @@ Usage: zxdecode [options] <message >decoded\n\
 Will attempt to detect many layers of encoding. Will hunt for the\n\
 relevant input such as SAMLRequest or SAMLResponse in, e.g., log file.\n";
 
+int enc_flag = 0;
 int b64_flag = 2;      /* Auto */
 int inflate_flag = 2;  /* Auto */
 int verbose = 1;
@@ -165,6 +170,14 @@ static void opt(int* argc, char*** argv, char*** env)
       switch ((*argv)[0][2]) {
       case '\0':
 	inflate_flag = 1;
+	continue;
+      }
+      break;
+
+    case 'E':
+      switch ((*argv)[0][2]) {
+      case '\0':
+	enc_flag = 1;
 	continue;
       }
       break;
@@ -515,6 +528,51 @@ decompress:
   return 0;
 }
 
+/* Called by:  zxdecode_main */
+static int encode(char* msg, char* q)
+{
+  int len= q-msg;
+  char* p = msg;
+  char* b64;
+  
+  *q = 0;
+  D("Original Msg(%s) x=%x", msg, *msg);
+  
+  switch (inflate_flag) {  /* Here means deflate */
+  default:
+    ERR("For -E (encode) you must specify -Z or -z. Current choice %d results in no deflate.", inflate_flag);
+  case 0:
+    if (b64_flag != 1) {
+      D("encode_base64 skipped at user request %d, len=%d",b64_flag,len);
+      break;
+    }
+
+    len = SIMPLE_BASE64_LEN(q-msg);
+    DD("zbuf(%.*s) zlen=%d len=%d", zlen, zbuf, zlen, len);
+    b64 = ZX_ALLOC(cf->ctx, len+1);
+    p = base64_fancy_raw(msg, q-msg, b64, safe_basis_64, 1<<31, 0, 0, '=');
+    *p = 0;
+    len = p-b64;
+    p = b64;
+    D("No decompression by user choice len=%d", len);
+    break;
+
+  case 1:
+    D("Compressing... (force) %d",b64_flag);
+    if (b64_flag == 1) {
+      p = zxid_deflate_safe_b64_raw(0, q-msg, msg);  /* Redir uses compressed payload. */
+      len = strlen(p);
+      break;
+    }
+    p = zx_zlib_raw_deflate(0, p-msg, msg, &len);
+    break;
+  }
+
+  fwrite(p, 1, len, stdout);  
+  /*if (sig_flag) return sig_create(len, p);*/
+  return 0;
+}
+
 #ifndef zxdecode_main
 #define zxdecode_main main
 #endif
@@ -539,6 +597,11 @@ int zxdecode_main(int argc, char** argv, char** env)
     p = sha1_safe_base64(buf, got, buf);
     *p = 0;
     printf("%s\n", buf);
+    return 0;
+  }
+
+  if (enc_flag) {
+    encode(buf, buf+got);
     return 0;
   }
 

@@ -803,7 +803,9 @@ int zx_LEN_SO_md_AttributeAuthorityDescriptor(struct zx_ctx* c, struct zx_md_Att
   len += zx_attr_so_len(c, x->ID, sizeof("ID")-1, &pop_seen);
   len += zx_attr_so_len(c, x->cacheDuration, sizeof("cacheDuration")-1, &pop_seen);
   len += zx_attr_so_len(c, x->errorURL, sizeof("errorURL")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->graphURL, sizeof("graphURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->protocolSupportEnumeration, sizeof("protocolSupportEnumeration")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->tokenURL, sizeof("tokenURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->validUntil, sizeof("validUntil")-1, &pop_seen);
 
 #else
@@ -886,7 +888,9 @@ char* zx_ENC_SO_md_AttributeAuthorityDescriptor(struct zx_ctx* c, struct zx_md_A
   p = zx_attr_so_enc(p, x->ID, " ID=\"", sizeof(" ID=\"")-1);
   p = zx_attr_so_enc(p, x->cacheDuration, " cacheDuration=\"", sizeof(" cacheDuration=\"")-1);
   p = zx_attr_so_enc(p, x->errorURL, " errorURL=\"", sizeof(" errorURL=\"")-1);
+  p = zx_attr_so_enc(p, x->graphURL, " graphURL=\"", sizeof(" graphURL=\"")-1);
   p = zx_attr_so_enc(p, x->protocolSupportEnumeration, " protocolSupportEnumeration=\"", sizeof(" protocolSupportEnumeration=\"")-1);
+  p = zx_attr_so_enc(p, x->tokenURL, " tokenURL=\"", sizeof(" tokenURL=\"")-1);
   p = zx_attr_so_enc(p, x->validUntil, " validUntil=\"", sizeof(" validUntil=\"")-1);
 
   for (attr = x->gg.attr; attr; attr = (struct zx_attr_s*)attr->g.n)
@@ -1314,7 +1318,9 @@ int zx_LEN_SO_md_AuthnAuthorityDescriptor(struct zx_ctx* c, struct zx_md_AuthnAu
   len += zx_attr_so_len(c, x->ID, sizeof("ID")-1, &pop_seen);
   len += zx_attr_so_len(c, x->cacheDuration, sizeof("cacheDuration")-1, &pop_seen);
   len += zx_attr_so_len(c, x->errorURL, sizeof("errorURL")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->graphURL, sizeof("graphURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->protocolSupportEnumeration, sizeof("protocolSupportEnumeration")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->tokenURL, sizeof("tokenURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->validUntil, sizeof("validUntil")-1, &pop_seen);
 
 #else
@@ -1389,7 +1395,9 @@ char* zx_ENC_SO_md_AuthnAuthorityDescriptor(struct zx_ctx* c, struct zx_md_Authn
   p = zx_attr_so_enc(p, x->ID, " ID=\"", sizeof(" ID=\"")-1);
   p = zx_attr_so_enc(p, x->cacheDuration, " cacheDuration=\"", sizeof(" cacheDuration=\"")-1);
   p = zx_attr_so_enc(p, x->errorURL, " errorURL=\"", sizeof(" errorURL=\"")-1);
+  p = zx_attr_so_enc(p, x->graphURL, " graphURL=\"", sizeof(" graphURL=\"")-1);
   p = zx_attr_so_enc(p, x->protocolSupportEnumeration, " protocolSupportEnumeration=\"", sizeof(" protocolSupportEnumeration=\"")-1);
+  p = zx_attr_so_enc(p, x->tokenURL, " tokenURL=\"", sizeof(" tokenURL=\"")-1);
   p = zx_attr_so_enc(p, x->validUntil, " validUntil=\"", sizeof(" validUntil=\"")-1);
 
   for (attr = x->gg.attr; attr; attr = (struct zx_attr_s*)attr->g.n)
@@ -2280,6 +2288,8 @@ int zx_LEN_SO_md_EntityDescriptor(struct zx_ctx* c, struct zx_md_EntityDescripto
     len += zx_len_xmlns_if_not_seen(c, zx_ns_tab+(zx_md_NS >> ZX_TOK_NS_SHIFT), &pop_seen);
 
   len += zx_attr_so_len(c, x->ID, sizeof("ID")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->appId, sizeof("appId")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->appSecret, sizeof("appSecret")-1, &pop_seen);
   len += zx_attr_so_len(c, x->cacheDuration, sizeof("cacheDuration")-1, &pop_seen);
   len += zx_attr_so_len(c, x->entityID, sizeof("entityID")-1, &pop_seen);
   len += zx_attr_so_len(c, x->validUntil, sizeof("validUntil")-1, &pop_seen);
@@ -2370,6 +2380,8 @@ char* zx_ENC_SO_md_EntityDescriptor(struct zx_ctx* c, struct zx_md_EntityDescrip
   zx_see_attr_ns(c, x->gg.attr, &pop_seen);
   p = zx_enc_seen(p, pop_seen); 
   p = zx_attr_so_enc(p, x->ID, " ID=\"", sizeof(" ID=\"")-1);
+  p = zx_attr_so_enc(p, x->appId, " appId=\"", sizeof(" appId=\"")-1);
+  p = zx_attr_so_enc(p, x->appSecret, " appSecret=\"", sizeof(" appSecret=\"")-1);
   p = zx_attr_so_enc(p, x->cacheDuration, " cacheDuration=\"", sizeof(" cacheDuration=\"")-1);
   p = zx_attr_so_enc(p, x->entityID, " entityID=\"", sizeof(" entityID=\"")-1);
   p = zx_attr_so_enc(p, x->validUntil, " validUntil=\"", sizeof(" validUntil=\"")-1);
@@ -2667,7 +2679,9 @@ int zx_LEN_SO_md_IDPSSODescriptor(struct zx_ctx* c, struct zx_md_IDPSSODescripto
   len += zx_attr_so_len(c, x->WantAuthnRequestsSigned, sizeof("WantAuthnRequestsSigned")-1, &pop_seen);
   len += zx_attr_so_len(c, x->cacheDuration, sizeof("cacheDuration")-1, &pop_seen);
   len += zx_attr_so_len(c, x->errorURL, sizeof("errorURL")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->graphURL, sizeof("graphURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->protocolSupportEnumeration, sizeof("protocolSupportEnumeration")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->tokenURL, sizeof("tokenURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->validUntil, sizeof("validUntil")-1, &pop_seen);
 
 #else
@@ -2767,7 +2781,9 @@ char* zx_ENC_SO_md_IDPSSODescriptor(struct zx_ctx* c, struct zx_md_IDPSSODescrip
   p = zx_attr_so_enc(p, x->WantAuthnRequestsSigned, " WantAuthnRequestsSigned=\"", sizeof(" WantAuthnRequestsSigned=\"")-1);
   p = zx_attr_so_enc(p, x->cacheDuration, " cacheDuration=\"", sizeof(" cacheDuration=\"")-1);
   p = zx_attr_so_enc(p, x->errorURL, " errorURL=\"", sizeof(" errorURL=\"")-1);
+  p = zx_attr_so_enc(p, x->graphURL, " graphURL=\"", sizeof(" graphURL=\"")-1);
   p = zx_attr_so_enc(p, x->protocolSupportEnumeration, " protocolSupportEnumeration=\"", sizeof(" protocolSupportEnumeration=\"")-1);
+  p = zx_attr_so_enc(p, x->tokenURL, " tokenURL=\"", sizeof(" tokenURL=\"")-1);
   p = zx_attr_so_enc(p, x->validUntil, " validUntil=\"", sizeof(" validUntil=\"")-1);
 
   for (attr = x->gg.attr; attr; attr = (struct zx_attr_s*)attr->g.n)
@@ -3896,7 +3912,9 @@ int zx_LEN_SO_md_PDPDescriptor(struct zx_ctx* c, struct zx_md_PDPDescriptor_s* x
   len += zx_attr_so_len(c, x->ID, sizeof("ID")-1, &pop_seen);
   len += zx_attr_so_len(c, x->cacheDuration, sizeof("cacheDuration")-1, &pop_seen);
   len += zx_attr_so_len(c, x->errorURL, sizeof("errorURL")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->graphURL, sizeof("graphURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->protocolSupportEnumeration, sizeof("protocolSupportEnumeration")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->tokenURL, sizeof("tokenURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->validUntil, sizeof("validUntil")-1, &pop_seen);
 
 #else
@@ -3971,7 +3989,9 @@ char* zx_ENC_SO_md_PDPDescriptor(struct zx_ctx* c, struct zx_md_PDPDescriptor_s*
   p = zx_attr_so_enc(p, x->ID, " ID=\"", sizeof(" ID=\"")-1);
   p = zx_attr_so_enc(p, x->cacheDuration, " cacheDuration=\"", sizeof(" cacheDuration=\"")-1);
   p = zx_attr_so_enc(p, x->errorURL, " errorURL=\"", sizeof(" errorURL=\"")-1);
+  p = zx_attr_so_enc(p, x->graphURL, " graphURL=\"", sizeof(" graphURL=\"")-1);
   p = zx_attr_so_enc(p, x->protocolSupportEnumeration, " protocolSupportEnumeration=\"", sizeof(" protocolSupportEnumeration=\"")-1);
+  p = zx_attr_so_enc(p, x->tokenURL, " tokenURL=\"", sizeof(" tokenURL=\"")-1);
   p = zx_attr_so_enc(p, x->validUntil, " validUntil=\"", sizeof(" validUntil=\"")-1);
 
   for (attr = x->gg.attr; attr; attr = (struct zx_attr_s*)attr->g.n)
@@ -4242,7 +4262,9 @@ int zx_LEN_SO_md_RoleDescriptor(struct zx_ctx* c, struct zx_md_RoleDescriptor_s*
   len += zx_attr_so_len(c, x->ID, sizeof("ID")-1, &pop_seen);
   len += zx_attr_so_len(c, x->cacheDuration, sizeof("cacheDuration")-1, &pop_seen);
   len += zx_attr_so_len(c, x->errorURL, sizeof("errorURL")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->graphURL, sizeof("graphURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->protocolSupportEnumeration, sizeof("protocolSupportEnumeration")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->tokenURL, sizeof("tokenURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->validUntil, sizeof("validUntil")-1, &pop_seen);
 
 #else
@@ -4305,7 +4327,9 @@ char* zx_ENC_SO_md_RoleDescriptor(struct zx_ctx* c, struct zx_md_RoleDescriptor_
   p = zx_attr_so_enc(p, x->ID, " ID=\"", sizeof(" ID=\"")-1);
   p = zx_attr_so_enc(p, x->cacheDuration, " cacheDuration=\"", sizeof(" cacheDuration=\"")-1);
   p = zx_attr_so_enc(p, x->errorURL, " errorURL=\"", sizeof(" errorURL=\"")-1);
+  p = zx_attr_so_enc(p, x->graphURL, " graphURL=\"", sizeof(" graphURL=\"")-1);
   p = zx_attr_so_enc(p, x->protocolSupportEnumeration, " protocolSupportEnumeration=\"", sizeof(" protocolSupportEnumeration=\"")-1);
+  p = zx_attr_so_enc(p, x->tokenURL, " tokenURL=\"", sizeof(" tokenURL=\"")-1);
   p = zx_attr_so_enc(p, x->validUntil, " validUntil=\"", sizeof(" validUntil=\"")-1);
 
   for (attr = x->gg.attr; attr; attr = (struct zx_attr_s*)attr->g.n)
@@ -4423,7 +4447,9 @@ int zx_LEN_SO_md_SPSSODescriptor(struct zx_ctx* c, struct zx_md_SPSSODescriptor_
   len += zx_attr_so_len(c, x->WantAssertionsSigned, sizeof("WantAssertionsSigned")-1, &pop_seen);
   len += zx_attr_so_len(c, x->cacheDuration, sizeof("cacheDuration")-1, &pop_seen);
   len += zx_attr_so_len(c, x->errorURL, sizeof("errorURL")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->graphURL, sizeof("graphURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->protocolSupportEnumeration, sizeof("protocolSupportEnumeration")-1, &pop_seen);
+  len += zx_attr_so_len(c, x->tokenURL, sizeof("tokenURL")-1, &pop_seen);
   len += zx_attr_so_len(c, x->validUntil, sizeof("validUntil")-1, &pop_seen);
 
 #else
@@ -4512,7 +4538,9 @@ char* zx_ENC_SO_md_SPSSODescriptor(struct zx_ctx* c, struct zx_md_SPSSODescripto
   p = zx_attr_so_enc(p, x->WantAssertionsSigned, " WantAssertionsSigned=\"", sizeof(" WantAssertionsSigned=\"")-1);
   p = zx_attr_so_enc(p, x->cacheDuration, " cacheDuration=\"", sizeof(" cacheDuration=\"")-1);
   p = zx_attr_so_enc(p, x->errorURL, " errorURL=\"", sizeof(" errorURL=\"")-1);
+  p = zx_attr_so_enc(p, x->graphURL, " graphURL=\"", sizeof(" graphURL=\"")-1);
   p = zx_attr_so_enc(p, x->protocolSupportEnumeration, " protocolSupportEnumeration=\"", sizeof(" protocolSupportEnumeration=\"")-1);
+  p = zx_attr_so_enc(p, x->tokenURL, " tokenURL=\"", sizeof(" tokenURL=\"")-1);
   p = zx_attr_so_enc(p, x->validUntil, " validUntil=\"", sizeof(" validUntil=\"")-1);
 
   for (attr = x->gg.attr; attr; attr = (struct zx_attr_s*)attr->g.n)

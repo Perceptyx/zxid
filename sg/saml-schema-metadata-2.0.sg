@@ -1,6 +1,7 @@
 # zxid/sg/saml-schema-metadata-2.0.sh .sg
 # Slightly edited, 27.5.2006, Sampo Kellomaki (sampo@iki.fi)
 # 22.11.2009, added shib metadata support --Sampo
+# 30.11.2016, added metadata fields for OAuth2 (on Facebook) --Sampo
 # $Id: saml-schema-metadata-2.0.sg,v 1.4 2009-11-24 23:53:40 sampo Exp $
 
 target(md,urn:oasis:names:tc:SAML:2.0:metadata)
@@ -75,6 +76,8 @@ EntityDescriptor	 -> %md:EntityDescriptorType
   @validUntil?	 -> %dateTime
   @cacheDuration?	 -> %duration
   @ID?	 -> %xs:ID
+  @appId? -> %xs:string
+  @appSecret? -> %xs:string
   @any
   ;
 
@@ -128,6 +131,8 @@ RoleDescriptor	 -> %md:RoleDescriptorType
   @cacheDuration?	 -> %duration
   @protocolSupportEnumeration	 -> %xs:anyURI
   @errorURL?	 -> %xs:anyURI
+  @tokenURL? -> %xs:anyURI
+  @graphURL? -> %xs:anyURI
   @any
   ;
 
