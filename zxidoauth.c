@@ -334,7 +334,7 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* i
       ERR("RelayState(%s) supplied in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
     }
     /* Carry the original authn req in state */
-    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ssoreq=%s", cgi->eid, cgi->ssoreq);
+    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
     state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
     D("Middle IdP of Proxy IdP flow state(%s)", STRNULLCHK(st));
     ZX_FREE(cf->ctx, st);
@@ -421,7 +421,7 @@ struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp
       D("FBC RelayState(%s) supplied in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
     }
     /* Carry the original authn req in state */
-    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ssoreq=%s", cgi->eid, cgi->ssoreq);
+    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
     state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
     D("FBC middle IdP of Proxy IdP flow state(%s)", STRNULLCHK(st));
     ZX_FREE(cf->ctx, st);
@@ -1325,7 +1325,8 @@ static int zxid_oauth_call_fb_graph_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_
   
   /* Extract the fields as if it had been implicit mode SSO */
   ses->nid = zx_json_extract_dup(cf->ctx, res->s, "\"id\"");  /* facebook persistent pseudonym */
-  D("remote idp addigned nid(%s)", STRNULLCHKD(ses->nid));
+  ses->uid = ses->nid;
+  D("remote idp addigned nid(%s), also used as uid", STRNULLCHKD(ses->nid));
 
 #if 0
   ses->access_token = zx_json_extract_dup(cf->ctx, res->s, "\"access_token\"");
@@ -1427,12 +1428,10 @@ int zxid_sp_sso_finalize_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const 
   zxlog(cf, &ourts, &srcts, 0, ses->issuer, 0, 0, &ss,
 	cgi->sigval, "K", ses->nidfmt?"FEDSSOJWT":"TMPSSOJWT", STRNULLCHKD(ses->sesix), 0);
 
-#if 0
   if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP flow */
-    if (cgi->rs && cgi->rs[0]) {
-      D("ProxyIdP got RelayState(%s) ar(%s)", cgi->rs, STRNULLCHK(cgi->ssoreq));
+    if (cgi->ssoreq && cgi->ssoreq[0]) {
+      D("ProxyIdP got ar(%s)", STRNULLCHK(cgi->ssoreq));
       cgi->saml_resp = 0;  /* Clear Response to prevent re-interpretation. We want Request. */
-      cgi->ssoreq = cgi->rs;
       zxid_decode_ssoreq(cf, cgi);
       cgi->op = 'V';
       D_DEDENT("ssof: ");
@@ -1441,7 +1440,6 @@ int zxid_sp_sso_finalize_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const 
       INFO("Middle IdP of Proxy IdP flow did not receive RelayState from upstream IdP %p", cgi->rs);
     }
   }
-#endif
   D_DEDENT("ssof: ");
   return ZXID_SSO_OK;
 
@@ -1475,7 +1473,7 @@ static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
  *    does not include any issuer information in the responses.
  * 2. SSOREQ or original RelayState
  *
- * The two are represented as query string "eid=EID&ssoreq=SSOREQ" and then
+ * The two are represented as query string "e=EID&ar=SSOREQ" and then
  * deflated and safe_base64 encoded. Here we need to unpack this
  * and populate it back to cgi context.
  */
@@ -1516,7 +1514,7 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
   struct timeval ourts;
   struct timeval srcts = {0,501000};
 
-  ret = zxid_decode_oauth2_state(cf, cgi); /* Recover cgi->eid and cgi->ssoreq */  
+  ret = zxid_decode_oauth2_state(cf, cgi); /* Recover cgi->eid (e) and cgi->ssoreq (ar) */  
   if (cgi->code) {  /* OAUTH2 artifact / Authorization Code biding, aka OpenID-Connect1 */
     D("Dereference code(%s)", cgi->code);
     zxid_oauth_call_token_endpoint(cf, cgi, ses);
@@ -1548,6 +1546,7 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
     ses->nidfmt = 1;  /* Assume federation */
     ses->tgt = ses->nid;
     ses->tgtfmt = 1;  /* Assume federation */
+    zxid_put_user(cf, 0, ses->issuer, 0, zx_ref_str(cf->ctx, ses->nid), 0);
     // *** should some signature validation happen here, using issuer (idp) meta?
     cgi->sigval = "N";
     cgi->sigmsg = "Facebook Connect response was not signed.";
@@ -1577,7 +1576,6 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
     //*** zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest attributes and bootstrap(s) */
     cgi->msg = "SSO completed and session created.";
     cgi->op = '-';  /* Make sure management screen does not try to redispatch. */
-    zxid_put_user(cf, 0, 0, 0, zx_ref_str(cf->ctx, ses->nid), 0);
     DD("Logging... %d", 0);
     ss.s = ses->nid; ss.len = strlen(ss.s);
     zxlog(cf, &ourts, &srcts, 0, ses->issuer, 0, 0, &ss,
@@ -1585,21 +1583,20 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
     zxlog(cf, &ourts, &srcts, 0, ses->issuer, 0, 0, &ss,
 	  cgi->sigval, "K", ses->nidfmt?"FEDSSOFBC":"TMPSSOFBC", STRNULLCHKD(ses->sesix), 0);
 
-#if 0
+    /* See zxid_sp_sso_finalize() for similar code path */
+
     if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP flow */
-      if (cgi->rs && cgi->rs[0]) {
-	D("ProxyIdP got RelayState(%s) ar(%s)", cgi->rs, STRNULLCHK(cgi->ssoreq));
+      if (cgi->ssoreq && cgi->ssoreq[0]) {
+	D("ProxyIdP got ar(%s)", STRNULLCHK(cgi->ssoreq));
 	cgi->saml_resp = 0;  /* Clear Response to prevent re-interpretation. We want Request. */
-	cgi->ssoreq = cgi->rs;
 	zxid_decode_ssoreq(cf, cgi);
 	cgi->op = 'V';
-	D_DEDENT("ssof: ");
-	return ZXID_IDP_REQ; /* Cause zxid_simple_idp_an_ok_do_rest() to be called from zxid_sp_dispatch(); */
+	/* case ZXID_IDP_REQ (PXY) process proxy IdP middle IdP role */
+	return zx_dup_str(cf->ctx, zxid_simple_ses_active_cf(cf, cgi, ses, 0, 0x1fff));
       } else {
-	INFO("Middle IdP of Proxy IdP flow did not receive RelayState from upstream IdP %p", cgi->rs);
+	INFO("Middle IdP of Proxy IdP flow did not receive ssoreq from upstream IdP %p", cgi->ssoreq);
       }
     }
-#endif
     return zx_dup_str(cf->ctx, "O");  /* ZXID_SSO_OK */
   }
   

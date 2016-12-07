@@ -1,6 +1,6 @@
 /* zxiduser.c  -  Handwritten functions for SP user local account management
  * Copyright (c) 2012 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2010 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2010,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -14,6 +14,7 @@
  * 14.11.2009, added yubikey (yubico.com) support --Sampo
  * 23.9.2010,  added delegation support --Sampo
  * 1.9.2012,   distilled the authentication backend to an independent module zxpw.c --Sampo
+ * 7.12.2016,  updated zxid_put_user() for FBC based proxy IdP operation --Sampo
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -152,8 +153,13 @@ void zxid_user_change_nameid(zxid_conf* cf, zxid_nid* oldnid, struct zx_str* new
   zxid_put_user(cf, &oldnid->Format->g, &oldnid->NameQualifier->g, &oldnid->SPNameQualifier->g, ZX_GET_CONTENT(oldnid), sha1_name);
 }
 
-/*() Create new user object in file system. Will create user diretory (but not
- * its subdirectories).
+/*() Create new user object in file system.
+ * Will create user diretory (but not its subdirectories). The user name
+ * is automatically formed by computing a sha1 name over idp entity id
+ * and the idp assigned name id. This ensures persistent user name that
+ * is unique across users from all IdPs. The end user is not supposed to
+ * know this username so it is ok that it is not mnemonic or easy to remember.
+ * 
  * See also zxid_ses_to_pool() */
 
 /* Called by:  zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt, zxid_user_change_nameid x2, zxid_wsp_validate_env */
@@ -178,6 +184,7 @@ int zxid_put_user(zxid_conf* cf, struct zx_str* nidfmt, struct zx_str* idpent, s
     return 0;
   }
   
+  /* *** the .mni file is rewritten every time user performs SSO */
   buf = ZX_ALLOC(cf->ctx, ZXID_MAX_USER);
   write_all_path_fmt("put_user", ZXID_MAX_USER, buf,
 		     "%s" ZXID_USER_DIR "%s/.mni", cf->cpath, sha1_name,

@@ -991,7 +991,8 @@ char* zxid_simple_show_err(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_
 
 /* ----------- IdP Screens ----------- */
 
-/*() Decode ssoreq (ar=), i.e. the preserved original AuthnReq */
+/*() Decode ssoreq (ar=), i.e. the preserved original AuthnReq, into fields of cgi.
+ * The authentication request fields appear as they were originally sent. */
 
 /* Called by:  zxid_simple_idp_pw_authn, zxid_simple_idp_show_an, zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt */
 int zxid_decode_ssoreq(zxid_conf* cf, zxid_cgi* cgi)
@@ -1306,8 +1307,13 @@ static char* zxid_show_protected_content_setcookie(zxid_conf* cf, zxid_cgi* cgi,
   if (cf->ptm_cookie_name && *cf->ptm_cookie_name) {
     D("ptm_cookie_name(%s) ses->a7n=%p", cf->ptm_cookie_name, ses->a7n);
     issuer = ses->a7n?ZX_GET_CONTENT(ses->a7n->Issuer):0;
-    if (!issuer)
+    if (!issuer) {
       ERR("Assertion does not have Issuer. %p", ses->a7n);
+      if (ses->issuer) {
+	issuer = ses->issuer;  /* This happens, e.g. in FBC login case */
+	D("Picked from session issuer(%.*s)", issuer->len, issuer->s);
+      }
+    }
     
     if (epr = zxid_get_epr(cf, ses, TAS3_PTM, 0, 0, 0, 1)) {
       url = zxid_get_epr_address(cf, epr);
@@ -1661,7 +1667,7 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
     DD("PRE saml_req(%s) saml_resp(%s) rs(%s) sigalg(%s) sig(%s)", STRNULLCHK(cgi->saml_req),  STRNULLCHK(cgi->saml_resp), cgi->rs, cgi->sigalg, cgi->sig);
     ss = zxid_sp_dispatch(cf, cgi, ses);
   post_dispatch:
-    D("POST dispatch_loc(%s)", ss->s);
+    D("POST dispatch ret(%s)", ss->s);
     switch (ss->s[0]) {
     case 'O': return zxid_show_protected_content_setcookie(cf, cgi, ses, res_len, auto_flags);
     case 'M': return zxid_simple_ab_pep(cf, ses, res_len, auto_flags); /* Mgmt screen case */
