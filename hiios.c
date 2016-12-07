@@ -311,7 +311,7 @@ void hi_in_out(struct hi_thr* hit, struct hi_io* io)
 
 /*() Main I/O shuffling loop. Never returns. Main loop of most (all?) threads. */
 
-/* Called by:  thread_loop, zxbusd_main */
+/* Called by:  thread_loop x3, zxbusd_main, zxcachecli_main, zxcached_main */
 void hi_shuffle(struct hi_thr* hit, struct hiios* shf)
 {
   struct hi_qel* qe;

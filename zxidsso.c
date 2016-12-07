@@ -67,7 +67,7 @@ int zxid_pick_sso_profile(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta)
 }
 
 /*() Map name id format form field to SAML specified URN string. */
-/* Called by:  covimp_test x10, zxid_map_identity_token, zxid_mk_authn_req, zxid_nidmap_identity_token */
+/* Called by:  zxid_map_identity_token, zxid_mk_authn_req, zxid_nidmap_identity_token */
 const char* zxid_saml2_map_nid_fmt(const char* f)
 {
   if (!f || !f[0]) {
@@ -101,7 +101,7 @@ const char* zxid_saml2_map_nid_fmt(const char* f)
 }
 
 /*() Map protocol binding form field to SAML specified URN string. */
-/* Called by:  covimp_test x7 */
+/* Called by: */
 const char* zxid_saml2_map_protocol_binding(const char* b)
 {
   switch (b[0]) {
@@ -117,7 +117,7 @@ const char* zxid_saml2_map_protocol_binding(const char* b)
 }
 
 /*() Map SAML protocol binding URN to form field. */
-/* Called by:  covimp_test x8, zxid_idp_sso x3, zxid_sp_loc_by_index_raw */
+/* Called by:  zxid_idp_sso x3, zxid_sp_loc_by_index_raw */
 int zxid_protocol_binding_map_saml2(struct zx_str* b)
 {
   if (!b || !b->len || !b->s) {
@@ -135,7 +135,7 @@ int zxid_protocol_binding_map_saml2(struct zx_str* b)
 }
 
 /*() Map authentication contest class ref form field to SAML specified URN string. */
-/* Called by:  covimp_test x8, zxid_mk_authn_req */
+/* Called by:  zxid_mk_authn_req */
 char* zxid_saml2_map_authn_ctx(char* c)
 {
   switch (c[0]) {
@@ -156,7 +156,7 @@ char* zxid_saml2_map_authn_ctx(char* c)
 
 /*() cgi->rs will be copied to ses->rs and from there in ab_pep to resource-id.
  * We compress and safe_base64 encode it to protect any URL special characters. */
-/* Called by:  zxid_start_sso_url, zxid_simple_show_idp_sel */
+/* Called by:  zxid_simple_show_idp_sel, zxid_start_sso_url */
 void zxid_sso_set_relay_state_to_return_to_this_url(zxid_conf* cf, zxid_cgi* cgi)
 {
   struct zx_str* ss;
@@ -178,6 +178,7 @@ void zxid_sso_set_relay_state_to_return_to_this_url(zxid_conf* cf, zxid_cgi* cgi
 /*() Scan through the SSO svc list to find the entry that matches the binding.
  * Returns NULL if none match. */
 
+/* Called by:  zxid_start_sso_url x3 */
 static struct zx_md_SingleSignOnService_s* zxid_search_idp_sso_desc(zxid_entity* idp_meta, const char* binding)
 {
   struct zx_md_SingleSignOnService_s* sso_svc;
@@ -449,7 +450,7 @@ int zxid_sp_deref_art(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 
 /*() Map ZXSIG constant to letter for log and string message. */
 
-/* Called by:  covimp_test x11, zxid_chk_sig, zxid_decode_redir_or_post, zxid_sp_sso_finalize, zxid_wsc_valid_re_env, zxid_wsf_validate_a7n, zxid_wsp_validate_env */
+/* Called by:  zxid_chk_sig, zxid_decode_redir_or_post, zxid_sp_sso_finalize, zxid_wsc_valid_re_env, zxid_wsf_validate_a7n, zxid_wsp_validate_env */
 void zxid_sigres_map(int sigres, char** sigval, char** sigmsg)
 {
   switch (sigres) {
@@ -668,7 +669,7 @@ struct zx_str unknown_str = {0,0,1,"??"};  /* Static string used as dummy value.
  * See also: zxid_sp_sso_finalize_jwt() in zxidoauth.c
  */
 
-/* Called by:  main, sig_validate, zxid_sp_dig_oauth_sso_a7n, zxid_sp_dig_sso_a7n */
+/* Called by:  main, sig_validate, zxid_sp_dig_oauth_sso_a7n x2, zxid_sp_dig_sso_a7n */
 int zxid_sp_sso_finalize(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, zxid_a7n* a7n, struct zx_ns_s* pop_seen)
 {
   char* err = "S"; /* See: RES in zxid-log.pd, section "ZXID Log Format" */
@@ -842,7 +843,7 @@ erro:
  * ses:: Session object. Will be modified according to new session created from the SSO assertion.
  * return:: 0 for failure, otherwise some success code such as ZXID_SSO_OK */
 
-/* Called by:  covimp_test, zxid_sp_dig_oauth_sso_a7n, zxid_sp_dig_sso_a7n */
+/* Called by:  zxid_sp_dig_oauth_sso_a7n x3, zxid_sp_dig_sso_a7n */
 int zxid_sp_anon_finalize(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 {
   D_INDENT("anon_ssof: ");
@@ -993,7 +994,7 @@ int zxid_as_call_ses(zxid_conf* cf, zxid_entity* idp_meta, zxid_cgi* cgi, zxid_s
   return ZXID_SSO_OK;
 }
 
-/* Called by:  zxcall_main */
+/* Called by:  zxcall_main, zxumacall_main */
 zxid_ses* zxid_as_call(zxid_conf* cf, zxid_entity* idp_meta, const char* user, const char* pw)
 {
   zxid_ses* ses = zxid_alloc_ses(cf);

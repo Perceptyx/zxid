@@ -53,7 +53,7 @@
  *
  * See also: zxid_wsp_validate() */
 
-/* Called by:  covimp_test x3, zxid_call_epr, zxid_wsc_valid_resp */
+/* Called by:  zxid_call_epr, zxid_wsc_valid_resp */
 int zxid_wsc_valid_re_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, struct zx_e_Envelope_s* env, const char* enve)
 {
   int n_refs = 0;
@@ -694,7 +694,7 @@ struct zx_str* zxid_callf_epr(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, const
  *     content. NULL on failure. ses->curflt and/or ses->curstatus contain
  *     more detailed error information. */
 
-/* Called by:  zxcall_main, zxid_callf */
+/* Called by:  zxcall_main, zxid_callf, zxumacall_main */
 struct zx_str* zxid_call(zxid_conf* cf, zxid_ses* ses, const char* svctype, const char* url, const char* di_opt, const char* az_cred, const char* enve)
 {
   zxid_epr* epr;
@@ -716,7 +716,7 @@ struct zx_str* zxid_call(zxid_conf* cf, zxid_ses* ses, const char* svctype, cons
 
 /*() Call web service, printf style. See zxid_call() for more documentation. */
 
-/* Called by:  main, zxid_di_query */
+/* Called by:  main, zxid_di_match_cpn */
 struct zx_str* zxid_callf(zxid_conf* cf, zxid_ses* ses, const char* svctype, const char* url, const char* di_opt, const char* az_cred, const char* env_f, ...)
 {
   char* s;
@@ -759,7 +759,7 @@ struct zx_str* zxid_callf(zxid_conf* cf, zxid_ses* ses, const char* svctype, con
  * N.B. If the ID-WSF call for some reason needs to be retried, this function
  * should be called for each retry. */
 
-/* Called by:  ws_validations, zxid_wsc_prepare_callf */
+/* Called by:  zxid_wsc_prepare_callf */
 struct zx_str* zxid_wsc_prepare_call(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, const char* az_cred, const char* enve)
 {
   struct zx_str* ret;
@@ -816,7 +816,7 @@ struct zx_str* zxid_wsc_prepare_callf(zxid_conf* cf, zxid_ses* ses, zxid_epr* ep
 
 /*(i) Validate a response to web service call. Return: 1=valid. */
 
-/* Called by:  ws_validations */
+/* Called by: */
 int zxid_wsc_valid_resp(zxid_conf* cf, zxid_ses* ses, const char* az_cred, const char* enve)
 {
   int ret;

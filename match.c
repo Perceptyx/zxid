@@ -71,7 +71,7 @@ static int zx_match_one(const char* pat, int patlen, const char* str)
  * (/foo/bar*) are supported. The double asterisk (**) matches
  * also slash (/). */
 
-/* Called by:  chkuid, do_file, really_check_referer x3, send_error_and_exit, zxid_mini_httpd_filter x2 */
+/* Called by:  chkuid x3, send_error_and_exit, zxid_mini_httpd_filter x3, zxid_mini_httpd_sso, zxid_sp_dig_sso_a7n, zxid_unix_grp_az_check x2 */
 int zx_match(const char* pat, const char* str)
 {
   const char* or_clause;

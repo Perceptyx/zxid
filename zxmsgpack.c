@@ -34,6 +34,7 @@
  * return:: The length of the serialization (how big the buffer needs to be)
  */
 
+/* Called by:  zx_global_write x2, zx_val2msgpack x2 */
 int zx_val2msgpack(struct zx_val* val, int maxlen, unsigned char* buf, int maxrecurse, int flags)
 {
   int i,len,cnt;
@@ -275,6 +276,7 @@ int zx_val2msgpack(struct zx_val* val, int maxlen, unsigned char* buf, int maxre
  * return:: zx_val object
  */
 
+/* Called by:  zx_msgpack2val, zx_msgpack2val2 x3 */
 struct zx_val* zx_msgpack2val2(struct zx_ctx* c, unsigned char** buf, unsigned char* lim, int flags)
 {
   int i,cnt;
@@ -565,6 +567,7 @@ struct zx_val* zx_msgpack2val2(struct zx_ctx* c, unsigned char** buf, unsigned c
   return 0;
 }
 
+/* Called by: */
 struct zx_val* zx_msgpack2val(struct zx_ctx* c, int len, unsigned char* buf, int flags)
 {
   return zx_msgpack2val2(c, &buf, buf+len, flags);

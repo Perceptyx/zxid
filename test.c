@@ -12,6 +12,7 @@ struct foo {
 
 struct foo foox = { "A", {1,2,3,0}};
 
+/* Called by: */
 int main(int argc, char** argv)
 {
 #if 0

@@ -55,6 +55,7 @@ extern char* zxcache_path;
  * return:: 0 on failure, positive on success
  */
 
+/* Called by:  mcdb_got_set */
 int zx_global_write(zxid_conf* cf, int ghkeylen, const char* ghkey, const unsigned char* symkey, struct zx_val* val)
 {
   int len, zlen;
@@ -125,6 +126,7 @@ int zx_global_write(zxid_conf* cf, int ghkeylen, const char* ghkey, const unsign
  * return:: 0 on failure, positive on success
  */
 
+/* Called by: */
 int zx_global_read_last(zxid_conf* cf, int ghkeylen, const char* ghkey, const unsigned char* symkey, struct zx_val* val)
 {
   char path[ZXID_MAX_BUF];

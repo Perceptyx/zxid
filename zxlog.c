@@ -88,7 +88,7 @@ static char* zxlog_alloc_zbuf(zxid_conf* cf, int *zlen, char* zbuf, int len, cha
 * logbuf:: The data that should be logged
 */
 
-/* Called by:  test_mode x12, zxlog_output x2 */
+/* Called by:  test_mode x12, zxlog_output x2, zxlogusr */
 void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const char* logbuf)
 {
   EVP_PKEY* log_sign_pkey;
@@ -347,7 +347,7 @@ static int zxlog_fmt(zxid_conf* cf,   /* 1 */
 
 /*() Figure out which log file should receive the message */
 
-/* Called by: */
+/* Called by:  zxlog, zxlogwsp */
 static int zxlog_output(zxid_conf* cf, int n, const char* logbuf, const char* res)
 {
   char c_path[ZXID_MAX_BUF];
@@ -537,7 +537,7 @@ static int zx_create_dir_with_check(zxid_conf* cf, const char* dir, int create_d
  *     is to write a file to the computed path. Usually 0 if the intent is to read.
  * return:: The path, as zx_str or 0 if failure */
 
-/* Called by:  zxbus_send_cmdf, zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_decode_redir_or_post x2, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxid_soap_cgi_resp_body, zxid_sp_sso_finalize, zxid_sso_issue_jwt, zxid_wsc_valid_re_env, zxid_wsf_validate_a7n, zxid_wsp_validate */
+/* Called by:  zxbus_send_cmdf, zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_decode_redir_or_post x2, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxid_soap_cgi_resp_body, zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt, zxid_sso_issue_azc, zxid_sso_issue_jwt x3, zxid_wsc_valid_re_env, zxid_wsf_validate_a7n, zxid_wsp_validate */
 struct zx_str* zxlog_path(zxid_conf* cf,
 			  struct zx_str* entid,  /* issuer or target entity ID */
 			  struct zx_str* objid,  /* AssertionID or MessageID */
@@ -604,7 +604,7 @@ struct zx_str* zxlog_path(zxid_conf* cf,
  * return::  0 if no duplicate (success), 1 if duplicate (failure)
  */
 
-/* Called by:  zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_decode_redir_or_post x2, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxid_soap_cgi_resp_body, zxid_sp_sso_finalize, zxid_sso_issue_jwt, zxid_wsc_valid_re_env, zxid_wsf_validate_a7n, zxid_wsp_validate */
+/* Called by:  zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_decode_redir_or_post x2, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxid_soap_cgi_resp_body, zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt, zxid_sso_issue_azc, zxid_sso_issue_jwt x3, zxid_wsc_valid_re_env, zxid_wsf_validate_a7n, zxid_wsp_validate */
 int zxlog_dup_check(zxid_conf* cf, struct zx_str* path, const char* logkey)
 {
   struct stat st;
@@ -651,7 +651,7 @@ int zxlog_dup_check(zxid_conf* cf, struct zx_str* path, const char* logkey)
  * captures both the original and the duplicate assertion (the logging is an append),
  * which may have forensic value. */
 
-/* Called by:  zxbus_send_cmdf, zxid_anoint_a7n x2, zxid_anoint_sso_resp x2, zxid_decode_redir_or_post x2, zxid_saml2_post_enc x2, zxid_saml2_redir_enc x2, zxid_soap_cgi_resp_body x2, zxid_sp_sso_finalize x2, zxid_sso_issue_jwt x2, zxid_wsc_valid_re_env x2, zxid_wsf_validate_a7n x2, zxid_wsp_validate x2 */
+/* Called by:  zxbus_send_cmdf, zxid_anoint_a7n x2, zxid_anoint_sso_resp x2, zxid_decode_redir_or_post x2, zxid_saml2_post_enc x2, zxid_saml2_redir_enc x2, zxid_soap_cgi_resp_body x2, zxid_sp_oauth2_dispatch x2, zxid_sp_sso_finalize x2, zxid_sp_sso_finalize_jwt x2, zxid_sso_issue_azc x2, zxid_sso_issue_jwt x6, zxid_wsc_valid_re_env x2, zxid_wsf_validate_a7n x2, zxid_wsp_validate x2 */
 int zxlog_blob(zxid_conf* cf, int logflag, struct zx_str* path, struct zx_str* blob, const char* lk)
 {
   if (!logflag || !blob)
@@ -829,7 +829,7 @@ print_it:
  * body::       Data to issue receipt about, i.e. data that will be signed.
  * return::     sigbuf. If there was error, first character of sigbuf is set to 'E' */
 
-/* Called by:  stomp_send_receipt, test_receipt x9 */
+/* Called by:  mcdb_send_receipt, stomp_send_receipt, test_receipt x9 */
 char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_len, const char* mid, int dest_len, const char* dest, int eid_len, const char* eid, int body_len, const char* body)
 {
   int len, zlen;
@@ -958,7 +958,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
  * body::       Data pertaining to receipt
  * return::     0 (ZXSIG_OK) on success, nonzero on failure. */
 
-/* Called by:  stomp_got_ack, test_receipt x10, zxbus_send_cmdf */
+/* Called by:  mcdb_got_ack, stomp_got_ack, test_receipt x11, zxbus_send_cmdf */
 int zxbus_verify_receipt(zxid_conf* cf, const char* eid, int sigbuf_len, char* sigbuf, int mid_len, const char* mid, int dest_len, const char* dest, int deid_len, const char* deid, int body_len, const char* body)
 {
   int ver = -4, len, zlen;

@@ -153,7 +153,7 @@ struct hiios* shuff;        /* Main I/O shuffler object (global to help debuggin
 
 /* proto:host:port or proto:host or proto::port */
 
-/* Called by:  opt x2 */
+/* Called by:  opt x6 */
 int parse_port_spec(char* arg, struct hi_host_spec** head, char* default_host)
 {
   struct hostent* he;
@@ -211,7 +211,7 @@ int parse_port_spec(char* arg, struct hi_host_spec** head, char* default_host)
   return 1;
 }
 
-/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcall_main, zxcot_main, zxdecode_main */
+/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxdecode_main, zxumacall_main */
 void opt(int* argc, char*** argv, char*** env)
 {
   struct zx_str* ss;
@@ -506,7 +506,7 @@ void opt(int* argc, char*** argv, char*** env)
 
 /* Parse serial port config string and do all the ioctls to get it right. */
 
-/* Called by:  zxbusd_main */
+/* Called by:  zxbusd_main, zxcached_main */
 static struct hi_io* serial_init(struct hi_thr* hit, struct hi_host_spec* hs)
 {
 #ifdef ENA_SERIAL

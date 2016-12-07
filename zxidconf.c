@@ -68,6 +68,7 @@
 #include <openssl/x509.h>
 #include <openssl/rsa.h>
 
+/* Called by:  zxid_extract_cert, zxid_read_cert_pem */
 char* zxid_extract_cert_pem(char* buf, char* name)
 {
   char* p;
@@ -90,6 +91,7 @@ char* zxid_extract_cert_pem(char* buf, char* name)
 
 /*() Extract a certificate as base64 textr from PEM encoded file. */
 
+/* Called by:  zxid_mk_jwks x2, zxid_read_cert */
 char* zxid_read_cert_pem(zxid_conf* cf, char* name, int siz, char* buf)
 {
   int got = read_all(siz, buf, "read_cert", 1, "%s" ZXID_PEM_DIR "%s", cf->cpath, name);
@@ -101,7 +103,7 @@ char* zxid_read_cert_pem(zxid_conf* cf, char* name, int siz, char* buf)
 
 /*() Extract a certificate from PEM encoded string. */
 
-/* Called by:  opt, test_mode, zxid_read_cert */
+/* Called by:  opt, test_mode */
 X509* zxid_extract_cert(char* buf, char* name)
 {
   X509* x = 0;  /* Forces d2i_X509() to alloc the memory. */
@@ -194,7 +196,7 @@ EVP_PKEY* zxid_extract_private_key(char* buf, char* name)
 
 /*() Extract a private key from PEM encoded file. */
 
-/* Called by:  hi_new_shuffler, test_ibm_cert_problem x2, test_ibm_cert_problem_enc_dec x2, zxbus_mint_receipt x2, zxenc_privkey_dec, zxid_init_conf x3, zxid_lazy_load_sign_cert_and_pkey, zxlog_write_line x2 */
+/* Called by:  hi_new_shuffler, zxbus_mint_receipt, zxenc_privkey_dec, zxid_init_conf x3, zxid_lazy_load_sign_cert_and_pkey, zxlog_write_line x2 */
 EVP_PKEY* zxid_read_private_key(zxid_conf* cf, char* name)
 {
   char buf[8192];
@@ -567,7 +569,7 @@ struct zxid_map* zxid_load_map(zxid_conf* cf, struct zxid_map* map, char* v)
  * See also: zxid_find_map() and zxid_map_val()
  */
 
-/* Called by:  zxid_init_conf x7, zxid_mk_usr_a7n_to_sp, zxid_parse_conf_raw x7, zxid_read_map */
+/* Called by:  zxid_init_conf, zxid_parse_conf_raw */
 struct zxid_map* zxid_load_unix_grp_az_map(zxid_conf* cf, struct zxid_map* map, char* v)
 {
   char* ns;
@@ -661,7 +663,7 @@ struct zxid_map* zxid_load_unix_grp_az_map(zxid_conf* cf, struct zxid_map* map, 
 
 /*() Reverse of zxid_load_map(). */
 
-/* Called by:  zxid_free_conf x7 */
+/* Called by:  zxid_free_conf x8 */
 void zxid_free_map(struct zxid_conf *cf, struct zxid_map *map)
 {
   while (map) {
@@ -677,7 +679,7 @@ void zxid_free_map(struct zxid_conf *cf, struct zxid_map *map)
 
 /*() Parse comma separated strings (nul terminated) and add to linked list */
 
-/* Called by:  zxid_init_conf x4, zxid_load_obl_list, zxid_parse_conf_raw x4 */
+/* Called by:  zxid_init_conf x5, zxid_load_obl_list, zxid_parse_conf_raw x5 */
 struct zxid_cstr_list* zxid_load_cstr_list(zxid_conf* cf, struct zxid_cstr_list* l, char* p)
 {
   char* q;
@@ -698,7 +700,7 @@ struct zxid_cstr_list* zxid_load_cstr_list(zxid_conf* cf, struct zxid_cstr_list*
 
 /*() Free list nodes and strings of zxid_cstr_list. */
 
-/* Called by:  zxid_free_conf x4, zxid_free_obl_list */
+/* Called by:  zxid_free_conf x5, zxid_free_obl_list */
 void zxid_free_cstr_list(struct zxid_conf* cf, struct zxid_cstr_list* l)
 {
   while (l) {
@@ -955,7 +957,7 @@ struct zxid_map* zxid_find_map(struct zxid_map* map, const char* name)
 
 /*() Check whether name is in the list. Used for Local PDP white and black lists. */
 
-/* Called by:  zxid_eval_sol1, zxid_localpdp x4 */
+/* Called by:  zxid_eval_sol1, zxid_find_at_multival_on_cstr_list, zxid_localpdp x2 */
 struct zxid_cstr_list* zxid_find_cstr_list(struct zxid_cstr_list* cs, const char* name)
 {
   if (!name || !*name)
@@ -969,6 +971,7 @@ struct zxid_cstr_list* zxid_find_cstr_list(struct zxid_cstr_list* cs, const char
 
 /*() Chech whether any of multivalues of an attribute is on the list. */
 
+/* Called by:  zxid_localpdp x2 */
 struct zxid_cstr_list* zxid_find_at_multival_on_cstr_list(struct zxid_cstr_list* cs, struct zxid_attr* at)
 {
   struct zxid_cstr_list* ret;
@@ -994,7 +997,7 @@ struct zxid_obl_list* zxid_find_obl_list(struct zxid_obl_list* obl, const char* 
 
 /*() Check whether attribute is in pool. */
 
-/* Called by:  zxid_localpdp x2 */
+/* Called by:  zxid_add_at_vals x2, zxid_localpdp x2, zxid_unix_grp_az_check x2 */
 struct zxid_attr* zxid_find_at(struct zxid_attr* pool, const char* name)
 {
   if (!name || !*name)
@@ -1012,6 +1015,7 @@ struct zxid_attr* zxid_find_at(struct zxid_attr* pool, const char* name)
  *
  * return:: 0=deny, 1=permit */
 
+/* Called by:  auth_check */
 int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid)
 {
   struct zxid_map* grp_map = 0;
@@ -1055,7 +1059,7 @@ int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid)
  * to the domain name part of the URL. Used to grab fedusername_suffix
  * from the url config option. */
 
-/* Called by:  zxid_parse_conf_raw */
+/* Called by:  zxid_parse_conf_raw x2 */
 char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
 {
   char* dom;
@@ -1365,7 +1369,7 @@ void zx_reset_ns_ctx(struct zx_ctx* ctx)
  * such initialization, any memory allocation activity as well as
  * any XML parsing activity is doomed to segmentation fault. */
 
-/* Called by:  dirconf, main x3, zx_init_ctx, zxid_az, zxid_az_base, zxid_simple_len */
+/* Called by:  dirconf, main x3, zxid_az, zxid_az_base, zxid_simple_len */
 void zx_reset_ctx(struct zx_ctx* ctx)
 {
   ZERO(ctx, sizeof(struct zx_ctx));
@@ -1441,7 +1445,7 @@ zxid_conf* zxid_init_conf_ctx(zxid_conf* cf, const char* zxid_path)
  * Just initializes the config object to factory defaults (see zxidconf.h).
  * Previous content of the config object is lost. */
 
-/* Called by:  attribute_sort_test, covimp_test, main x4, so_enc_dec, test_ibm_cert_problem, test_ibm_cert_problem_enc_dec, test_mode, timegm_test, timegm_tester, x509_test */
+/* Called by:  main x4, test_mode, timegm_tester */
 zxid_conf* zxid_new_conf(const char* zxid_path)
 {
   /* *** unholy malloc()s: should use our own allocator! */
@@ -1490,7 +1494,7 @@ static void zxid_parse_conf_path_raw(zxid_conf* cf, const char* v, int check_fil
  * the sematic where PATH is not changed unless corresponding zxid.conf
  * is found. This is used by VPATH. */
 
-/* Called by:  zxid_parse_conf_raw */
+/* Called by:  zxid_parse_conf_raw x2 */
 static void zxid_parse_inc(zxid_conf* cf, const char* inc_file, int check_file_exists)
 {
   int len;
@@ -1702,7 +1706,7 @@ static int zxid_parse_vurl(zxid_conf* cf, char* vurl)
  *     terminations and performing URL decoding.
  * return:: -1 on failure, 0 on success */
 
-/* Called by:  zxid_conf_to_cf_len x4, zxid_parse_conf, zxid_parse_conf_path_raw */
+/* Called by:  zxid_conf_to_cf_len x4, zxid_parse_conf, zxid_parse_conf_path_raw, zxid_parse_inc */
 int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
 {
   int i;
@@ -1997,7 +2001,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
 
 /*() Wrapper with initial error checking for zxid_parse_conf_raw(), which see. */
 
-/* Called by:  opt x13, set_zxid_conf */
+/* Called by:  opt x16, set_zxid_conf */
 int zxid_parse_conf(zxid_conf* cf, char* qs)
 {
   if (!cf || !qs)
@@ -2040,7 +2044,7 @@ static struct zx_str* zxid_show_need(zxid_conf* cf, struct zxid_need* np)
 
 /*() Pretty print map chain. */
 
-/* Called by:  zxid_show_conf x7 */
+/* Called by:  zxid_show_conf x8 */
 static struct zx_str* zxid_show_map(zxid_conf* cf, struct zxid_map* mp)
 {
   struct zx_str* inmap = zx_dup_str(cf->ctx, "");
@@ -2057,7 +2061,7 @@ static struct zx_str* zxid_show_map(zxid_conf* cf, struct zxid_map* mp)
 
 /*() Pretty print cstr list as used in local PDP. */
 
-/* Called by:  zxid_show_conf x4 */
+/* Called by:  zxid_show_conf x5 */
 static struct zx_str* zxid_show_cstr_list(zxid_conf* cf, struct zxid_cstr_list* cp)
 {
   struct zx_str* ss = zx_dup_str(cf->ctx, "");
@@ -2089,7 +2093,7 @@ static struct zx_str* zxid_show_bus_url(zxid_conf* cf, struct zxid_bus_url* cp)
 
 /*() Generate our SP CARML and return it as a string. */
 
-/* Called by:  opt x5, zxid_simple_show_conf */
+/* Called by:  opt x8, zxid_simple_show_conf */
 struct zx_str* zxid_show_conf(zxid_conf* cf)
 {
   char* eid;

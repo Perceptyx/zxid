@@ -49,7 +49,7 @@
  *   FOLDEDSVCTYP,RANKKEY,NICE_SHA1_OF_CONTENTS
  * This function computes the first component of the comma separated structure. */
 
-/* Called by:  zxid_di_query, zxid_find_epr, zxid_nice_sha1, zxid_reg_svc */
+/* Called by:  zxid_di_match_prefix, zxid_epr_path, zxid_find_epr, zxid_nice_sha1, zxid_reg_svc */
 void zxid_fold_svc(char* svctyp, int len)
 {
   for (; *svctyp && len; ++svctyp, --len)
@@ -165,7 +165,7 @@ int zxid_epr_path(zxid_conf* cf, char* dir, char* sid, char* buf, int buf_len, s
  *     the old one. Perhaps the simple sha1 hash of the content is not the
  *     right solution. Better sha1 the svctype+eid+epurl? */
 
-/* Called by:  main, zxid_get_epr, zxid_snarf_eprs */
+/* Called by:  main, zxid_discover_epr, zxid_snarf_eprs */
 int zxid_cache_epr(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, int rank)
 {
   fdtype fd;
@@ -327,7 +327,7 @@ void zxid_snarf_eprs_from_ses(zxid_conf* cf, zxid_ses* ses)
  *
  * See also: zxid_print_session() in zxcall.c and zxid_di_query() in zxiddi.c */
 
-/* Called by:  main x2, zxid_get_epr x3 */
+/* Called by:  main x2, zxid_discover_epr, zxid_get_epr x2 */
 zxid_epr* zxid_find_epr(zxid_conf* cf, zxid_ses* ses, const char* svc, const char* url, const char* di_opt, const char* action, int nth)
 {
   struct zx_root_s* r;
@@ -479,6 +479,7 @@ next_file:
  *     of EPRs is returned.
  */
 
+/* Called by:  zxid_get_epr */
 zxid_epr* zxid_discover_epr(zxid_conf* cf, zxid_ses* ses, const char* svc, const char* url, const char* di_opt, const char* action)
 {
   int wsf20 = 0;
@@ -556,7 +557,7 @@ zxid_epr* zxid_discover_epr(zxid_conf* cf, zxid_ses* ses, const char* svc, const
  * See also:: zxid_get_epr_address() for extracting URL as a string
  */
 
-/* Called by:  main x5, zxcall_main x2, zxid_call, zxid_map_identity_token, zxid_nidmap_identity_token, zxid_show_protected_content_setcookie */
+/* Called by:  main x5, zxcall_main x2, zxid_call, zxid_map_identity_token, zxid_nidmap_identity_token, zxid_show_protected_content_setcookie, zxumacall_main x2 */
 zxid_epr* zxid_get_epr(zxid_conf* cf, zxid_ses* ses, const char* svc, const char* url, const char* di_opt, const char* action, int nth)
 {
   zxid_epr* epr;
@@ -578,7 +579,7 @@ zxid_epr* zxid_get_epr(zxid_conf* cf, zxid_ses* ses, const char* svc, const char
 
 /*() Accessor function for extracting endpoint address URL. */
 
-/* Called by:  zxcall_main, zxid_print_session, zxid_show_protected_content_setcookie */
+/* Called by:  zxcall_main, zxid_print_session x2, zxid_show_protected_content_setcookie, zxumacall_main */
 struct zx_str* zxid_get_epr_address(zxid_conf* cf, zxid_epr* epr) {
   if (!epr)
     return 0;
@@ -587,7 +588,7 @@ struct zx_str* zxid_get_epr_address(zxid_conf* cf, zxid_epr* epr) {
 
 /*() Accessor function for extracting endpoint ProviderID. */
 
-/* Called by:  zxcall_main, zxid_print_session */
+/* Called by:  zxcall_main, zxid_print_session x2, zxumacall_main */
 struct zx_str* zxid_get_epr_entid(zxid_conf* cf, zxid_epr* epr) {
   if (!epr || !epr->Metadata || !epr->Metadata->ProviderID) {
     D("Missing epr=%p epr->Metadata=%p or epr->Metadata->ProviderID", epr, epr?epr->Metadata:0);
@@ -599,7 +600,7 @@ struct zx_str* zxid_get_epr_entid(zxid_conf* cf, zxid_epr* epr) {
 
 /*() Accessor function for extracting endpoint Description (Abstract). */
 
-/* Called by:  zxcall_main, zxid_print_session */
+/* Called by:  zxcall_main, zxid_print_session x2, zxumacall_main */
 struct zx_str* zxid_get_epr_desc(zxid_conf* cf, zxid_epr* epr) {
   if (!epr || !epr->Metadata)
     return 0;

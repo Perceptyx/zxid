@@ -156,7 +156,7 @@ void zxid_user_change_nameid(zxid_conf* cf, zxid_nid* oldnid, struct zx_str* new
  * its subdirectories).
  * See also zxid_ses_to_pool() */
 
-/* Called by:  zxid_sp_sso_finalize, zxid_user_change_nameid x2, zxid_wsp_validate_env */
+/* Called by:  zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt, zxid_user_change_nameid x2, zxid_wsp_validate_env */
 int zxid_put_user(zxid_conf* cf, struct zx_str* nidfmt, struct zx_str* idpent, struct zx_str* spqual, struct zx_str* idpnid, char* mniptr)
 {
   char sha1_name[28];
@@ -201,6 +201,7 @@ static char* login_failed = "Login failed. Check username and password. Make sur
  * on original authentication to the pairing web site.
  */
 
+/* Called by:  zxid_pw_authn */
 static int zxid_check_mobile_pairing(zxid_conf* cf, zxid_cgi* cgi)
 {
   int len, secs;

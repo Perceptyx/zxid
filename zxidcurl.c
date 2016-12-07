@@ -119,7 +119,7 @@ size_t zxid_curl_read_data(void *buffer, size_t size, size_t nmemb, void *userp)
  * N.B. To use proxy, set environment variable all_proxy=proxyhost:port, see libcurl documentation.
  */
 
-/* Called by:  zxid_soap_call_raw */
+/* Called by:  zxid_get_meta, zxid_oauth_call_az_endpoint, zxid_oauth_call_fb_graph_endpoint, zxid_oauth_call_rpt_endpoint, zxid_oauth_call_token_endpoint x2, zxid_oauth_dynclireg_client, zxid_oauth_get_well_known_item, zxid_oauth_rsrcreg_client, zxid_oidc_as_call, zxid_soap_call_raw */
 struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int len, const char* data, const char* content_type, const char* headers, int flags)
 {
 #ifdef USE_CURL
@@ -328,6 +328,7 @@ zxid_entity* zxid_get_meta_ss(zxid_conf* cf, struct zx_str* url)
  * Typically this allows extraction of SOAP envelope from deep
  * inside MIME multipart message (MTOM+xop aka SOAP with attachments) */
 
+/* Called by:  zxid_soap_call_raw, zxid_wsp_validate */
 const char* zxid_locate_soap_Envelope(const char* haystack)
 {
   const char* q;
@@ -364,6 +365,7 @@ const char* zxid_locate_soap_Envelope(const char* haystack)
 /*() Return Content-Type header from last HTTP response.
  * This could be used to detect MIME multipart boundary, for example. */
 
+/* Called by: */
 const char* zxid_get_last_content_type(zxid_conf* cf)
 {
   char* ct;

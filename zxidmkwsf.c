@@ -39,7 +39,7 @@
  *
  * See also: zxid_mk_fault() */
 
-/* Called by:  covimp_test, zxid_di_query x2, zxid_idp_as_do x3, zxid_idp_map_nid2uid, zxid_imreq x6, zxid_mk_fault, zxid_mk_lu_Status, zxid_mk_tas3_status, zxid_ps_addent_invite x2, zxid_ps_resolv_id */
+/* Called by:  zxid_di_query x2, zxid_idp_as_do x3, zxid_idp_map_nid2uid, zxid_imreq x6, zxid_mk_fault, zxid_mk_lu_Status, zxid_mk_tas3_status, zxid_ps_addent_invite x2, zxid_ps_resolv_id */
 struct zx_lu_Status_s* zxid_mk_lu_Status(zxid_conf* cf, struct zx_elem_s* father, const char* sc1, const char* sc2, const char* msg, const char* ref)
 {
   struct zx_lu_Status_s* st = zx_NEW_lu_Status(cf->ctx,father);
@@ -55,7 +55,7 @@ struct zx_lu_Status_s* zxid_mk_lu_Status(zxid_conf* cf, struct zx_elem_s* father
 
 /*() Create TAS3 application level Status (error) header. */
 
-/* Called by:  covimp_test, zxid_get_fault_status */
+/* Called by:  zxid_get_fault_status */
 zxid_tas3_status* zxid_mk_tas3_status(zxid_conf* cf, struct zx_elem_s* father, const char* ctlpt, const char* sc1, const char* sc2, const char* msg, const char* ref)
 {
   zxid_tas3_status* st = zx_NEW_tas3_Status(cf->ctx, father);
@@ -88,7 +88,7 @@ zxid_tas3_status* zxid_mk_tas3_status(zxid_conf* cf, struct zx_elem_s* father, c
  * See also: zxid_mk_lu_Status()
  */
 
-/* Called by:  covimp_test, zxid_call, zxid_query_ctlpt_pdp x2, zxid_timestamp_chk x2, zxid_validate_cond x3, zxid_wsc_call, zxid_wsc_valid_re_env x11, zxid_wsf_validate_a7n x6, zxid_wsp_validate x2, zxid_wsp_validate_env x11 */
+/* Called by:  zxid_call, zxid_query_ctlpt_pdp x2, zxid_timestamp_chk x2, zxid_validate_cond x3, zxid_wsc_call, zxid_wsc_valid_re_env x11, zxid_wsf_validate_a7n x6, zxid_wsp_validate x2, zxid_wsp_validate_env x11 */
 zxid_fault* zxid_mk_fault(zxid_conf* cf, struct zx_elem_s* father, const char* fa, const char* fc, const char* fs, const char* sc1, const char* sc2, const char* msg, const char* ref)
 {
   zxid_fault* flt = zx_NEW_e_Fault(cf->ctx, father);
@@ -130,7 +130,7 @@ void zxid_set_fault(zxid_conf* cf, zxid_ses* ses, zxid_fault* flt) {
 
 /*() Read current SOAP Fault of the session. NULL return means that there was no fault. */
 
-/* Called by:  covimp_test */
+/* Called by: */
 zxid_fault* zxid_get_fault(zxid_conf* cf, zxid_ses* ses) {
   return ses->curflt;
 }
@@ -138,7 +138,7 @@ zxid_fault* zxid_get_fault(zxid_conf* cf, zxid_ses* ses) {
 /*() Return first level status code from SOAP Fault.
  * Typically called as  sc1 = zxid_get_tas3_fault_sc1(cf, zxid_get_fault(cf, ses)); */
 
-/* Called by:  covimp_test x2, zxid_get_fault_status */
+/* Called by:  zxid_get_fault_status */
 char* zxid_get_tas3_fault_sc1(zxid_conf* cf, zxid_fault* flt) {
   if (!flt || !ZX_SIMPLE_ELEM_CHK(flt->faultcode))
     return 0;
@@ -148,7 +148,7 @@ char* zxid_get_tas3_fault_sc1(zxid_conf* cf, zxid_fault* flt) {
 /*() Return second level status code from SOAP Fault.
  * Typically called as  sc2 = zxid_get_tas3_fault_sc2(cf, zxid_get_fault(cf, ses)); */
 
-/* Called by:  covimp_test x2 */
+/* Called by: */
 char* zxid_get_tas3_fault_sc2(zxid_conf* cf, zxid_fault* flt) {
   if (!flt || !flt->detail || !flt->detail->Status || !flt->detail->Status->code || !flt->detail->Status->code->g.s)
     return 0;
@@ -158,7 +158,7 @@ char* zxid_get_tas3_fault_sc2(zxid_conf* cf, zxid_fault* flt) {
 /*() Return comment field from SOAP Fault.
  * Typically called as  c = zxid_get_tas3_fault_comment(cf, zxid_get_fault(cf, ses)); */
 
-/* Called by:  covimp_test x2, zxid_get_fault_status */
+/* Called by:  zxid_get_fault_status */
 char* zxid_get_tas3_fault_comment(zxid_conf* cf, zxid_fault* flt) {
   if (!flt || !ZX_SIMPLE_ELEM_CHK(flt->faultstring))
     return 0;
@@ -171,7 +171,7 @@ char* zxid_get_tas3_fault_comment(zxid_conf* cf, zxid_fault* flt) {
  * Reference field may indicate which XML element is causing the fault.
  * Its value correspons to id XML attribute of the faulting element. */
 
-/* Called by:  covimp_test x2 */
+/* Called by: */
 char* zxid_get_tas3_fault_ref(zxid_conf* cf, zxid_fault* flt) {
   if (!flt || !flt->detail || !flt->detail->Status || !flt->detail->Status->ref || !flt->detail->Status->ref->g.s)
     return 0;
@@ -183,7 +183,7 @@ char* zxid_get_tas3_fault_ref(zxid_conf* cf, zxid_fault* flt) {
  *
  * Actor field may indicate whether the detected error is attributable to Server or Client. */
 
-/* Called by:  covimp_test x2, zxid_get_fault_status */
+/* Called by:  zxid_get_fault_status */
 char* zxid_get_tas3_fault_actor(zxid_conf* cf, zxid_fault* flt) {
   if (!flt || !ZX_SIMPLE_ELEM_CHK(flt->faultactor))
     return 0;
@@ -221,7 +221,7 @@ void zxid_set_tas3_status(zxid_conf* cf, zxid_ses* ses, zxid_tas3_status* status
 
 /*() Read current fault of the session. NULL return means that there was no fault. */
 
-/* Called by:  covimp_test */
+/* Called by: */
 zxid_tas3_status* zxid_get_tas3_status(zxid_conf* cf, zxid_ses* ses) {
   return ses->curstatus;
 }
@@ -229,7 +229,7 @@ zxid_tas3_status* zxid_get_tas3_status(zxid_conf* cf, zxid_ses* ses) {
 /*() Return first level status code from TAS3 status.
  * Typically called as  sc1 = zxid_get_tas3_status_sc1(cf, zxid_get_tas3_status(cf, ses)); */
 
-/* Called by:  covimp_test x2 */
+/* Called by: */
 char* zxid_get_tas3_status_sc1(zxid_conf* cf, zxid_tas3_status* st) {
   if (!st || !st->code || !st->code->g.s)
     return 0;
@@ -239,7 +239,7 @@ char* zxid_get_tas3_status_sc1(zxid_conf* cf, zxid_tas3_status* st) {
 /*() Return second level status code from TAS3 status.
  * Typically called as  sc2 = zxid_get_tas3_status_sc2(cf, zxid_get_tas3_status(cf, ses)); */
 
-/* Called by:  covimp_test x2 */
+/* Called by: */
 char* zxid_get_tas3_status_sc2(zxid_conf* cf, zxid_tas3_status* st) {
   if (!st || !st->Status || !st->Status->code || !st->Status->code->g.s)
     return 0;
@@ -249,7 +249,7 @@ char* zxid_get_tas3_status_sc2(zxid_conf* cf, zxid_tas3_status* st) {
 /*() Return comment from TAS3 status.
  * Typically called as  c = zxid_get_tas3_status_comment(cf, zxid_get_tas3_status(cf, ses)); */
 
-/* Called by:  covimp_test x2 */
+/* Called by: */
 char* zxid_get_tas3_status_comment(zxid_conf* cf, zxid_tas3_status* st) {
   if (!st || !st->comment || !st->comment->g.s)
     return 0;
@@ -262,7 +262,7 @@ char* zxid_get_tas3_status_comment(zxid_conf* cf, zxid_tas3_status* st) {
  * Reference field may indicate which XML element is causing the fault.
  * Its value correspons to id XML attribute of the faulting element. */
 
-/* Called by:  covimp_test x2 */
+/* Called by: */
 char* zxid_get_tas3_status_ref(zxid_conf* cf, zxid_tas3_status* st) {
   if (!st || !st->ref || !st->ref->g.s)
     return 0;
@@ -276,7 +276,7 @@ char* zxid_get_tas3_status_ref(zxid_conf* cf, zxid_tas3_status* st) {
  * architecture, e.g. "urn:tas3:ctlpt:pep:rq:out", "urn:tas3:ctlpt:pep:rq:in",
  * "urn:tas3:ctlpt:pep:rs:out", or "urn:tas3:ctlpt:pep:rs:in". */
 
-/* Called by:  covimp_test x2 */
+/* Called by: */
 char* zxid_get_tas3_status_ctlpt(zxid_conf* cf, zxid_tas3_status* st) {
   if (!st || !st->ctlpt || !st->ctlpt->g.s)
     return 0;
@@ -316,7 +316,7 @@ static struct zx_di_RequestedService_s* zxid_mk_di_req_svc(zxid_conf* cf, struct
 
 /*() Low level constructor for discovery <di:Query>. */
 
-/* Called by:  main x2, zxid_get_epr */
+/* Called by:  main x2, zxid_discover_epr */
 struct zx_di_Query_s* zxid_mk_di_query(zxid_conf* cf, struct zx_elem_s* father, const char* svc_type, const char* url, const char* di_opt, const char* action)
 {
   struct zx_di_Query_s* q = zx_NEW_di_Query(cf->ctx, father);
@@ -326,7 +326,7 @@ struct zx_di_Query_s* zxid_mk_di_query(zxid_conf* cf, struct zx_elem_s* father, 
 
 /*() Low level constructor for WSA <Address>. */
 
-/* Called by:  zxid_wsc_prep, zxid_wsf_decor */
+/* Called by:  zxid_wsc_prep x3, zxid_wsf_decor */
 struct zx_a_Address_s* zxid_mk_addr(zxid_conf* cf, struct zx_elem_s* father, struct zx_str* url)
 {
   struct zx_a_Address_s* addr = zx_NEW_a_Address(cf->ctx, father);
@@ -338,7 +338,7 @@ struct zx_a_Address_s* zxid_mk_addr(zxid_conf* cf, struct zx_elem_s* father, str
 
 /*() Low level constructor for <dap:Select>. */
 
-/* Called by:  covimp_test x2, main x4 */
+/* Called by:  main x4 */
 struct zx_dap_Select_s* zxid_mk_dap_select(zxid_conf* cf, struct zx_elem_s* father, char* dn, char* filter, char* attributes, int derefaliases, int scope, int sizelimit, int timelimit, int typesonly)
 {
   struct zx_dap_Select_s* sel = zx_NEW_dap_Select(cf->ctx, father);
@@ -355,7 +355,7 @@ struct zx_dap_Select_s* zxid_mk_dap_select(zxid_conf* cf, struct zx_elem_s* fath
 
 /*() Low level constructor for <dap:QueryItem>. */
 
-/* Called by:  covimp_test, main x3 */
+/* Called by:  main x3 */
 struct zx_dap_QueryItem_s* zxid_mk_dap_query_item(zxid_conf* cf, struct zx_elem_s* father, struct zx_dap_Select_s* sel, char* objtype, char* predef, char* sort, char* changed_since, int incl_common_attr, int offset, int count, char* setreq, char* setid, char* contingent_itemidref)
 {
   struct zx_dap_QueryItem_s* qi = zx_NEW_dap_QueryItem(cf->ctx, father);
@@ -398,7 +398,7 @@ struct zx_dap_QueryItem_s* zxid_mk_dap_query_item(zxid_conf* cf, struct zx_elem_
 
 /*() Low level constructor for <dap:TestOp>. */
 
-/* Called by:  covimp_test, main */
+/* Called by:  main */
 struct zx_dap_TestOp_s* zxid_mk_dap_testop(zxid_conf* cf, struct zx_elem_s* father, char* dn, char* filter, char* attributes, int derefaliases, int scope, int sizelimit, int timelimit, int typesonly)
 {
   struct zx_dap_TestOp_s* sel = zx_NEW_dap_TestOp(cf->ctx, father);
@@ -415,7 +415,7 @@ struct zx_dap_TestOp_s* zxid_mk_dap_testop(zxid_conf* cf, struct zx_elem_s* fath
 
 /*() Low level constructor for <dap:TestItem>. */
 
-/* Called by:  covimp_test, main */
+/* Called by:  main */
 struct zx_dap_TestItem_s* zxid_mk_dap_test_item(zxid_conf* cf, struct zx_elem_s* father, struct zx_dap_TestOp_s* top, char* objtype, char* predef)
 {
   struct zx_dap_TestItem_s* ti = zx_NEW_dap_TestItem(cf->ctx, father);
@@ -430,7 +430,7 @@ struct zx_dap_TestItem_s* zxid_mk_dap_test_item(zxid_conf* cf, struct zx_elem_s*
 
 /*() Low level constructor for <dap:ResultQuery>. */
 
-/* Called by:  covimp_test, main */
+/* Called by:  main */
 struct zx_dap_ResultQuery_s* zxid_mk_dap_resquery(zxid_conf* cf, struct zx_elem_s* father, struct zx_dap_Select_s* sel, char* objtype, char* predef, char* sort, char* changed_since, int incl_common_attr, char* contingent_itemidref)
 {
   struct zx_dap_ResultQuery_s* qi = zx_NEW_dap_ResultQuery(cf->ctx, father);
@@ -467,7 +467,7 @@ struct zx_dap_ResultQuery_s* zxid_mk_dap_resquery(zxid_conf* cf, struct zx_elem_
 
 /*() Low level constructor for <dap:Subscription>. */
 
-/* Called by:  covimp_test, main */
+/* Called by:  main */
 struct zx_dap_Subscription_s* zxid_mk_dap_subscription(zxid_conf* cf, struct zx_elem_s* father, char* subsID, char* itemidref, struct zx_dap_ResultQuery_s* rq, char* aggreg, char* trig, char* starts, char* expires, int incl_data, char* admin_notif, char* notify_ref)
 {
   struct zx_dap_Subscription_s* subs = zx_NEW_dap_Subscription(cf->ctx, father);
@@ -493,7 +493,7 @@ struct zx_dap_Subscription_s* zxid_mk_dap_subscription(zxid_conf* cf, struct zx_
 
 /*() Low level constructor for <dap:Query>. */
 
-/* Called by:  covimp_test, main x3 */
+/* Called by:  main x3 */
 struct zx_dap_Query_s* zxid_mk_dap_query(zxid_conf* cf, struct zx_elem_s* father, struct zx_dap_TestItem_s* tis, struct zx_dap_QueryItem_s* qis, struct zx_dap_Subscription_s* subs)
 {
   struct zx_dap_Query_s* q = zx_NEW_dap_Query(cf->ctx, father);

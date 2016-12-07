@@ -47,7 +47,7 @@ struct ak_master_rec ak_master =
 /* pthread specific data key for locating the logging buffer */
 pthread_key_t ak_buf_key;
 
-/* Called by:  main, zxbusd_main */
+/* Called by:  main, zxbusd_main, zxcachecli_main, zxcached_main */
 void ak_init(char* argv0) {
   char buf[8192];
   int x,n=0;
@@ -281,7 +281,7 @@ struct ak_buf* ak_add_buf(int afr_buffer_size, int flags, char* comment)
  *   T=regular worket thread, W=witer thread, F=fe polling thead, f=fe consumer thread,
  *   B=backend poller thread, b=backedn consumer thread, S=shuffler, s=static, etc. */
 
-/* Called by:  main, opt, thread_loop */
+/* Called by:  main, opt x3, thread_loop x3 */
 void ak_add_thread(int afr_buffer_size, char* prefix, int flags)
 {
   struct ak_buf* buf;

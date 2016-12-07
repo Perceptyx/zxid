@@ -50,7 +50,7 @@
  * handled by this function. The fd_hint is only used for debug prints.
  * return:: 0 on failure, 1 on success  */
 
-/* Called by:  zx_password_authn */
+/* Called by:  zx_password_authn, zx_yubikey_authn */
 static int zx_pw_chk(const char* uid, const char* pw_buf, const char* passw, int fd_hint)
 {
   unsigned char pw_hash[120];

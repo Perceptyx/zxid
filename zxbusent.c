@@ -178,7 +178,7 @@ static int zxbus_pw_authn_ent(const char* eid, const char* passw, int fd_hint)
  *      > ln -s /var/zxid/bus/uid/G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/162553b8
  */
 
-/* Called by:  stomp_got_login */
+/* Called by:  mcdb_got_login, stomp_got_login */
 int zxbus_login_ent(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 {
   char* p;

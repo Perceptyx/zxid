@@ -91,7 +91,7 @@ char* nidmap_to = 0;
 char* bdy = 0;
 zxid_conf* cf;
 
-/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcall_main, zxcot_main, zxdecode_main */
+/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxdecode_main, zxumacall_main */
 static void opt(int* argc, char*** argv, char*** env)
 {
   struct zx_str* ss;
@@ -313,7 +313,7 @@ help:
  *
  * See also: zxid_find_epr() */
 
-/* Called by:  zxcall_main */
+/* Called by:  zxcall_main, zxumacall_main */
 int zxid_print_session(zxid_conf* cf, zxid_ses* ses)
 {
   struct zx_root_s* r;

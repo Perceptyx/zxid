@@ -265,7 +265,7 @@ static void die_oom() {
   exit(1);
 }
 
-/* Called by:  main x11, re_open_logfile */
+/* Called by:  main x11 */
 static void die_perror(const char* what) {
 #ifdef MINGW
   ERR("WSAGetLastError=%d", WSAGetLastError());
@@ -284,7 +284,7 @@ static int ret_crit_perror(const char* what) {
 
 /* ------------- Memory alloc utils ----------- */
 
-/* Called by:  add_to_buf, build_env, really_check_referer */
+/* Called by:  add_to_buf, build_env */
 static void* e_malloc(size_t size) {
   void* ptr = malloc(size);
   if (!ptr) die_oom();
@@ -298,7 +298,7 @@ static void* e_realloc(void* optr, size_t size) {
   return ptr;
 }
 
-/* Called by:  build_env, do_cgi */
+/* Called by:  build_env */
 static char* e_strdup(char* ostr) {
   char* str = strdup(ostr);
   if (!str) die_oom();
@@ -319,7 +319,7 @@ static int hexit(char c) {
 }
 
 /* Copies and decodes a string.  It's ok for from and to to be the same string. */
-/* Called by:  handle_request, make_argp x2 */
+/* Called by: */
 static void strdecode(char* to, char* from) {
   for (; *from != '\0'; ++to, ++from) {
     if (from[0] == '%' && isxdigit(from[1]) && isxdigit(from[2]))
@@ -364,7 +364,7 @@ static void str_copy_and_url_encode(char* to, size_t tosize, const char* from) {
   *to = '\0';
 }
 
-/* Called by:  do_dir */
+/* Called by: */
 static char* file_details(const char* dir, const char* name) {
   char f_time[20];
   static char encname[1000];
@@ -390,7 +390,7 @@ static char* file_details(const char* dir, const char* name) {
 
 /* ------------- Read Write Utils ----------- */
 
-/* Called by:  cgi_interpose_input, handle_request, zxid_mini_httpd_read_post */
+/* Called by:  cgi_interpose_input, zxid_mini_httpd_read_post */
 ssize_t conn_read(char* buf, size_t size) {
   DD("size=%d", size);
   if (do_ssl)
@@ -401,7 +401,7 @@ ssize_t conn_read(char* buf, size_t size) {
   return size;
 }
 
-/* Called by:  cgi_interpose_output x6, send_response, send_via_write x2, zxid_mini_httpd_wsp_response x2 */
+/* Called by:  cgi_interpose_output x6, send_via_read_write, send_via_write, zxid_mini_httpd_wsp_response x2 */
 ssize_t conn_write(char* buf, size_t size) {
   DD("size=%d buf(%.*s)", size, MIN(size, 100), buf);
   if (do_ssl)
@@ -413,7 +413,7 @@ ssize_t conn_write(char* buf, size_t size) {
 }
 
 #ifdef HAVE_SENDFILE
-/* Called by:  do_file */
+/* Called by: */
 static int conn_sendfile(int fd, size_t nbytes) {
 #ifdef HAVE_LINUX_SENDFILE
   return sendfile(conn_fd, fd, 0, nbytes);
@@ -425,7 +425,7 @@ static int conn_sendfile(int fd, size_t nbytes) {
 
 /* ------------- Buffer manipulation ----------- */
 
-/* Called by:  add_to_request, add_to_response, cgi_interpose_output x2, do_dir x4, zxid_mini_httpd_wsp_response */
+/* Called by:  add_to_request, add_to_response, cgi_interpose_output x2, zxid_mini_httpd_wsp_response */
 void add_to_buf(char** bufP, size_t* bufsizeP, size_t* buflenP, char* str, size_t len) {
   if (!*bufsizeP) {
     *bufsizeP = len + 500;
@@ -441,18 +441,18 @@ void add_to_buf(char** bufP, size_t* bufsizeP, size_t* buflenP, char* str, size_
 }
 
 
-/* Called by:  handle_request */
+/* Called by: */
 static void start_request(void) {
   request_size = 0;
   request_idx = 0;
 }
 
-/* Called by:  handle_request, zxid_mini_httpd_read_post */
+/* Called by:  zxid_mini_httpd_read_post */
 void add_to_request(char* str, size_t len) {
   add_to_buf(&request, &request_size, &request_len, str, len);
 }
 
-/* Called by:  handle_request x2 */
+/* Called by: */
 static char* get_request_line(void) {
   int i;
   char c;
@@ -483,16 +483,17 @@ static void start_response(void) {
   response_size = 0;
 }
 
-/* Called by:  add_headers x14, do_dir, send_error_and_exit x5, send_error_file, zxid_mini_httpd_sso */
+/* Called by:  add_headers x14, send_error_and_exit x5, send_error_file, zxid_mini_httpd_metadata_get_special_case, zxid_mini_httpd_process_zxid_simple_outcome */
 void add_to_response(char* str, size_t len) {
   add_to_buf(&response, &response_size, &response_len, str, len);
 }
 
-/* Called by:  do_dir, do_file x2, send_error_and_exit, zxid_mini_httpd_sso */
+/* Called by:  send_error_and_exit, zxid_mini_httpd_metadata_get_special_case, zxid_mini_httpd_process_zxid_simple_outcome */
 void send_response(void) {
   (void) conn_write(response, response_len);
 }
 
+/* Called by:  send_via_write */
 static void send_via_read_write(int fd, off_t size) {
   char buf[32*1024];
   ssize_t r, r2;
@@ -524,7 +525,7 @@ static void send_via_read_write(int fd, off_t size) {
  * plain files. If Range causes offset (start), then mmap(2)
  * is not used (even if by accident start would fall on page boundary). */
 
-/* Called by:  do_file x2 */
+/* Called by: */
 static void send_via_write(int fd, off_t size, off_t start) {
 #ifndef MINGW
   if (size <= SIZE_T_MAX && !start) {
@@ -581,7 +582,7 @@ static void lookup_hostname(usockaddr* usa4P, size_t sa4_len, int* gotv4P, usock
   *gotv6P = 0; /* *** how do you bind INADDR_ANY for IP6? */
 }
 
-/* Called by:  auth_check, check_referer, do_dir, do_file x2, handle_read_timeout, handle_write_timeout, make_envp, make_log_entry, virtual_file */
+/* Called by:  auth_check, handle_read_timeout, handle_write_timeout, initialize_listen_socket, main x2, virtual_file */
 static char* ntoa(usockaddr* usaP) {
 #ifdef USE_IPV6
   static char str[200];
@@ -630,7 +631,7 @@ static int initialize_listen_socket(usockaddr* usaP)
 }
 
 /* Set NDELAY mode on a socket. */
-/* Called by:  post_post_garbage_hack */
+/* Called by: */
 static void set_ndelay(int fd) {
   int flags, newflags;
 
@@ -643,7 +644,7 @@ static void set_ndelay(int fd) {
 }
 
 /* Clear NDELAY mode on a socket. */
-/* Called by:  post_post_garbage_hack */
+/* Called by: */
 static void clear_ndelay(int fd) {
   int flags, newflags;
 
@@ -765,7 +766,7 @@ static const int n_typ_tab = sizeof(typ_tab) / sizeof(*typ_tab);
 ** encodings are separated by commas, and are listed in the order in
 ** which they were applied to the file.
 */
-/* Called by:  do_file */
+/* Called by: */
 static const char* figure_mime(char* name, char* me, size_t me_size)
 {
   char* prev_dot;
@@ -1513,7 +1514,7 @@ static void handle_request(void)
   SSL_free(ssl);
 }
 
-/* Called by:  handle_request */
+/* Called by: */
 static void de_dotdot(char* file)
 {
   char* cp;
@@ -1558,7 +1559,7 @@ static void de_dotdot(char* file)
  * prefix that corresponds to stat'able file. Anything
  * beyond this is considered PATH_INFO. */
 
-/* Called by:  handle_request */
+/* Called by: */
 static int get_pathinfo(void) {
   int r;
   pathinfo = file+strlen(file);
@@ -1580,7 +1581,7 @@ static int get_pathinfo(void) {
   }
 }
 
-/* Called by:  handle_request x2 */
+/* Called by: */
 static void do_file(void) {
   char buf[10000];
   char mime_encodings[500];
@@ -1677,7 +1678,7 @@ static void do_file(void) {
 }
 
 
-/* Called by:  handle_request */
+/* Called by: */
 static void do_dir(void)
 {
   char buf[10000];
@@ -1747,7 +1748,7 @@ static void do_dir(void)
   send_response();
 }
 
-/* Called by:  do_cgi x2 */
+/* Called by: */
 static int pipe_and_fork(int* p, const char* next_step_flag) {
   int ret;
 
@@ -1791,7 +1792,7 @@ static int pipe_and_fork(int* p, const char* next_step_flag) {
 #endif
 }
 
-/* Called by:  do_file */
+/* Called by: */
 static void do_cgi(void) {
   char** argp;
   char** envp;
@@ -1916,7 +1917,7 @@ static void do_cgi(void) {
 **
 ** Oh, and it's also used for all SSL CGIs.
 */
-/* Called by:  do_cgi, main */
+/* Called by:  main */
 static void cgi_interpose_input(int wfd)
 {
   size_t cnt;
@@ -1959,7 +1960,7 @@ static void cgi_interpose_input(int wfd)
 }
 
 /* This routine is used for parsed-header CGIs and for all SSL CGIs. */
-/* Called by:  do_cgi, main */
+/* Called by:  main */
 static void cgi_interpose_output(int rfd, int parse_headers)
 {
   ssize_t got, r2;
@@ -2089,7 +2090,7 @@ static void cgi_interpose_output(int rfd, int parse_headers)
 /* Set up CGI argument vector.  We don't have to worry about freeing
 ** stuff since we're a sub-process.  This gets done after make_envp() because
 ** we scribble on query. */
-/* Called by:  do_cgi */
+/* Called by: */
 static char** make_argp(void)
 {
   char** argp;
@@ -2133,7 +2134,7 @@ static char** make_argp(void)
   return argp;
 }
 
-/* Called by:  make_envp x23 */
+/* Called by: */
 static char* build_env(char* fmt, char* arg)
 {
   char* cp;
@@ -2159,7 +2160,7 @@ static char* build_env(char* fmt, char* arg)
 /* Set up CGI environment variables. Be real careful here to avoid
 ** letting malicious clients overrun a buffer.  We don't have
 ** to worry about freeing stuff since we're a sub-process. */
-/* Called by:  do_cgi */
+/* Called by: */
 static char** make_envp(void)
 {
   static char* envp[50+200];
@@ -2228,7 +2229,7 @@ static char** make_envp(void)
  * mod:: Last-Modified time
  */
 
-/* Called by:  do_dir, do_file x2, send_error_and_exit, zxid_mini_httpd_sso */
+/* Called by:  send_error_and_exit, zxid_mini_httpd_metadata_get_special_case, zxid_mini_httpd_process_zxid_simple_outcome */
 void add_headers(int s, char* title, char* extra_header, char* me, char* mt, off_t byt, time_t mod)
 {
   time_t now, expires;
@@ -2313,7 +2314,7 @@ void add_headers(int s, char* title, char* extra_header, char* me, char* mt, off
   add_to_response(buf, buflen);
 }
 
-/* Called by:  handle_request */
+/* Called by: */
 static char* virtual_file(char* file) {
   char* cp;
   static char vfile[10000];
@@ -2357,7 +2358,7 @@ static int send_error_file(char* filename) {
   return 1;
 }
 
-/* Called by:  auth_check, check_referer, do_cgi x2, do_dir x2, do_file x3, handle_read_timeout, handle_request x9, pipe_and_fork x3, send_authenticate, zxid_mini_httpd_sso x3, zxid_mini_httpd_wsp x2 */
+/* Called by:  auth_check x2, handle_read_timeout, pipe_and_fork x3, send_authenticate, zxid_mini_httpd_metadata_get_special_case, zxid_mini_httpd_process_zxid_simple_outcome x3, zxid_mini_httpd_uma x3, zxid_mini_httpd_wsp x2 */
 void send_error_and_exit(int err_code, char* title, char* extra_header, char* text) {
   char buf[4000];
   int buflen;
@@ -2415,7 +2416,7 @@ static void send_authenticate(char* realm) {
  * Second, the .htaccess file in the directory, if any, is checked (i.e. HTTP
  * Basic Auth with usename and password).
  */
-/* Called by:  do_dir, do_file */
+/* Called by: */
 static void auth_check(char* dirname)
 {
   char authpath[10000];
@@ -2502,7 +2503,7 @@ static void auth_check(char* dirname)
 }
 
 /* Returns 1 if ok to serve the url, 0 if not. */
-/* Called by:  check_referer */
+/* Called by: */
 static int really_check_referer(void)
 {
   char* cp1;
@@ -2563,7 +2564,7 @@ static int really_check_referer(void)
 }
 
 /* Returns if it's ok to serve the url, otherwise generates an error and exits. */
-/* Called by:  do_dir, do_file */
+/* Called by: */
 static void check_referer(void)
 {
   char* cp;

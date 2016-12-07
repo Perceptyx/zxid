@@ -96,6 +96,7 @@ static void chldinit(apr_pool_t* p, server_rec* s)
 
 /*(-) Set cookies apache style. Internal. */
 
+/* Called by:  chkuid x2, pool2apache */
 static void set_cookies(zxid_conf* cf, request_rec* r, const char* setcookie, const char* setptmcookie)
 {
   if (setcookie && setcookie[0] && setcookie[0] != '-') {
@@ -128,7 +129,7 @@ static void set_cookies(zxid_conf* cf, request_rec* r, const char* setcookie, co
  * return:: Apache error code, typically OK, which allows Apache continue
  *     processing the request. */
 
-/* Called by:  chkuid x2 */
+/* Called by:  chkuid x3 */
 static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
 {
   int ret = OK;
@@ -248,7 +249,7 @@ static int send_res(zxid_conf* cf, request_rec* r, char* res)
  * This is considered internal function to mod_auth_saml, called by chkuid().
  * You should not call this directly, unless you know what you are doing. */
 
-/* Called by:  chkuid x2 */
+/* Called by:  chkuid x3 */
 static char* read_post(zxid_conf* cf, request_rec* r)
 {
   int len, ret;

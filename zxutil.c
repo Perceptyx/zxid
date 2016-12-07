@@ -60,7 +60,7 @@ int close_file(fdtype fd, const char* logkey);
 
 /*(-) Report brokenness of snprintf() */
 
-/* Called by:  vname_from_path, write_all_fd_fmt, write_all_path_fmt, zx_alloc_vasprintf, zxbus_log_receipt, zxid_epr_path */
+/* Called by:  vname_from_path, write_all_fd_fmt, write_all_path_fmt, zx_alloc_vasprintf, zxbus_log_receipt, zxid_epr_path x2, zxlog_fmt x2 */
 void platform_broken_snprintf(int n, const char* where, int maxlen, const char* fmt)
 {
   perror("snprintf");
@@ -455,7 +455,7 @@ int write_all_path_fmt(const char* logkey, int maxlen, char* buf, const char* pa
  * data::     Data to be written. No formatting on data is performed.
  * Returns:: 1 on success, 0 on fail. */
 
-/* Called by: */
+/* Called by:  authn_user, main x3, zx_get_symkey, zx_yubikey_authn, zxid_check_fed, zxid_mk_at_cert, zxid_mk_oauth2_dyn_cli_reg_res, zxid_mk_oauth2_rsrc_reg_res, zxid_mk_self_sig_cert, zxid_mk_transient_nid */
 int write_all_path(const char* logkey, const char* path_fmt, const char* prepath, const char* postpath, int len, const char* data)
 {
   fdtype fd;
@@ -583,7 +583,7 @@ int close_file(fdtype fd, const char* logkey)
  * actually copying file is more portable. Even in Unix, hardlinking
  * can be troublesome if the from and to are on different file systems. */
 
-/* Called by:  covimp_test x5, zxid_cp_usr_eprs2ses */
+/* Called by:  zxid_cp_usr_eprs2ses */
 int copy_file(const char* from, const char* to, const char* logkey, int may_link)
 {
   fdtype fd_from;
@@ -713,7 +713,7 @@ int hexdump(const char* msg, const void* data, const void* lim, int max)
   return 0;
 }
 
-/* Called by:  covimp_test x2, zxsig_validate x6 */
+/* Called by:  zx_get_symkey, zx_raw_cipher2 x4, zxbus_verify_receipt x2, zxsig_validate x19 */
 int hexdmp(const char* msg, const void* p, int len, int max) {
   return hexdump(msg, p, p+len, max);
 }
@@ -931,7 +931,7 @@ void zx_zlib_zfree(void* opaque, voidpf addr)
  * of the comressed data. Since the compressed data will be
  * binary, there is no provision for nul termination. Caveat: RFC1951 is not same a gzip. */
 
-/* Called by:  zxid_deflate_safe_b64_raw, zxid_map_val_ss, zxid_saml2_redir_enc, zxlog_write_line */
+/* Called by:  encode, zx_global_write, zxid_deflate_safe_b64_raw, zxid_map_val_ss, zxid_saml2_redir_enc, zxlog_write_line */
 char* zx_zlib_raw_deflate(struct zx_ctx* c, int in_len, const char* in, int* out_len)
 {
   int ret, dlen;
@@ -972,7 +972,7 @@ char* zx_zlib_raw_deflate(struct zx_ctx* c, int in_len, const char* in, int* out
  * s:: String to compress and ascii armour
  * return:: string that has been allocated from zx_ctx. Nul terminated. Caller frees. */
 
-/* Called by:  zxid_deflate_safe_b64, zxid_mk_oauth_az_req, zxid_parse_cgi, zxid_simple_show_idp_sel */
+/* Called by:  encode, zxid_deflate_safe_b64, zxid_mk_fbc_az_req x3, zxid_mk_oauth_az_req x5, zxid_parse_cgi, zxid_sso_set_relay_state_to_return_to_this_url */
 char* zxid_deflate_safe_b64_raw(struct zx_ctx* c, int len, const char* s)
 {
   int zlen;
@@ -997,7 +997,7 @@ char* zxid_deflate_safe_b64_raw(struct zx_ctx* c, int len, const char* s)
 
 /*() Helper to compress and ascii armour the original request. */
 
-/* Called by:  zxid_simple_idp_show_an x2 */
+/* Called by:  zxid_simple_idp_show_an x3 */
 char* zxid_deflate_safe_b64(struct zx_ctx* c, struct zx_str* ss)
 {
   char* b64 = zxid_deflate_safe_b64_raw(c, ss->len, ss->s);
@@ -1070,7 +1070,7 @@ char* zx_zlib_raw_inflate(struct zx_ctx* c, int in_len, const char* in, int* out
  * The return value is newly allocated string (caller frees). Inplace inflate
  * does not make sense as the result is nearly always bigger than the input. */
 
-/* Called by:  pool2apache, zxid_decode_ssoreq, zxid_map_bangbang, zxid_map_val_ss, zxid_show_protected_content_setcookie */
+/* Called by:  zxid_decode_oauth2_state, zxid_decode_ssoreq, zxid_map_bangbang, zxid_map_val_ss, zxid_show_protected_content_setcookie */
 char* zxid_unbase64_inflate(struct zx_ctx* c, int in_len, const char* in, int* out_len)
 {
   int len;
@@ -1098,6 +1098,7 @@ char* zxid_unbase64_inflate(struct zx_ctx* c, int in_len, const char* in, int* o
 /*() Eliminate characters in zap from the string s, in place, i.e. shifting the
  * tail of the string left. The string is modified in place. */
 
+/* Called by:  zxid_mk_jwk */
 char* zx_zap_inplace_raw(char* s, const char* zap)
 {
   char* ret = s;
@@ -1189,6 +1190,7 @@ char* zx_url_encode(struct zx_ctx* c, int in_len, const char* in, int* out_len)
 
 /*() Base64 encode and URL encode concatenation "uid:password" as in HTTP basic authentication */
 
+/* Called by:  opt, zxid_oauth_call_az_endpoint, zxid_oauth_call_rpt_endpoint, zxid_oauth_rsrcreg_client */
 char* zx_mk_basic_auth_b64(struct zx_ctx* c, const char* uid, const char* pw)
 {
   char* p;
@@ -1312,7 +1314,7 @@ const unsigned char const * ykmodhex_trans = (unsigned char*)"cbdefghijklnrtuv";
 /*() Especially useful as yubikey_modhex_decode() replacement.
  * Supports inplace conversion. Does not nul terminate. */
 
-/* Called by:  authn_user x2, covimp_test, zx_yubikey_authn x2 */
+/* Called by:  authn_user x2, zx_yubikey_authn x2 */
 char* zx_hexdec(char* dst, char* src, int src_len, const unsigned char* trans)
 {
   const unsigned char* hi;
@@ -1398,7 +1400,7 @@ static int zx_timegm(const struct tm* t)
  *
  * See also zxid_date_time() for inverse. */
 
-/* Called by:  timegm_tester, zxid_parse_invite x2, zxid_sp_sso_finalize, zxid_sso_issue_a7n, zxid_sso_issue_jwt, zxid_timestamp_chk, zxid_validate_cond x2 */
+/* Called by:  timegm_tester, zxid_parse_invite x2, zxid_sp_sso_finalize, zxid_sso_issue_a7n, zxid_sso_issue_jwt x3, zxid_timestamp_chk, zxid_validate_cond x2 */
 int zx_date_time_to_secs(const char* dt)
 {
   struct tm t;
@@ -1418,6 +1420,7 @@ int zx_date_time_to_secs(const char* dt)
  * N.B. The key specification MUST include the quotes, e.g. "\"yourkey\""
  */
 
+/* Called by:  zx_json_extract_dup */
 const char* zx_json_extract_raw(const char* hay, const char* key, int* len)
 {
   const char* s;
@@ -1447,6 +1450,7 @@ const char* zx_json_extract_raw(const char* hay, const char* key, int* len)
  * N.B. The key specification MUST include the quotes, e.g. "\"yourkey\""
  */
 
+/* Called by:  zxid_oauth_call_az_endpoint, zxid_oauth_call_fb_graph_endpoint x5, zxid_oauth_call_rpt_endpoint, zxid_oauth_call_token_endpoint x4, zxid_oauth_dynclireg_client x2, zxid_oauth_get_well_known_item, zxid_sp_sso_finalize_jwt x3 */
 char* zx_json_extract_dup(struct zx_ctx* c, const char* hay, const char* key)
 {
   int len;
@@ -1460,6 +1464,7 @@ char* zx_json_extract_dup(struct zx_ctx* c, const char* hay, const char* key)
  * N.B. The key specification MUST include the quotes, e.g. "\"yourkey\""
  */
 
+/* Called by:  zxid_oauth_call_fb_graph_endpoint, zxid_oauth_call_token_endpoint */
 int zx_json_extract_int(const char* hay, const char* key)
 {
   int i;
@@ -1486,6 +1491,7 @@ int zx_json_extract_int(const char* hay, const char* key)
  * N.B. The key specification MUST include the equals sign, e.g. "yourkey="
  */
 
+/* Called by:  zx_qs_extract_dup */
 const char* zx_qs_extract_raw(const char* hay, const char* key, int* len)
 {
   const char* s;
@@ -1509,6 +1515,7 @@ const char* zx_qs_extract_raw(const char* hay, const char* key, int* len)
  * N.B. The key specification MUST include the quotes, e.g. "\"yourkey\""
  */
 
+/* Called by:  zxid_oidc_as_call x4 */
 char* zx_qs_extract_dup(struct zx_ctx* c, const char* hay, const char* key)
 {
   int len;

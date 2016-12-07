@@ -131,7 +131,7 @@ zxid_entity* zxid_get_ses_idp(zxid_conf* cf, zxid_ses* ses)
 
 /*() Allocate memory for session object. Used with zxid_simple_cf_ses(). */
 
-/* Called by:  zxid_as_call, zxid_fetch_ses, zxid_mini_httpd_sso, zxid_mini_httpd_wsp */
+/* Called by:  zxid_as_call, zxid_fetch_ses, zxid_mini_httpd_filter, zxid_mini_httpd_step_up, zxumacall_main x3 */
 zxid_ses* zxid_alloc_ses(zxid_conf* cf)
 {
   zxid_ses* ses = ZX_ZALLOC(cf->ctx, zxid_ses);
@@ -143,7 +143,7 @@ zxid_ses* zxid_alloc_ses(zxid_conf* cf)
  * attributes to pool so they are available for use. You mus obtain session id
  * from some source. */
 
-/* Called by:  zxcall_main */
+/* Called by:  zxcall_main, zxumacall_main */
 zxid_ses* zxid_fetch_ses(zxid_conf* cf, const char* sid)
 {
   zxid_ses* ses = zxid_alloc_ses(cf);
@@ -161,7 +161,7 @@ zxid_ses* zxid_fetch_ses(zxid_conf* cf, const char* sid)
  * load the assertion, if needed. Or zxid_ses_to_pool() if you need attributes
  * as well. Returns 1 if session gotten, 0 if fail. */
 
-/* Called by:  chkuid x2, main x5, zxid_az_base_cf, zxid_az_cf, zxid_fetch_ses, zxid_find_ses, zxid_mini_httpd_sso x2, zxid_simple_cf_ses */
+/* Called by:  chkuid x2, main x5, zxid_az_base_cf, zxid_az_cf, zxid_fetch_ses, zxid_find_ses, zxid_mini_httpd_check_protocol_url, zxid_mini_httpd_sso, zxid_simple_cf_ses */
 int zxid_get_ses(zxid_conf* cf, zxid_ses* ses, const char* sid)
 {
   char* p;
@@ -236,7 +236,7 @@ int zxid_get_ses(zxid_conf* cf, zxid_ses* ses, const char* sid)
  * ses:: Pointer to previously allocated and populated session object
  * return:: 1 upon success, 0 on failure. */
 
-/* Called by:  zxid_as_call_ses, zxid_pw_authn, zxid_sp_anon_finalize, zxid_sp_sso_finalize, zxid_wsp_validate_env */
+/* Called by:  zxid_as_call_ses, zxid_pw_authn, zxid_sp_anon_finalize, zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt, zxid_wsp_validate_env */
 int zxid_put_ses(zxid_conf* cf, zxid_ses* ses)
 {
   char dir[ZXID_MAX_BUF];

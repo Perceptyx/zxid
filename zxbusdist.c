@@ -311,7 +311,7 @@ void zxbus_sched_pending_delivery(struct hi_thr* hit, const char* dest)
  * or just unlinked on the spot.
  * return:: 0 on fail, 1 on rename to .del, 2 on unlink */
 
-/* Called by:  stomp_got_ack */
+/* Called by:  mcdb_got_ack, stomp_got_ack */
 int zxbus_retire(struct hi_thr* hit, struct hi_pdu* db_pdu)
 {
   int len, dest_len;
@@ -353,7 +353,7 @@ int zxbus_retire(struct hi_thr* hit, struct hi_pdu* db_pdu)
  * return:: 0 on failure, 1 on success.
  * see also:: persist feature in zxbus_listen_msg() */
 
-/* Called by:  stomp_got_send */
+/* Called by:  mcdb_got_send, stomp_got_send */
 int zxbus_persist(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 {
   int len, dest_len;

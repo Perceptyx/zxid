@@ -50,7 +50,7 @@
  *     CGI arguments are simply ignored with assumption that some other processing
  *     layer will pick them up - hence no need to flag error. */
 
-/* Called by:  chkuid x2, main x4, zxid_decode_ssoreq, zxid_mini_httpd_sso x2, zxid_new_cgi, zxid_simple_cf_ses x3, zxid_simple_no_ses_cf */
+/* Called by:  chkuid x2, main x4, zxid_decode_oauth2_state, zxid_decode_ssoreq, zxid_mini_httpd_check_protocol_url, zxid_mini_httpd_filter, zxid_new_cgi, zxid_simple_cf_ses x3, zxid_simple_no_ses_cf */
 int zxid_parse_cgi(zxid_conf* cf, zxid_cgi* cgi, char* qs)
 {
   char *p, *n, *v;
@@ -279,7 +279,7 @@ set_eid:
   return 0;
 }
 
-/* Called by:  covimp_test */
+/* Called by: */
 zxid_cgi* zxid_new_cgi(zxid_conf* cf, char* qs)
 {
   zxid_cgi* cgi = ZX_ZALLOC(cf->ctx, zxid_cgi);
@@ -310,7 +310,7 @@ zxid_cgi* zxid_new_cgi(zxid_conf* cf, char* qs)
  *    ONE_COOKIE=aaa; ZXIDSES=S12cvd324; SOME_OTHER_COOKIE=...
  */
 
-/* Called by:  chkuid, zxid_mini_httpd_sso, zxid_simple_cf_ses */
+/* Called by:  chkuid, zxid_mini_httpd_filter, zxid_simple_cf_ses */
 void zxid_get_sid_from_cookie(zxid_conf* cf, zxid_cgi* cgi, const char* cookie)
 {
   char* q;

@@ -33,7 +33,7 @@
 
 /*() Extract an assertion, decrypting EncryptedAssertion if needed. */
 
-/* Called by:  sig_validate x2, zxid_imreq, zxid_sp_dig_oauth_sso_a7n, zxid_sp_dig_sso_a7n, zxid_wsp_validate_env x2 */
+/* Called by:  sig_validate x2, zxid_imreq, zxid_sp_dig_oauth_sso_a7n x2, zxid_sp_dig_sso_a7n, zxid_wsp_validate_env x2 */
 zxid_a7n* zxid_dec_a7n(zxid_conf* cf, zxid_a7n* a7n, struct zx_sa_EncryptedAssertion_s* enca7n)
 {
   struct zx_str* ss;
@@ -523,7 +523,7 @@ int zxid_sp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx
 
 /*() Return 0 for failure, otherwise some success code such as ZXID_SSO_OK */
 
-/* Called by:  chkuid, main x6, zxid_mini_httpd_sso, zxid_simple_cf_ses */
+/* Called by:  chkuid, main x6, zxid_mini_httpd_check_protocol_url, zxid_simple_cf_ses */
 int zxid_sp_soap_parse(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int len, char* buf)
 {
   struct zx_root_s* r;

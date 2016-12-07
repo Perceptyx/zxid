@@ -93,7 +93,7 @@ char  buf[4096];
 static void test_mode(int* argc, char*** argv, char*** env);
 static void test_receipt(int* argc, char*** argv, char*** env);
 
-/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcall_main, zxcot_main, zxdecode_main */
+/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxdecode_main, zxumacall_main */
 static void opt(int* argc, char*** argv, char*** env)
 {
   int gotall;

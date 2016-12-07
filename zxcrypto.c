@@ -44,7 +44,7 @@
 #include <openssl/pem.h>
 #endif
 
-/* Called by:  zxid_mk_jwt x2 */
+/* Called by:  zxid_mk_jwt x6 */
 char* zx_hmac_sha256(struct zx_ctx* c, int key_len, const char* key, int data_len, const char* data, char* md, int* md_len) {
   return (char*)HMAC(EVP_sha256(), key, key_len, (unsigned char*)data, data_len, (unsigned char*)md, (unsigned int*)md_len);
 }
@@ -90,6 +90,7 @@ const char* zxid_get_cert_signature_algo(X509* cert)
  * zx_raw_raw_digest() expects an algorithm object instead of a string.
  * Returns 0 on failure or length of the digest on success.  */
 
+/* Called by:  zx_raw_digest2, zxsig_sign x2, zxsig_verify_data */
 int zx_raw_raw_digest2(struct zx_ctx* c, char* md, const EVP_MD* evp_digest, int len, const char* s, int len2, const char* s2)
 {
   char* where = "a";
@@ -129,6 +130,7 @@ int zx_raw_raw_digest2(struct zx_ctx* c, char* md, const EVP_MD* evp_digest, int
   return 0;
 }
 
+/* Called by:  zxid_psobj_key_setup */
 int zx_raw_digest2(struct zx_ctx* c, char* md, const char* algo, int len, const char* s, int len2, const char* s2)
 {
   const EVP_MD* evp_digest;
@@ -141,7 +143,7 @@ int zx_raw_digest2(struct zx_ctx* c, char* md, const char* algo, int len, const 
  * It performs XML Enc compatible padding check.  See OpenSSL bug 1067
  * http://rt.openssl.org/Ticket/Display.html?user=guest&;pass=guest&id=1067 */
 
-/* Called by:  zx_raw_cipher */
+/* Called by:  zx_raw_cipher2 */
 int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
   int i,n;
   unsigned int b;
@@ -188,7 +190,7 @@ int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
  * If encflag (==1) indicates encryption, the initialization vector will be prepended.
  * If 0 is supplied as iv, then internal ZX_DEFAULT_IV of correct length is used. */
 
-/* Called by:  zxenc_symkey_dec x4, zxenc_symkey_enc, zxid_psobj_dec, zxid_psobj_enc */
+/* Called by:  zx_global_write, zx_raw_cipher, zxid_psobj_dec, zxid_psobj_enc */
 struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, int keylen, const unsigned char* key, int len, const char* s, int iv_len, const char* iv)
 {
   const char* ivv;
@@ -294,6 +296,7 @@ struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, i
   return 0;
 }
 
+/* Called by:  zxenc_symkey_dec x5, zxenc_symkey_enc x2 */
 struct zx_str* zx_raw_cipher(struct zx_ctx* c, const char* algo, int encflag, struct zx_str* key, int len, const char* s, int iv_len, const char* iv)
 {
   return zx_raw_cipher2(c, algo, encflag, key->len, (unsigned char*)key->s, len, s, iv_len, iv);
@@ -443,7 +446,7 @@ struct zx_str* zx_rsa_priv_enc(struct zx_ctx* c, struct zx_str* plain, RSA* rsa_
 /*() Obtain RSA public key from X509 certificate. The certificate must have been
  * previously read into a data structure. See zxid_read_cert() and zxid_extract_cert() */
 
-/* Called by:  zxenc_pubkey_enc, zxlog_write_line */
+/* Called by:  zxenc_pubkey_enc, zxid_mk_jwk, zxlog_write_line */
 RSA* zx_get_rsa_pub_from_cert(X509* cert, char* logkey)
 {
   EVP_PKEY* evp_pkey;
@@ -783,7 +786,7 @@ http://tools.ietf.org/html/draft-ietf-pkix-3281update-05
  * returns:: 0 on failure, 1 on success
  */
 
-/* Called by:  x509_test, zxid_map_val_ss */
+/* Called by:  zxid_map_val_ss */
 int zxid_mk_at_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, zxid_nid* nameid, const char* name, struct zx_str* val)
 {
 #ifdef USE_OPENSSL

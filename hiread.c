@@ -92,6 +92,7 @@ struct hi_pdu* hi_pdu_alloc(struct hi_thr* hit, struct hi_io* fe, const char* lk
  * locking:: PDU is assumed to be already under lock or otherwise protected
  *     such as being the io->cur_pdu. */
 
+/* Called by:  hi_read */
 void hi_pdu_realloc_m(struct hi_thr* hit, struct hi_pdu* pdu, int newsize, const char* lk)
 {
   char* p;
@@ -150,7 +151,7 @@ static void hi_checkmore(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
  * locking:: takes io->qel.mut
  * see also:: hi_del_from_reqs() */
 
-/* Called by:  http_decode, stomp_decode, stomp_frame_err, test_ping */
+/* Called by:  http_decode, mcdb_decode, mcdb_frame_err, stomp_decode, stomp_frame_err, test_ping */
 void hi_add_to_reqs(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int minlen)
 {
   LOCK(io->qel.mut, "add_to_reqs");

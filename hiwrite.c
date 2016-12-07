@@ -50,6 +50,7 @@ extern int errmac_debug;
 #define heart_bt  dest
 #define zx_rcpt_sig dest
 
+/* Called by:  hi_send0 */
 static void stomp_set_msg_id_and_destination(struct hi_io* io, struct hi_pdu* resp)
 {
 #ifdef ENA_STOMP
@@ -166,7 +167,7 @@ void hi_send(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct
 
 /*() Uses hi_send0() to send one segment message. */
 
-/* Called by:  hi_send, hi_sendf, smtp_resp_wait_250_from_ehlo, smtp_resp_wait_354_from_data, smtp_send */
+/* Called by:  hi_send, hi_sendf, mcdb_err, mcdb_ok, smtp_resp_wait_250_from_ehlo, smtp_resp_wait_354_from_data, smtp_send */
 void hi_send1(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, struct hi_pdu* resp, int len0, char* d0)
 {
   resp->n_iov = 1;
@@ -178,7 +179,7 @@ void hi_send1(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
 
 /*() Uses hi_send0() to send two segment message. */
 
-/* Called by:  hmtp_send */
+/* Called by:  hmtp_send, mcdb_ok x2 */
 void hi_send2(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, struct hi_pdu* resp, int len0, char* d0, int len1, char* d1)
 {
   resp->n_iov = 2;
@@ -193,7 +194,7 @@ void hi_send2(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
 
 /*() Uses hi_send0() to send three segment message. */
 
-/* Called by:  hmtp_send */
+/* Called by:  hmtp_send, mcdb_ok */
 void hi_send3(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, struct hi_pdu* resp, int len0, char* d0, int len1, char* d1, int len2, char* d2)
 {
   resp->n_iov = 3;
@@ -214,7 +215,7 @@ void hi_send3(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
  * formatted size is truncated to fit.
  * Uses underlying machinery of hi_send0(). */
 
-/* Called by:  hi_accept_book, smtp_data, smtp_ehlo, smtp_mail_from x2, smtp_rcpt_to x3, smtp_resp_wait_220_greet, smtp_resp_wait_250_msg_sent, stomp_cmd_ni, stomp_err, stomp_got_login, stomp_got_send, stomp_msg_deliver, stomp_send_receipt */
+/* Called by:  hi_accept_book, mcdb_got_login, mcdb_got_send, mcdb_send_receipt, smtp_data, smtp_ehlo, smtp_mail_from x2, smtp_rcpt_to x3, smtp_resp_wait_220_greet, smtp_resp_wait_250_msg_sent, stomp_cmd_ni, stomp_err, stomp_got_login, stomp_got_send, stomp_msg_deliver, stomp_send_receipt */
 void hi_sendf(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struct hi_pdu* req, char* fmt, ...)
 {
   va_list pv;
@@ -325,7 +326,7 @@ static void hi_pdu_free(struct hi_thr* hit, struct hi_pdu* pdu, const char* lk1,
  * c. possibility of sending a response before processing of request itself has ended
  * locking:: Called outside io->qel.mut */
 
-/* Called by:  hi_free_in_write, stomp_got_ack x2, stomp_got_nack */
+/* Called by:  hi_free_in_write, mcdb_got_ack x2, mcdb_got_nack, stomp_got_ack x2, stomp_got_nack */
 void hi_free_resp(struct hi_thr* hit, struct hi_pdu* resp, const char* lk1)
 {
   struct hi_pdu* pdu = resp->req->reals;
@@ -352,7 +353,7 @@ void hi_free_resp(struct hi_thr* hit, struct hi_pdu* resp, const char* lk1)
  * May be called either because individual resp was done, or because of connection close.
  * locking:: Called outside io->qel.mut */
 
-/* Called by:  hi_close x3, hi_free_req_fe, stomp_got_ack, stomp_got_nack, stomp_msg_deliver */
+/* Called by:  hi_close x3, hi_free_req_fe, mcdb_got_ack, mcdb_got_nack, stomp_got_ack, stomp_got_nack, stomp_msg_deliver */
 void hi_free_req(struct hi_thr* hit, struct hi_pdu* req, const char* lk1)
 {
   struct hi_pdu* pdu;  
@@ -370,7 +371,7 @@ void hi_free_req(struct hi_thr* hit, struct hi_pdu* req, const char* lk1)
  * locking:: takes io->qel.mut
  * see also:: hi_add_to_reqs() */
 
-/* Called by:  hi_free_req_fe, stomp_got_ack */
+/* Called by:  hi_free_req_fe, mcdb_got_ack, stomp_got_ack */
 void hi_del_from_reqs(struct hi_io* io, struct hi_pdu* req)
 {
   struct hi_pdu* pdu;
@@ -407,7 +408,7 @@ void hi_del_from_reqs(struct hi_io* io, struct hi_pdu* req)
  * Will also remove the PDU from the frontend reqs queue.
  * locking:: called outside io->qel.mut, takes it indirectly */
 
-/* Called by:  hi_free_in_write */
+/* Called by:  hi_free_in_write, mcdb_got_set */
 void hi_free_req_fe(struct hi_thr* hit, struct hi_pdu* req)
 {
   ASSERT(req->fe);

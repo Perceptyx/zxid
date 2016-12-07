@@ -113,7 +113,7 @@ char* nidmap_to = 0;
 char* bdy = 0;
 zxid_conf* cf;
 
-/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcall_main, zxcot_main, zxdecode_main */
+/* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxdecode_main, zxumacall_main */
 static void opt(int* argc, char*** argv, char*** env)
 {
   struct zx_str* ss;
@@ -390,7 +390,7 @@ help:
  *
  * See also: zxid_find_epr() */
 
-/* Called by:  zxcall_main */
+/* Called by:  zxcall_main, zxumacall_main */
 int zxid_print_session(zxid_conf* cf, zxid_ses* ses)
 {
   struct zx_root_s* r;
@@ -461,6 +461,7 @@ int zxid_print_session(zxid_conf* cf, zxid_ses* ses)
 }
 
 #if 0
+/* Called by: */
 char* zxid_scan_quoted(zxid_conf* cf, char* p, char** val, const char* res, comma_expected)
 {
   char quote;
@@ -526,7 +527,7 @@ char* zxid_scan_quoted(zxid_conf* cf, char* p, char** val, const char* res, comm
  *     content. NULL on failure. ses->curflt and/or ses->curstatus contain
  *     more detailed error information. */
 
-/* Called by:  zxcall_main, zxid_callf */
+/* Called by:  zxumacall_main */
 struct zx_str* zxid_uma_call(zxid_conf* cf, zxid_ses* ses, const char* svctype, const char* url, const char* di_opt, const char* az_cred, const char* req)
 {
   long rc;

@@ -38,7 +38,7 @@
 /*() Format error message describing an XML parse error. The buf argument
  * should be at leaset 256 bytes for satisfactory results. */
 
-/* Called by:  covimp_test, zxid_wsp_validate */
+/* Called by:  zxid_wsp_validate */
 int zx_format_parse_error(struct zx_ctx* ctx, char* buf, int siz, char* logkey)
 {
   int at, end, start, len;
@@ -51,7 +51,7 @@ int zx_format_parse_error(struct zx_ctx* ctx, char* buf, int siz, char* logkey)
   return len;
 }
 
-/* Called by:  covimp_test, zx_dec_attr_val x2, zx_scan_elem_end, zx_scan_pi_or_comment, zx_scan_xmlns x2 */
+/* Called by:  zx_dec_attr_val x2, zx_scan_elem_end, zx_scan_pi_or_comment, zx_scan_xmlns x2 */
 void zx_xml_parse_err(struct zx_ctx* c, char quote, const char* func, const char* msg)
 {
   const char* errloc = MAX(c->p - 20, c->bas);
@@ -466,7 +466,7 @@ static int zx_attr_lookup(struct zx_ctx* c, struct zx_elem_s* x)
 
 /*() Given token, find element descriptor. */
 
-/* Called by:  zx_DEC_elem, zx_ENC_WO_any_elem, zx_LEN_WO_any_elem, zx_chk_el_ord, zx_el_lookup, zx_new_elem */
+/* Called by:  zx_DEC_elem, zx_chk_el_ord, zx_el_lookup, zx_new_elem */
 struct zx_el_desc* zx_el_desc_lookup(int tok)
 {
   struct zx_el_desc* ed;
@@ -645,7 +645,7 @@ no_attr:
  * or just see zx_dec_zx_root()
  */
 
-/* Called by:  covimp_test, zx_dec_zx_root */
+/* Called by:  zx_dec_zx_root */
 void zx_prepare_dec_ctx(struct zx_ctx* c, struct zx_ns_s* ns_tab, int n_ns, const char* start, const char* lim)
 {
   zx_reset_ns_ctx(c);
@@ -659,7 +659,7 @@ void zx_prepare_dec_ctx(struct zx_ctx* c, struct zx_ns_s* ns_tab, int n_ns, cons
  * The resulting data structure has linked lists in *inverted* order,
  * i.e. last tag is first element of the list. */
 
-/* Called by:  main x6, sig_validate, test_ibm_cert_problem, zxid_add_env_if_needed x2, zxid_dec_a7n, zxid_decode_redir_or_post, zxid_decrypt_nameid, zxid_decrypt_newnym, zxid_di_query, zxid_find_epr, zxid_gen_boots, zxid_get_ses_sso_a7n x2, zxid_idp_soap_parse, zxid_mk_sa_attribute_ss, zxid_mk_xacml_simple_at, zxid_parse_meta, zxid_print_session, zxid_reg_svc, zxid_soap_call_raw, zxid_sp_soap_parse, zxid_str2a7n, zxid_str2nid, zxid_str2token, zxid_wsp_validate */
+/* Called by:  main x6, sig_validate, zxid_add_env_if_needed x2, zxid_dec_a7n, zxid_decode_redir_or_post, zxid_decrypt_nameid, zxid_decrypt_newnym, zxid_di_query, zxid_find_epr, zxid_gen_boots, zxid_get_ses_sso_a7n x2, zxid_idp_soap_parse, zxid_mk_sa_attribute_ss, zxid_mk_xacml_simple_at, zxid_parse_meta, zxid_print_session x2, zxid_reg_svc, zxid_soap_call_raw, zxid_sp_soap_parse, zxid_str2a7n, zxid_str2nid, zxid_str2token, zxid_wsp_validate */
 struct zx_root_s* zx_dec_zx_root(struct zx_ctx* c, int len, const char* start, const char* func)
 {
   struct zx_root_s* r = zx_NEW_root(c, 0);

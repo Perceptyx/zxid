@@ -35,7 +35,7 @@
 /*() ID-WSF Single Sign-On Service (SSOS): Issue SSO assertion in response to receiving a token.
  * See also zxid_idp_sso() for similar code. */
 
-/* Called by:  a7n_test, zxid_sp_soap_dispatch */
+/* Called by:  zxid_sp_soap_dispatch */
 struct zx_sp_Response_s* zxid_ssos_anreq(zxid_conf* cf, zxid_ses* ses, struct zx_sp_AuthnRequest_s* ar)
 {
   zxid_a7n* outa7n;
@@ -139,7 +139,7 @@ struct zx_sp_Response_s* zxid_ssos_anreq(zxid_conf* cf, zxid_ses* ses, struct zx
  * you would not use the return value for anything else than checking for an error.
  */
 
-/* Called by:  zxcall_main */
+/* Called by:  zxcall_main, zxumacall_main */
 zxid_tok* zxid_map_identity_token(zxid_conf* cf, zxid_ses* ses, const char* at_eid, int how)
 {
   struct zx_e_Envelope_s* env;
@@ -373,7 +373,7 @@ struct zx_im_IdentityMappingResponse_s* zxid_imreq(zxid_conf* cf, zxid_ses* ses,
  * you would not use the return value for anything else than checking for an error.
  */
 
-/* Called by:  zxcall_main */
+/* Called by:  zxcall_main, zxumacall_main */
 zxid_tok* zxid_nidmap_identity_token(zxid_conf* cf, zxid_ses* ses, const char* at_eid, int how)
 {
   struct zx_e_Envelope_s* env;

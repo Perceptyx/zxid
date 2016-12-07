@@ -62,6 +62,7 @@ int zxid_idp_map_nid2uid(zxid_conf* cf, int len, char* uid, zxid_nid* nameid, st
 /*(-) Return 1 if any requested servicetype prefix matches filename, i.e. EPR file
  * is a viable candidate. Return 0 if no match. */
 
+/* Called by:  zxid_di_query */
 static int zxid_di_match_prefix(int nth, struct zx_di_RequestedService_s* rs, struct dirent* de)
 {
   struct zx_elem_s* el;
@@ -93,6 +94,7 @@ static int zxid_di_match_prefix(int nth, struct zx_di_RequestedService_s* rs, st
 
 /*(-) Return 1 if any requested svctype matches svctype parsed from file. Return 0 if no match. */
 
+/* Called by:  zxid_di_query */
 static int zxid_di_match_svctype(int nth, struct zx_di_RequestedService_s* rs, struct zx_str* svctyp, struct dirent* de)
 {
   struct zx_elem_s* el;
@@ -123,6 +125,7 @@ static int zxid_di_match_svctype(int nth, struct zx_di_RequestedService_s* rs, s
 
 /*(-) Return 1 if any requested svctype matches svctype parsed from file. Return 0 if no match. */
 
+/* Called by:  zxid_di_query */
 static int zxid_di_match_entid(int nth, struct zx_di_RequestedService_s* rs, struct zx_str* prvid, struct zx_str* addr, struct dirent* de)
 {
   struct zx_elem_s* el;
@@ -167,6 +170,7 @@ static int zxid_di_match_entid(int nth, struct zx_di_RequestedService_s* rs, str
 
 /*(-) Return 1 if Discovery Options match. Return 0 if no match. */
 
+/* Called by:  zxid_di_query */
 static int zxid_di_match_options(zxid_conf* cf, zxid_ses* ses, int nth, struct zx_di_RequestedService_s* rs, zxid_epr* epr, struct dirent* de)
 {
   struct zx_elem_s* el;
@@ -226,6 +230,7 @@ static int zxid_di_match_options(zxid_conf* cf, zxid_ses* ses, int nth, struct z
 /*(-) Return 1 if credentials and Privacy Negotation matches. Return 0 if no match.
  * This is a TAS3 extension. */
 
+/* Called by:  zxid_di_query */
 static int zxid_di_match_cpn(zxid_conf* cf, zxid_ses* ses, int nth, struct zx_str* svctyp, struct zx_str* prvid, struct dirent* de)
 {
   struct zx_str* ss;
@@ -272,6 +277,7 @@ static int zxid_di_match_cpn(zxid_conf* cf, zxid_ses* ses, int nth, struct zx_st
  *
  * This function extracts everything after the first comma as rankKey.  */
 
+/* Called by:  zxid_di_query, zxid_find_epr */
 void zxid_di_set_rankKey_if_needed(zxid_conf* cf, struct zx_a_Metadata_s* md, int nth, struct dirent* de)
 {
   char buf[48];
@@ -298,6 +304,7 @@ void zxid_di_set_rankKey_if_needed(zxid_conf* cf, struct zx_a_Metadata_s* md, in
  *
  * See:: zxid_snarf_eprs() and zxid_get_epr() */
 
+/* Called by:  zxid_di_query */
 static void zxid_di_sanitize_rankKey_out(zxid_epr* epr) {
   for (; epr; epr = (zxid_epr*)epr->gg.g.n)
     if (epr->Metadata)
@@ -307,6 +314,7 @@ static void zxid_di_sanitize_rankKey_out(zxid_epr* epr) {
 /*(-) Compare two EPRs by rankKey (string comparison) to help sorting discovery results.
  * Return -1 if a<b; 0 if a==b; 1 if a>b. */
 
+/* Called by:  zxid_di_sort_eprs x2 */
 static int zxid_id_epr_cmp(zxid_epr* a, zxid_epr* b) {
   if (!a || !a->Metadata || !a->Metadata->rankKey)
     return 1;  /* missing parts: sort to end of list */
@@ -317,6 +325,7 @@ static int zxid_id_epr_cmp(zxid_epr* a, zxid_epr* b) {
 
 /*() Sort discovery results (epr list) according to rankKey. */
 
+/* Called by:  zxid_di_query, zxid_find_epr */
 zxid_epr* zxid_di_sort_eprs(zxid_conf* cf, zxid_epr* epr)
 {
   zxid_epr* out;

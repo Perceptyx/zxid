@@ -37,7 +37,7 @@ extern int errmac_debug;
 extern pthread_mutexattr_t MUTEXATTR_DECL;
 #endif
 
-/* Called by:  thread_loop, zxbusd_main */
+/* Called by:  thread_loop x3, zxbusd_main, zxcachecli_main, zxcached_main */
 void hi_hit_init(struct hi_thr* hit)
 {
   memset(hit, 0, sizeof(struct hi_thr));
@@ -93,7 +93,7 @@ static void zxbus_info_cb(const SSL *ssl, int where, int ret)
  * pool, from which per thread pools will be plenished - see
  * hi_pdu_alloc() - and initialize syncronization primitives. */
 
-/* Called by:  zxbusd_main */
+/* Called by:  zxbusd_main, zxcachecli_main, zxcached_main */
 struct hiios* hi_new_shuffler(struct hi_thr* hit, int nfd, int npdu, int nch, int nthr)
 {
   int i;

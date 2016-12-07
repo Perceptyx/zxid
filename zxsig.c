@@ -53,6 +53,7 @@ ZXID_DECL struct zx_ds_KeyInfo_s* zxid_key_info(zxid_conf* cf, struct zx_elem_s*
  * string like "sha384WithRSAEncryption" or "dsa_with_SHA256".
  * If dsp is nonnull, it is populated with the corresponding digest URL. */
 
+/* Called by:  zxsig_sign x3 */
 static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
 {
   if (!spec || strstr(spec, "sha1") || strstr(spec, "SHA1")) if (dsp) *dsp = DIGEST_ALGO_SHA1; return "SHA1";
@@ -67,6 +68,7 @@ static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
 }
 
 /*(-) Heuristic to construct SIG_ALGO URL string based on chosen digest and algo pr private key */
+/* Called by:  zxid_saml2_post_enc, zxsig_sign */
 const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* dig_alg)
 {
   switch (EVP_PKEY_type(priv_key->type)) {
@@ -110,6 +112,7 @@ const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* di
 }
 
 /*(-) Heuristic to construct SIG_ALGO URL string based on chosen digest and algo pr private key */
+/* Called by:  zxid_saml2_post_enc, zxid_saml2_redir_enc */
 const char* zxsig_choose_xmldsig_sig_meth_urlenc(EVP_PKEY* priv_key, const char* dig_alg)
 {
   switch (EVP_PKEY_type(priv_key->type)) {

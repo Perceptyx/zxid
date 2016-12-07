@@ -85,7 +85,7 @@ int zxid_localpdp(zxid_conf* cf, zxid_ses* ses)
 /*(i) Postprocessing of SSO: Attribute Broker handles attributes and PEP/PDP
  * decide on authorization. */
 
-/* Called by:  chkuid, zxid_mini_httpd_sso, zxid_show_protected_content_setcookie, zxid_simple_cf_ses, zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
+/* Called by:  chkuid, zxid_mini_httpd_check_protocol_url, zxid_show_protected_content_setcookie, zxid_simple_cf_ses, zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
 char* zxid_simple_ab_pep(zxid_conf* cf, zxid_ses* ses, int* res_len, int auto_flags)
 {
   char* res;

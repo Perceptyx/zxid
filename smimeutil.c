@@ -118,7 +118,7 @@ int smime_init(const char* random_file, const char* randomness, int randlen)
 
 /* Initialize a memory BIO to have certain content */
 
-/* Called by:  encrypt1, extract_certificate, extract_request, get_pkcs7_from_pem, load_PKCS12, open_private_key, smime_base64, smime_pkcs12_to_pem_generic, smime_sign_engine, smime_verify_signature */
+/* Called by:  encrypt1, extract_certificate, extract_request, get_pkcs7_from_pem, load_PKCS12, open_private_key, smime_pem_to_pkcs12_generic x2, smime_pkcs12_to_pem_generic, smime_sign_engine, smime_verify_signature */
 BIO* set_read_BIO_from_buf(const char* buf, int len)
 {
   BIO* rbio;  
@@ -140,7 +140,7 @@ err:
 /* Flushes a write BIO and returns the accumulated data as one malloc'd blob
  * returns length or -1 if error */
 
-/* Called by:  decrypt, get_cert_info, get_req_modulus, save_PKCS12, smime_base64, smime_pkcs12_to_pem_generic x2, smime_verify_signature, write_certificate, write_private_key, write_request */
+/* Called by:  decrypt, get_cert_info, get_req_modulus, save_PKCS12, smime_pem_to_pkcs12_generic, smime_pkcs12_to_pem_generic x2, smime_verify_signature, write_certificate, write_private_key, write_request */
 int get_written_BIO_data(BIO* wbio, char** data)
 {
   int n;
@@ -177,7 +177,7 @@ int password_callback(char* buf, int buf_size, int x /*not used*/, void* passwor
 
 /* Get private key from buffer full of encrypted stuff */
 
-/* Called by:  smime_ca, smime_clear_sign, smime_decrypt, smime_sign */
+/* Called by:  smime_ca, smime_clear_sign, smime_decrypt, smime_pem_to_pkcs12, smime_sign */
 EVP_PKEY* open_private_key(const char* privatekey_pem, const char* password)
 {
   EVP_PKEY* pkey = NULL;
@@ -229,7 +229,7 @@ err:
 
 /* Extract a certificate from pem encoding */
 
-/* Called by:  smime_ca, smime_clear_sign, smime_decrypt, smime_encrypt, smime_get_cert_info, smime_get_cert_names, smime_sign, smime_verify_cert x2, smime_verify_signature */
+/* Called by:  smime_ca, smime_clear_sign, smime_decrypt, smime_encrypt, smime_get_cert_info, smime_get_cert_names, smime_pem_to_pkcs12, smime_sign, smime_verify_cert x2, smime_verify_signature */
 X509* extract_certificate(const char* cert_pem)
 {
   X509* x509 = NULL;
@@ -319,7 +319,7 @@ err:
   
 }
 
-/* Called by: */
+/* Called by:  smime_pem_to_pkcs12 */
 int save_PKCS12(PKCS12* p12, char** pkcs12_out)
 {
   BIO* wbio = NULL;

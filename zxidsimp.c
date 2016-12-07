@@ -161,7 +161,7 @@ int zxid_conf_to_cf_len(zxid_conf* cf, int conf_len, const char* conf)
  * conf::   Configuration string
  * return:: Configuration object */
 
-/* Called by:  a7n_test, handle_request, main x6, opt x2, test_receipt, ws_validations, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcall_main, zxcot_main, zxidwspcgi_main x2 */
+/* Called by:  main x6, opt x2, test_receipt, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxidwspcgi_main x2, zxumacall_main */
 zxid_conf* zxid_new_conf_to_cf(const char* conf)
 {
   zxid_conf* cf = malloc(sizeof(zxid_conf));  /* *** direct use of malloc */
@@ -762,7 +762,7 @@ char* zxid_idp_select(char* conf, int auto_flags) {
  *     was output to stdout, cgi style)
  */
 
-/* Called by:  zxid_idp_oauth2_check_id, zxid_simple_idp_show_an, zxid_simple_show_carml, zxid_simple_show_conf, zxid_simple_show_err, zxid_simple_show_idp_sel, zxid_simple_show_meta */
+/* Called by:  zxid_idp_oauth2_check_id x2, zxid_idp_oauth2_token_and_check_id, zxid_simple_idp_show_an, zxid_simple_md_authority, zxid_simple_show_carml, zxid_simple_show_conf, zxid_simple_show_err, zxid_simple_show_idp_sel, zxid_simple_show_json, zxid_simple_show_jwks, zxid_simple_show_meta */
 char* zxid_simple_show_page(zxid_conf* cf, struct zx_str* ss, int c_mask, int h_mask, char* rets, char* cont_type, int* res_len, int auto_flags, const char* status)
 {
   char* res;
@@ -823,6 +823,7 @@ char* zxid_simple_show_page(zxid_conf* cf, struct zx_str* ss, int c_mask, int h_
 
 /*() Show JSON page, as often needed in OAUTH2 */
 
+/* Called by:  zxid_idp_oauth2_token_and_check_id x2, zxid_simple_show_dynclireg, zxid_simple_show_rsrcreg */
 char* zxid_simple_show_json(zxid_conf* cf, const char* json, int* res_len, int auto_flags, const char* status)
 {
   struct zx_str* ss = zx_ref_str(cf->ctx, json);
@@ -831,7 +832,7 @@ char* zxid_simple_show_json(zxid_conf* cf, const char* json, int* res_len, int a
 
 /*() Helper function to redirect according to auto flags. */
 
-/* Called by:  zxid_show_protected_content_setcookie, zxid_simple_idp_an_ok_do_rest, zxid_simple_idp_new_user, zxid_simple_idp_recover_password, zxid_simple_idp_show_an, zxid_simple_show_err, zxid_simple_show_idp_sel */
+/* Called by:  zxid_show_protected_content_setcookie, zxid_simple_idp_an_ok_do_rest x3, zxid_simple_idp_new_user, zxid_simple_idp_recover_password, zxid_simple_idp_show_an, zxid_simple_show_err, zxid_simple_show_idp_sel */
 static char* zxid_simple_redir_page(zxid_conf* cf, zxid_ses* ses, char* redir, char* rs, int* res_len, int auto_flags)
 {
   char* res;
@@ -992,7 +993,7 @@ char* zxid_simple_show_err(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_
 
 /*() Decode ssoreq (ar=), i.e. the preserved original AuthnReq */
 
-/* Called by:  zxid_simple_idp_pw_authn, zxid_simple_idp_show_an, zxid_sp_sso_finalize */
+/* Called by:  zxid_simple_idp_pw_authn, zxid_simple_idp_show_an, zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt */
 int zxid_decode_ssoreq(zxid_conf* cf, zxid_cgi* cgi)
 {
   int len;
@@ -1366,7 +1367,7 @@ static char* zxid_show_protected_content_setcookie(zxid_conf* cf, zxid_cgi* cgi,
  *
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 
-/* Called by:  chkuid x2, zxid_mini_httpd_sso x2, zxid_simple_cf_ses, zxid_simple_idp_an_ok_do_rest, zxid_sp_dispatch, zxid_sp_oauth2_dispatch */
+/* Called by:  chkuid x2, zxid_mini_httpd_check_protocol_url, zxid_mini_httpd_sso, zxid_simple_cf_ses, zxid_simple_idp_an_ok_do_rest, zxid_sp_dispatch, zxid_sp_oauth2_dispatch x3 */
 char* zxid_simple_ses_active_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* res_len, int auto_flags)
 {
   struct zx_str* accr;
@@ -1562,7 +1563,7 @@ res_zx_str:
  *
  * N.B. More complete documentation is available in <<link: zxid-simple.pd>> (*** fixme) */
 
-/* Called by:  chkuid, zxid_mini_httpd_sso, zxid_simple_cf_ses */
+/* Called by:  chkuid, zxid_mini_httpd_step_up, zxid_simple_cf_ses */
 char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* res_len, int auto_flags)
 {
   char* res = 0;

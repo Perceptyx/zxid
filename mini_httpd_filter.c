@@ -63,7 +63,7 @@ extern zxid_ses* zxid_session;
  * This is considered internal function to mini_httpd_zxid, called by make_envp() in do_cgi().
  * You should not call this directly, unless you know what you are doing. */
 
-/* Called by:  make_envp */
+/* Called by: */
 int zxid_pool2env(zxid_conf* cf, zxid_ses* ses, char** envp, int envn, int max_envn, const char* uri_path, const char* qs)
 {
   char* name;
@@ -132,7 +132,7 @@ int zxid_pool2env(zxid_conf* cf, zxid_ses* ses, char** envp, int envn, int max_e
  * It works by accessing certain request related global variables from mini_httpd.
  * You should not call this directly, unless you know what you are doing. */
 
-/* Called by:  zxid_mini_httpd_sso, zxid_mini_httpd_wsp */
+/* Called by:  zxid_mini_httpd_check_protocol_url, zxid_mini_httpd_uma, zxid_mini_httpd_wsp */
 static char* zxid_mini_httpd_read_post(zxid_conf* cf)
 {
   char* res;
@@ -160,6 +160,7 @@ static char* zxid_mini_httpd_read_post(zxid_conf* cf)
 }
 
 #if 0
+/* Called by:  zxid_mini_httpd_uma, zxid_mini_httpd_wsp */
 static void zxid_mini_httpd_metadata_get_special_case(zxid_conf* cf, const char* uri_path)
 {
   struct zx_str* ss;
@@ -283,6 +284,7 @@ static zxid_ses* zxid_mini_httpd_uma(zxid_conf* cf, zxid_ses* ses, const char* m
  * 0x0008 10 + 00 = SOAP w/headers as string + no auto redir, no exit(2) */
 #define AUTO_FLAGS 0x6ea8
 
+/* Called by:  zxid_mini_httpd_check_protocol_url, zxid_mini_httpd_sso, zxid_mini_httpd_step_up */
 static zxid_ses* zxid_mini_httpd_process_zxid_simple_outcome(zxid_conf* cf, zxid_ses* ses, const char* uri_path, const char* cookie_hdr, char* res)
 {
   int len;
@@ -337,6 +339,7 @@ static zxid_ses* zxid_mini_httpd_process_zxid_simple_outcome(zxid_conf* cf, zxid
   return ses;
 }
 
+/* Called by:  auth_check, zxid_mini_httpd_check_protocol_url, zxid_mini_httpd_sso */
 zxid_ses* zxid_mini_httpd_step_up(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* uri_path, const char* cookie_hdr)
 {
   char* res;
@@ -393,6 +396,7 @@ static zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
  * Any exceptional outcome is handled internally and terminates in exit(2),
  * hence the void return. */
 
+/* Called by:  zxid_mini_httpd_filter */
 static void zxid_mini_httpd_check_protocol_url(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* method, const char* uri_path, const char* cookie_hdr)
 {
   int ret, uri_len, url_len;
@@ -482,6 +486,7 @@ step_up:
 /*(-)  Redirect hack: deal with externally imposed ACS url that does not follow zxid convention.
  * If the hack is active, returns the new qs and via pointer the new uri_path. */
 
+/* Called by:  zxid_mini_httpd_filter */
 static char* zxid_mini_httpd_check_redirect_hack(zxid_conf* cf, zxid_cgi* cgi, char** uri_path, const char* qs)
 {
   int len, qs_len = qs?strlen(qs):0;
@@ -518,7 +523,7 @@ static char* zxid_mini_httpd_check_redirect_hack(zxid_conf* cf, zxid_cgi* cgi, c
  * In that case docgi() contains further zxid related steps to
  * pass the SSO attributes to the CGI environment. */
 
-/* Called by:  handle_request */
+/* Called by: */
 zxid_ses* zxid_mini_httpd_filter(zxid_conf* cf, const char* method, const char* uri_path, const char* qs, const char* cookie_hdr)
 {
   zxid_ses* ses = zxid_alloc_ses(cf);

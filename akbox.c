@@ -576,7 +576,7 @@ unsigned long get_nano (ak_time act_tick){
 /* You need to teach this function about every possible message type. When (if) swimlanes
  * are implemented, this function probably needs to be aware of them. */
 
-/* Called by:  print_buffers x3 */
+/* Called by: */
 static void print_line(int i)
 {
   int seve;
@@ -1046,7 +1046,7 @@ static void anal_live(int pid)
   /*  if (gviz) ak_gviz(gviz);*/
 }
 
-/* Called by:  main x2, show_tab */
+/* Called by:  main x2 */
 static void resolve(int funcno)
 {
   if (funcno < 0 || funcno > 65535) die2("Function number must been in range 0..65535");

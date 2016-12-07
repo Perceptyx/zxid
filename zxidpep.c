@@ -615,7 +615,7 @@ char* zxid_pep_az_base_soap(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const c
  * For simpler API, see zxid_az() family of functions.
  */
 
-/* Called by:  zxcall_main, zxid_az_cf */
+/* Called by:  zxcall_main, zxid_az_cf, zxumacall_main */
 char* zxid_az_cf_ses(zxid_conf* cf, const char* qs, zxid_ses* ses)
 {
   zxid_cgi cgi;
@@ -732,7 +732,7 @@ char* zxid_az_base(const char* conf, const char* qs, const char* sid)
  *     permit returns <xac:Response> as string, allowing the obligations to be extracted.
  */
 
-/* Called by:  zxid_di_query */
+/* Called by:  zxid_di_match_options */
 int zxid_call_trustpdp(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zxid_map* pepmap, const char* start, const char* lim, zxid_epr* epr)
 {
   struct zx_xac_Attribute_s* xac_at;

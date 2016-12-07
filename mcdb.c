@@ -68,7 +68,7 @@ const char* mcdb_zero_cas = "\0\0\0\0\0\0\0\0";  /* When no real cas is needed *
  * cas:: 8byte string for cas value. Supply as  "\0\0\0\0\0\0\0\0" if not needed
  * return:: 0 for success in scheduling for write (real success is determined later) */
 
-/* Called by:  */
+/* Called by:  mcdb_got_get, mcdb_got_set, mcdb_got_zxmsgpack */
 int mcdb_ok(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int extralen, const char* extra, int cpkey, const char datatype, int vallen, const char* val, const char* cas)
 {
   int len;
@@ -118,7 +118,7 @@ int mcdb_ok(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int extral
 
 /*() Send error to remote client. */
 
-/* Called by:  mcdb_frame_err */
+/* Called by:  mcdb_cmd_ni, mcdb_decode x3, mcdb_frame_err, mcdb_got_get x2, mcdb_got_login x2, mcdb_got_set */
 int mcdb_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int status, const char* emsg)
 {
   int len;
@@ -171,7 +171,7 @@ static int mcdb_frame_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* r
 
 /*() Send not implemented error to remote client. */
 
-/* Called by:  mcdb_decode x7, mcdb_got_unsubsc */
+/* Called by:  mcdb_decode */
 static int mcdb_cmd_ni(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, const char cmd)
 {
   return mcdb_err(hit,io,req,MCDB_STATUS_UNKNOWN_COMMAND,"command not implemented or unknown");
@@ -180,7 +180,7 @@ static int mcdb_cmd_ni(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req,
 #if 0
 /*() Got ERROR from remote client. */
 
-/* Called by:  mcdb_decode */
+/* Called by: */
 static int mcdb_got_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 {
   /*struct hi_pdu* resp = mcdb_encode_start(hit);*/
@@ -191,7 +191,7 @@ static int mcdb_got_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req
 
 /*() Send a receipt to client. */
 
-/* Called by:  mcdb_got_disc, mcdb_got_send, mcdb_got_zxctl, zxbus_subscribe */
+/* Called by:  mcdb_got_send */
 void mcdb_send_receipt(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 {
   int len;
@@ -215,7 +215,7 @@ void mcdb_send_receipt(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 
 /* MCDB Received Command Handling */
 
-/* Called by:  mcdb_decode */
+/* Called by: */
 static int mcdb_got_login(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 {
   if (!req->ad.mcdb.login)
@@ -240,7 +240,7 @@ static int mcdb_got_login(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* r
  * first and then have a separate process attempt the sending. This
  * latter is the approach adopted here. */
 
-/* Called by:  mcdb_decode */
+/* Called by: */
 static void mcdb_got_send(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 {
   // ***
@@ -287,7 +287,7 @@ static struct hi_pdu* mcdb_find_pending_req_for_resp(struct hi_io* io, struct hi
  * hopeless cases quicker. (*** there should also be a handler for
  * close-connection lost that would do similar cleanup) */
 
-/* Called by:  mcdb_decode */
+/* Called by: */
 static void mcdb_got_nack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* resp)
 {
   int sublen, midlen, siglen;
@@ -322,7 +322,7 @@ static void mcdb_got_nack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* r
 
 /*() Process ACK response from client to MESSAGE request sent by server. */
 
-/* Called by:  mcdb_decode */
+/* Called by: */
 static void mcdb_got_ack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* resp)
 {
   int sublen, midlen, siglen, ver;
@@ -388,7 +388,7 @@ static void mcdb_got_ack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
 
 /*() Cache get operation */
 
-/* Called by:  mcdb_decode */
+/* Called by:  mcdb_decode x2 */
 static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int cpkey)
 {
   struct zx_gbucket* bkt;
@@ -408,7 +408,7 @@ static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
 
 /*() Cache set operation (also add, replace) */
 
-/* Called by:  mcdb_decode */
+/* Called by:  mcdb_decode x2 */
 static void mcdb_got_set(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int quiet)
 {
   struct zx_gbucket* gb;

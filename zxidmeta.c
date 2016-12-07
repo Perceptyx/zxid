@@ -257,7 +257,7 @@ int zxid_write_ent_to_cache(zxid_conf* cf, zxid_entity* ent)
  * See also zxid_get_ent_cache() which will compute the sha1_name
  * and then read the metadata. */
 
-/* Called by:  covimp_test, main x3, test_ibm_cert_problem_enc_dec, zxid_get_ent_by_sha1_name, zxid_get_ent_cache, zxid_load_cot_cache_from_file */
+/* Called by:  main x3, zxid_get_ent_by_sha1_name, zxid_get_ent_cache, zxid_load_cot_cache_from_file */
 zxid_entity* zxid_get_ent_file(zxid_conf* cf, const char* sha1_name, const char* logkey)
 {
   int n, got, siz;
@@ -438,7 +438,7 @@ zxid_entity* zxid_get_ent_ss(zxid_conf* cf, struct zx_str* eid)
 
 /*() Wrapper for zxid_get_ent_ss(), which see. */
 
-/* Called by:  hi_vfy_peer_ssl_cred, zxbus_verify_receipt, zxcall_main, zxid_cdc_check x2, zxid_oauth2_az_server_sso, zxid_simple_idp_show_an, zxid_start_sso_url */
+/* Called by:  hi_vfy_peer_ssl_cred, zxbus_verify_receipt, zxcall_main, zxid_cdc_check, zxid_oauth2_az_server_sso x3, zxid_oauth_call_token_endpoint, zxid_simple_idp_show_an, zxid_start_sso_url, zxumacall_main */
 zxid_entity* zxid_get_ent(zxid_conf* cf, const char* eid)
 {
   struct zx_str ss;
@@ -825,7 +825,7 @@ struct zx_md_ContactPerson_s* zxid_contact_desc(zxid_conf* cf, struct zx_elem_s*
  * cf:: ZXID configuration object, used to compute EntityID and also for memory allocation
  * return:: Entity ID as zx_str (caller must free with zx_str_free()) */
 
-/* Called by:  zxid_idp_map_nid2uid, zxid_mk_oauth_az_req, zxid_mk_subj, zxid_my_issuer, zxid_nidmap_do, zxid_ses_to_pool, zxid_sp_sso_finalize, zxid_wsf_validate_a7n */
+/* Called by:  zxid_idp_map_nid2uid, zxid_mk_fbc_az_req, zxid_mk_oauth_az_req x3, zxid_mk_subj, zxid_my_issuer, zxid_nidmap_do, zxid_oauth_call_token_endpoint, zxid_ses_to_pool, zxid_sp_sso_finalize, zxid_wsf_validate_a7n */
 struct zx_str* zxid_my_ent_id(zxid_conf* cf)
 {
   if (cf->non_standard_entityid) {
@@ -842,7 +842,7 @@ struct zx_str* zxid_my_ent_id(zxid_conf* cf)
 
 /*() Return our EntityID as c-string. Caller must free with ZX_FREE(cf->ctx, eid) */
 
-/* Called by:  main x2, stomp_got_ack, test_receipt, zxbus_send_cmdf, zxid_idp_select_zxstr_cf_cgi, zxid_map_bangbang, zxid_show_conf, zxid_sso_issue_jwt */
+/* Called by:  main x2, mcdb_got_ack, stomp_got_ack, test_receipt, zxbus_send_cmdf, zxid_idp_select_zxstr_cf_cgi, zxid_map_bangbang, zxid_mini_httpd_metadata_get_special_case, zxid_show_conf, zxid_sso_issue_jwt x3 */
 char* zxid_my_ent_id_cstr(zxid_conf* cf)
 {
   int len;
@@ -915,6 +915,7 @@ struct zx_sa_Issuer_s* zxid_my_issuer(zxid_conf* cf, struct zx_elem_s* father) {
 
 /*() Generate the (IdP) metadata field indicating presence of a metadata authority. */
 
+/* Called by:  zxid_sp_meta */
 static struct zx_md_AdditionalMetadataLocation_s* zxid_md_authority_loc(zxid_conf* cf, struct zx_md_EntityDescriptor_s* ed) {
   struct zx_md_AdditionalMetadataLocation_s* mda;
   mda = zx_NEW_md_AdditionalMetadataLocation(cf->ctx, &ed->gg);
@@ -925,7 +926,7 @@ static struct zx_md_AdditionalMetadataLocation_s* zxid_md_authority_loc(zxid_con
 
 /*() Generate our SP metadata and return it as a string. cgi may be specified as null. */
 
-/* Called by:  zxid_genmd, zxid_send_sp_meta, zxid_simple_show_meta */
+/* Called by:  zxid_genmd, zxid_mini_httpd_metadata_get_special_case, zxid_send_sp_meta, zxid_simple_show_meta */
 struct zx_str* zxid_sp_meta(zxid_conf* cf, zxid_cgi* cgi)
 {
   struct zx_md_EntityDescriptor_s* ed;

@@ -31,7 +31,7 @@
 
 /*() Interpret ZXID standard form fields to construct a XML structure for AuthnRequest */
 
-/* Called by:  zxid_start_sso_url */
+/* Called by:  zxid_oidc_as_call, zxid_start_sso_url */
 struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str* loc, char* relay_state)
 {
   struct zx_str* ss;
@@ -91,7 +91,7 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str*
 
 /*() Construct OAUTH2 / OpenID-Connect1 id_token. */
 
-/* Called by:  zxid_sso_issue_jwt */
+/* Called by:  zxid_sso_issue_jwt x3 */
 char* zxid_mk_jwt(zxid_conf* cf, int claims_len, char* claims)
 {
   char hash[64 /*EVP_MAX_MD_SIZE*/];
@@ -155,7 +155,7 @@ char* zxid_mk_jwt(zxid_conf* cf, int claims_len, char* claims)
 
 /*() Issue OAUTH2 / OpenID-Connect1 id_token. */
 
-/* Called by:  zxid_oauth2_az_server_sso */
+/* Called by:  zxid_oauth2_az_server_sso x3 */
 char* zxid_sso_issue_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct timeval* srcts, zxid_entity* sp_meta, struct zx_str* acsurl, zxid_nid** nameid, char* logop)
 {
   int rawlen;
@@ -342,7 +342,7 @@ struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
 
 /*() Extract an assertion from OAUTH Az response, and perform SSO */
 
-/* Called by:  zxid_sp_oauth2_dispatch */
+/* Called by:  zxid_sp_oauth2_dispatch x3 */
 static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 {
   //if (!zxid_chk_sig(cf, cgi, ses, &resp->gg, resp->Signature, resp->Issuer, 0, "Response")) return 0;
@@ -409,7 +409,7 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
  *     are allocated from static storage and MUST NOT be freed. Other
  *     strings such as "Location: ..." should be freed by caller. */
 
-/* Called by:  zxid_simple_no_ses_cf */
+/* Called by: */
 char* zxid_idp_oauth2_check_id(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int auto_flags)
 {
   int ret = 0;

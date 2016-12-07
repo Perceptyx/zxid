@@ -48,6 +48,7 @@
  * N.B. The metadata is supposed to be signed, but the signature is not
  * applied here. Rather, you should run zxcot -a -s when importing metadata. */
 
+/* Called by:  zxid_simple_no_ses_cf, zxid_simple_ses_active_cf */
 char* zxid_simple_md_authority(zxid_conf* cf, zxid_cgi* cgi, int* res_len, int auto_flags)
 {
 #define sha1_name cdc  /* We reuse the CGI variable c (aka cdc) as the sha1_name */

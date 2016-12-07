@@ -70,6 +70,7 @@ int zx_in_inc_ns(struct zx_ctx* c, struct zx_ns_s* new_ns) {
 
 /*() Convert a tok integer to namespace and el_tok descriptor from zx_el_tab[] table. */
 
+/* Called by:  zx_ENC_WO_any_elem, zx_LEN_WO_any_elem, zxid_add_action_hdr x2 */
 struct zx_el_tok* zx_get_el_tok(struct zx_elem_s* x)
 {
   int ix;
@@ -91,6 +92,7 @@ struct zx_el_tok* zx_get_el_tok(struct zx_elem_s* x)
 
 /*() Convert a tok integer to namespace and at_tok descriptor from zx_at_tab[] table. */
 
+/* Called by:  zx_LEN_WO_any_elem, zx_attr_wo_enc */
 static struct zx_at_tok* zx_get_at_tok(struct zx_attr_s* attr)
 {
   int ix;

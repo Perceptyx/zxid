@@ -601,7 +601,7 @@ static void zxid_add_a7n_at_to_pool(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n)
 /*() Add simple attribute to session's attribute pool, applying NEED, WANT, and INMAP.
  * Replaces zxid_add_attr_to_pool() */
 
-/* Called by:  chkuid, zxid_add_action_from_body_child, zxid_add_ldif_at2ses, zxid_add_qs2ses, zxid_mini_httpd_sso, zxid_ses_to_pool x26, zxid_simple_ab_pep x2 */
+/* Called by:  chkuid, zxid_add_action_from_body_child, zxid_add_ldif_at2ses, zxid_add_qs2ses, zxid_mini_httpd_process_zxid_simple_outcome, zxid_ses_to_pool x26, zxid_simple_ab_pep x2 */
 void zxid_add_attr_to_ses(zxid_conf* cf, zxid_ses* ses, char* at_name, struct zx_str* val)
 {
   struct zxid_map* map;

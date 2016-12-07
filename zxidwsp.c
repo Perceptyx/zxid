@@ -37,6 +37,7 @@
 /*() Create SOAP header Action (which is distinct from HTTP headers SOAPaction).
  * This is driven by the configuration option WSC_ACTION_HDR */
 
+/* Called by:  zxid_wsf_decor */
 static void zxid_add_action_hdr(zxid_conf* cf, zxid_ses* ses, struct zx_e_Envelope_s* env)
 {
   struct zx_e_Header_s* hdr = env->Header;
@@ -152,7 +153,7 @@ tas3_ESLPolicies
  * unless is_resp is set in which case the list is in forward order.
  * epr must be set for request and can be null for response. */
 
-/* Called by:  covimp_test x2, zxid_soap_cgi_resp_body, zxid_wsc_prep, zxid_wsp_decorate x2 */
+/* Called by:  zxid_soap_cgi_resp_body, zxid_wsc_prep, zxid_wsp_decorate x2 */
 int zxid_wsf_decor(zxid_conf* cf, zxid_ses* ses, struct zx_e_Envelope_s* env, int is_resp, zxid_epr* epr)
 {
   struct zx_wsse_Security_s* sec;
@@ -335,7 +336,7 @@ int zxid_wsf_decor(zxid_conf* cf, zxid_ses* ses, struct zx_e_Envelope_s* env, in
  * return:: SOAP Envelope of the response, as a string, ready to be
  *     sent as HTTP response. */
 
-/* Called by:  covimp_test, main x9, ws_validations, zxid_mini_httpd_wsp_response, zxid_wsp_decoratef, zxidwspcgi_parent */
+/* Called by:  main x9, zxid_mini_httpd_wsp_response, zxid_wsp_decoratef, zxidwspcgi_parent */
 struct zx_str* zxid_wsp_decorate(zxid_conf* cf, zxid_ses* ses, const char* az_cred, const char* enve)
 {
   struct zx_str* ss;
@@ -752,7 +753,7 @@ char* zxid_wsp_validate_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, s
  *
  * See also: zxid_wsc_validate_resp_env() */
 
-/* Called by:  chkuid, main, ws_validations, zxid_mini_httpd_wsp, zxidwspcgi_main */
+/* Called by:  chkuid x2, main, zxid_mini_httpd_uma, zxid_mini_httpd_wsp, zxidwspcgi_main */
 char* zxid_wsp_validate(zxid_conf* cf, zxid_ses* ses, const char* az_cred, const char* enve)
 {
   struct zx_str  ss;

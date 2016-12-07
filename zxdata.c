@@ -39,6 +39,7 @@
 
 extern struct hiios* shuff; /* global for accessing the shuffler and its todo_mut */
 
+/* Called by:  zx_msgpack2val2 x24 */
 struct zx_val* zx_new_val(struct zx_ctx* c, int kind)
 {
   struct zx_val* val = ZX_ZALLOC(c, struct zx_val);
@@ -58,6 +59,7 @@ struct zx_val* zx_new_val(struct zx_ctx* c, int kind)
  * return:: Always returns 0, which can be used to nullify pointer at caller size.
  */
 
+/* Called by:  zx_free_bucket, zx_free_val */
 static void zx_free_val_dep(struct zx_ctx* c, struct zx_val* val, int deep)
 {
   int i;
@@ -103,6 +105,7 @@ static void zx_free_val_dep(struct zx_ctx* c, struct zx_val* val, int deep)
   }
 }
 
+/* Called by:  zx_free_val_dep, zx_msgpack2val2 */
 struct zx_val* zx_free_val(struct zx_ctx* c, struct zx_val* val, int deep)
 {
   if (deep)
@@ -119,6 +122,7 @@ struct zx_val* zx_free_val(struct zx_ctx* c, struct zx_val* val, int deep)
  * val:: value to be freed
  */
 
+/* Called by:  zx_msgpack2val2 */
 const char* zx_val_to_str(struct zx_ctx* c, struct zx_val* val)
 {
   int len;
@@ -155,6 +159,7 @@ const char* zx_val_to_str(struct zx_ctx* c, struct zx_val* val)
  * The position may be empty (miss) or it may contain pointer to some bucket,
  * but this function fors not check if the key of the bucket matches. */
 
+/* Called by:  zx_get_by_len_key, zx_global_set_by_len_key, zx_set_by_len_key */
 static struct zx_bucket** zx_bucket_slot_by_len_key(int hlen, struct zx_bucket** h, int len, const char* key)
 {
   int raw_hash;
@@ -162,6 +167,7 @@ static struct zx_bucket** zx_bucket_slot_by_len_key(int hlen, struct zx_bucket**
   return h + raw_hash % hlen;
 }
 
+/* Called by:  zx_global_get_by_len_key */
 struct zx_bucket* zx_get_by_len_key(int hlen, struct zx_bucket** h, int len, const char* key)
 {
   struct zx_bucket** bktp = zx_bucket_slot_by_len_key(hlen, h, len, key);
@@ -173,6 +179,7 @@ struct zx_bucket* zx_get_by_len_key(int hlen, struct zx_bucket** h, int len, con
   return 0; /* miss */
 }
 
+/* Called by:  mcdb_got_get, zx_set_by_len_key */
 struct zx_gbucket* zx_global_get_by_len_key(int len, const char* key)
 {
   struct zx_bucket* bkt = zx_get_by_len_key(zx_ghlen, (struct zx_bucket**)zx_gh, len, key);
@@ -183,6 +190,7 @@ struct zx_gbucket* zx_global_get_by_len_key(int len, const char* key)
  * Copy of the key string is always made.
  */
 
+/* Called by:  zx_global_set_by_len_key x2 */
 static struct zx_gbucket* zx_new_gbucket(int len, const char* key, struct zx_val* val)
 {
   struct zx_gbucket* bkt = malloc(sizeof(struct zx_gbucket));
@@ -195,6 +203,7 @@ static struct zx_gbucket* zx_new_gbucket(int len, const char* key, struct zx_val
   return bkt;
 }
 
+/* Called by:  zx_free_val_dep x2 */
 struct zx_bucket* zx_free_bucket(struct zx_ctx* c, struct zx_bucket* b, int deep)
 {
   zx_free_val_dep(c, &b->val, deep);
@@ -211,6 +220,7 @@ struct zx_bucket* zx_free_bucket(struct zx_ctx* c, struct zx_bucket* b, int deep
  * return:: The hash element that was referenced
  */
 
+/* Called by:  mcdb_got_set, zx_set_by_len_key */
 struct zx_gbucket* zx_global_set_by_len_key(int len, const char* key, struct zx_val* val)
 {
   struct zx_bucket** bktp = zx_bucket_slot_by_len_key(zx_ghlen, (struct zx_bucket**)zx_gh, len, key);
@@ -260,6 +270,7 @@ struct zx_gbucket* zx_global_set_by_len_key(int len, const char* key, struct zx_
  * a globabl hash insert, with consequent locking.
  */
 
+/* Called by:  zx_msgpack2val2 */
 struct zx_bucket* zx_set_by_len_key(int hlen, struct zx_bucket** h, int len, const char* key, struct zx_val* val)
 {
   struct zx_bucket** bktp = zx_bucket_slot_by_len_key(hlen, h, len, key);

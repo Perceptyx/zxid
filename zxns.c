@@ -61,7 +61,7 @@ int zx_is_ns_prefix(struct zx_ns_s* ns, int len, const char* prefix)
 
 /*() Debugging function. You can say in gdb: print zx_dump_ns_tab(c,0) */
 
-/* Called by:  so_enc_dec */
+/* Called by: */
 int zx_dump_ns_tab(struct zx_ctx* c, int flags)
 {
   struct zx_ns_s* ns;
@@ -291,7 +291,7 @@ void zx_pop_seen(struct zx_ns_s* ns)
 
 /*() Collect namespaces from element */
 
-/* Called by:  sig_validate x3, zxid_chk_sig, zxid_sp_dig_oauth_sso_a7n, zxid_sp_dig_sso_a7n, zxid_sp_sso_finalize */
+/* Called by:  sig_validate x3, zxid_chk_sig, zxid_sp_dig_oauth_sso_a7n x2, zxid_sp_dig_sso_a7n, zxid_sp_sso_finalize */
 void zx_see_elem_ns(struct zx_ctx* c, struct zx_ns_s** pop_seen, struct zx_elem_s* el)
 {
   struct zx_ns_s* ns;

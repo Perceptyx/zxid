@@ -26,7 +26,7 @@
 
 /*() Interpret ZXID standard form fields to construct a XML structure for AuthnRequest */
 
-/* Called by:  a7n_test, x509_test, zxid_lecp_check, zxid_start_sso_url */
+/* Called by:  zxid_lecp_check, zxid_start_sso_url */
 struct zx_sp_AuthnRequest_s* zxid_mk_authn_req(zxid_conf* cf, zxid_cgi* cgi)
 {
   char index[2] = "1";
@@ -94,7 +94,7 @@ struct zx_sp_AuthnRequest_s* zxid_mk_authn_req(zxid_conf* cf, zxid_cgi* cgi)
 
 /*() Make the body for the ArtifactResolve SOAP message, signing it if needed. */
 
-/* Called by:  covimp_test, zxid_sp_deref_art */
+/* Called by:  zxid_sp_deref_art */
 struct zx_sp_ArtifactResolve_s* zxid_mk_art_deref(zxid_conf* cf, struct zx_elem_s* father, zxid_entity* idp_meta, const char* artifact)
 {
   X509* sign_cert;
@@ -121,7 +121,7 @@ struct zx_sp_ArtifactResolve_s* zxid_mk_art_deref(zxid_conf* cf, struct zx_elem_
 
 /*() Create SAML protocol <Status> element, given various levels of error input. */
 
-/* Called by:  so_enc_dec, zxid_OK, zxid_nidmap_do x2, zxid_ssos_anreq x4 */
+/* Called by:  zxid_OK, zxid_nidmap_do x2, zxid_ssos_anreq x4 */
 struct zx_sp_Status_s* zxid_mk_Status(zxid_conf* cf, struct zx_elem_s* father, const char* sc1, const char* sc2, const char* msg)
 {
   struct zx_sp_Status_s* st = zx_NEW_sp_Status(cf->ctx, father);
@@ -224,7 +224,7 @@ struct zx_sa_EncryptedAssertion_s* zxid_mk_enc_a7n(zxid_conf* cf, struct zx_elem
 
 /*() Create XML data structure for <LogoutRequest> element. Low level API. */
 
-/* Called by:  test_ibm_cert_problem_enc_dec, zxid_sp_slo_redir, zxid_sp_slo_soap */
+/* Called by:  zxid_sp_slo_redir, zxid_sp_slo_soap */
 struct zx_sp_LogoutRequest_s* zxid_mk_logout(zxid_conf* cf, zxid_nid* nid, struct zx_str* ses_ix, zxid_entity* idp_meta)
 {
   struct zx_sp_LogoutRequest_s* r = zx_NEW_sp_LogoutRequest(cf->ctx,0);
@@ -263,7 +263,7 @@ struct zx_sp_LogoutResponse_s* zxid_mk_logout_resp(zxid_conf* cf, struct zx_sp_S
 /*() Change SPNameID (newnym supplied), or Terminate federation (newnym not supplied).
  * Create XML data structure for <ManageNameIDRequest> element. Low level API. */
 
-/* Called by:  a7n_test, zxid_sp_mni_redir, zxid_sp_mni_soap */
+/* Called by:  zxid_sp_mni_redir, zxid_sp_mni_soap */
 struct zx_sp_ManageNameIDRequest_s* zxid_mk_mni(zxid_conf* cf, zxid_nid* nid, struct zx_str* new_nym, zxid_entity* idp_meta)
 {
   struct zx_str* ss;
@@ -565,7 +565,7 @@ struct zx_xac_Request_s* zxid_mk_xac_az(zxid_conf* cf, struct zx_elem_s* father,
 
 /*() Construct XACMLAuthzDecisionQuery */
 
-/* Called by:  attribute_sort_test, zxid_az_soap */
+/* Called by:  zxid_az_soap */
 struct zx_xasp_XACMLAuthzDecisionQuery_s* zxid_mk_az(zxid_conf* cf, struct zx_xac_Attribute_s* subj, struct zx_xac_Attribute_s* rsrc, struct zx_xac_Attribute_s* act, struct zx_xac_Attribute_s* env)
 {
   struct zx_xasp_XACMLAuthzDecisionQuery_s* r = zx_NEW_xasp_XACMLAuthzDecisionQuery(cf->ctx,0);
@@ -580,7 +580,7 @@ struct zx_xasp_XACMLAuthzDecisionQuery_s* zxid_mk_az(zxid_conf* cf, struct zx_xa
 
 /*() Construct XACMLAuthzDecisionQuery according to Commitee Draft 1 */
 
-/* Called by:  attribute_sort_test, zxid_az_soap */
+/* Called by:  zxid_az_soap */
 struct zx_xaspcd1_XACMLAuthzDecisionQuery_s* zxid_mk_az_cd1(zxid_conf* cf, struct zx_xac_Attribute_s* subj, struct zx_xac_Attribute_s* rsrc, struct zx_xac_Attribute_s* act, struct zx_xac_Attribute_s* env)
 {
   struct zx_xaspcd1_XACMLAuthzDecisionQuery_s* r = zx_NEW_xaspcd1_XACMLAuthzDecisionQuery(cf->ctx,0);

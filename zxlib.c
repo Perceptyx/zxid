@@ -154,7 +154,7 @@ char* zx_str_to_c(struct zx_ctx* c, struct zx_str* ss) {
  * to native length + data representations of scripting languages.
  * Should not need to use directly. */
 
-/* Called by:  covimp_test */
+/* Called by: */
 void zx_str_conv(struct zx_str* ss, int* out_len, char** out_s)  /* SWIG typemap friendly */
 {
   *out_s = 0;
@@ -167,7 +167,7 @@ void zx_str_conv(struct zx_str* ss, int* out_len, char** out_s)  /* SWIG typemap
 
 /*() Free both the zx_str node and the underlying string data */
 
-/* Called by:  main, zx_free_elem, zx_prefix_seen_whine, zxbus_send_cmdf, zxenc_privkey_dec, zxenc_pubkey_enc, zxenc_symkey_enc, zxid_addmd x3, zxid_anoint_a7n x5, zxid_anoint_sso_resp x4, zxid_az_soap x3, zxid_cache_epr, zxid_decode_redir_or_post, zxid_deflate_safe_b64, zxid_fed_mgmt_cf x3, zxid_idp_dispatch x2, zxid_idp_list_cf_cgi x3, zxid_idp_soap, zxid_idp_soap_dispatch x2, zxid_idp_sso x4, zxid_lecp_check, zxid_mgmt x3, zxid_mk_art_deref, zxid_mk_enc_a7n, zxid_mk_enc_id, zxid_mk_mni, zxid_mk_oauth_az_req x2, zxid_psobj_dec, zxid_psobj_enc, zxid_reg_svc x3, zxid_saml2_post_enc x2, zxid_saml2_redir, zxid_saml2_redir_enc x2, zxid_saml2_redir_url, zxid_saml2_resp_redir, zxid_send_sp_meta, zxid_simple_no_ses_cf x4, zxid_simple_ses_active_cf, zxid_simple_show_idp_sel, zxid_simple_show_page x3, zxid_slo_resp_redir, zxid_snarf_eprs_from_ses, zxid_soap_call_raw, zxid_soap_cgi_resp_body x2, zxid_sp_dispatch x2, zxid_sp_mni_soap, zxid_sp_slo_soap, zxid_sp_soap, zxid_sp_soap_dispatch x7, zxid_sp_sso_finalize, zxid_sso_issue_jwt x2, zxid_ssos_anreq, zxid_start_sso_location, zxid_user_sha1_name, zxid_write_ent_to_cache, zxid_wsf_validate_a7n, zxsig_sign */
+/* Called by:  main, zx_free_elem, zx_global_write, zx_prefix_seen_whine, zxbus_send_cmdf, zxenc_privkey_dec, zxenc_pubkey_enc, zxenc_symkey_enc, zxid_addmd x3, zxid_anoint_a7n x5, zxid_anoint_sso_resp x4, zxid_az_soap x3, zxid_cache_epr, zxid_decode_redir_or_post, zxid_deflate_safe_b64, zxid_fed_mgmt_cf x3, zxid_idp_dispatch x2, zxid_idp_list_cf_cgi x3, zxid_idp_soap, zxid_idp_soap_dispatch x2, zxid_idp_sso x4, zxid_lecp_check, zxid_mgmt x3, zxid_mk_art_deref, zxid_mk_enc_a7n, zxid_mk_enc_id, zxid_mk_fbc_az_req x2, zxid_mk_mni, zxid_mk_oauth_az_req x6, zxid_oauth2_az_server_sso x3, zxid_oauth_call_fb_graph_endpoint, zxid_oauth_call_token_endpoint x2, zxid_oidc_as_call, zxid_psobj_dec, zxid_psobj_enc, zxid_reg_svc x3, zxid_saml2_post_enc x2, zxid_saml2_redir, zxid_saml2_redir_enc x2, zxid_saml2_redir_url, zxid_saml2_resp_redir, zxid_send_sp_meta, zxid_simple_no_ses_cf x4, zxid_simple_ses_active_cf, zxid_simple_show_page x3, zxid_slo_resp_redir, zxid_snarf_eprs_from_ses, zxid_soap_call_raw, zxid_soap_cgi_resp_body x2, zxid_sp_dispatch x2, zxid_sp_mni_soap, zxid_sp_slo_soap, zxid_sp_soap, zxid_sp_soap_dispatch x7, zxid_sp_sso_finalize, zxid_sso_issue_azc x2, zxid_sso_issue_jwt x5, zxid_sso_set_relay_state_to_return_to_this_url, zxid_ssos_anreq, zxid_start_sso_location, zxid_user_sha1_name, zxid_write_ent_to_cache, zxid_wsf_validate_a7n, zxsig_sign */
 void zx_str_free(struct zx_ctx* c, struct zx_str* ss) {
   if (ss->s)
     ZX_FREE(c, ss->s);
@@ -222,7 +222,7 @@ struct zx_str* zx_dup_str(struct zx_ctx* c, const char* s) {
 
 /*() Create an allocated cstr (nul terminated) from len and ptr. */
 
-/* Called by: */
+/* Called by:  zx_dup_cstr, zx_json_extract_dup, zx_qs_extract_dup, zxid_oauth_call_token_endpoint, zxid_scan_quoted x2 */
 char* zx_dup_len_cstr(struct zx_ctx* c, int len, const char* str) {
   char* s = ZX_ALLOC(c, len+1);
   memcpy(s, str, len);
@@ -346,7 +346,7 @@ char* zx_alloc_vasprintf(struct zx_ctx* c, int* retlen, const char* f, va_list a
  * String will be nul terminated. Optional retlen result paremeter allows the
  * length to be returned. Specify 0 if this is not needed. */
 
-/* Called by:  zxid_add_env_if_needed, zxid_pool2env x4, zxid_ps_accept_invite, zxid_ps_finalize_invite, zxid_pw_authn x2, zxid_query_ctlpt_pdp, zxid_saml2_post_enc x2, zxid_show_protected_content_setcookie x4, zxid_simple_idp_an_ok_do_rest, zxid_simple_idp_new_user, zxid_simple_idp_recover_password, zxid_simple_idp_show_an, zxid_simple_show_err, zxid_sso_issue_jwt */
+/* Called by:  zx_mk_basic_auth_b64, zx_val_to_str x3, zxid_add_env_if_needed, zxid_idp_oauth2_token_and_check_id, zxid_mk_fbc_az_req x2, zxid_mk_jwk, zxid_mk_jwks, zxid_mk_oauth2_dyn_cli_reg_req, zxid_mk_oauth2_dyn_cli_reg_res, zxid_mk_oauth2_rsrc_reg_req, zxid_mk_oauth2_rsrc_reg_res, zxid_mk_oauth_az_req x2, zxid_oauth_call_az_endpoint x4, zxid_oauth_call_fb_graph_endpoint, zxid_oauth_call_rpt_endpoint x3, zxid_oauth_call_token_endpoint, zxid_oauth_dynclireg_client x2, zxid_oauth_rsrcreg_client x4, zxid_pool2env x4, zxid_ps_accept_invite, zxid_ps_finalize_invite, zxid_pw_authn x2, zxid_query_ctlpt_pdp, zxid_saml2_post_enc x2, zxid_show_protected_content_setcookie x4, zxid_simple_idp_an_ok_do_rest x2, zxid_simple_idp_new_user, zxid_simple_idp_recover_password, zxid_simple_idp_show_an x2, zxid_simple_show_err, zxid_sso_issue_azc, zxid_sso_issue_jwt x3 */
 char* zx_alloc_sprintf(struct zx_ctx* c, int* retlen, const char* f, ...)  /* data is new memory */
 {
   char* ret;
@@ -393,6 +393,7 @@ int zx_str_ends_in(struct zx_str* ss, int len, const char* suffix)
 
 /*() Compare two zx_strs; return -1 if a<b; 0 if a==b; 1 if a>b. */
 
+/* Called by:  zxid_id_epr_cmp, zxid_imreq */
 int zx_str_cmp(struct zx_str* a, struct zx_str* b)
 {
   int r;
@@ -412,7 +413,7 @@ int zx_str_cmp(struct zx_str* a, struct zx_str* b)
 
 /*() Add non-XML content to the kids list. These essentially appear as DATA items. */
 
-/* Called by:  test_ibm_cert_problem_enc_dec, x509_test, zx_new_str_elem, zxid_attach_sol1_usage_directive, zxid_az_soap x5, zxid_check_fed, zxid_issuer, zxid_mk_addr, zxid_mk_sa_attribute_ss x2, zxid_mk_subj, zxid_mk_transient_nid, zxid_new_epr, zxid_org_desc x4, zxid_parse_mni, zxid_ps_addent_invite x2, zxid_wsc_prep, zxid_wsc_prep_secmech x3, zxid_wsf_decor x4, zxsig_sign */
+/* Called by:  zx_new_str_elem, zxid_add_action_hdr, zxid_attach_sol1_usage_directive, zxid_az_soap x5, zxid_check_fed, zxid_issuer, zxid_md_authority_loc, zxid_mk_addr, zxid_mk_sa_attribute_ss x2, zxid_mk_subj, zxid_mk_transient_nid, zxid_new_epr, zxid_org_desc x4, zxid_parse_mni, zxid_ps_addent_invite x2, zxid_wsc_prep_secmech x3, zxid_wsf_decor x5, zxsig_sign */
 void zx_add_content(struct zx_ctx* c, struct zx_elem_s* x, struct zx_str* cont)
 {
   if (!cont || !x) {
@@ -595,7 +596,7 @@ void zx_free_attr(struct zx_ctx* c, struct zx_attr_s* aa, int free_strs)
  * is useful if the strings point to underlying data from the wire that was
  * allocated differently. */
 
-/* Called by:  main, zx_free_elem, zxid_mk_mni, zxid_parse_meta, zxid_set_fault, zxid_set_tas3_status */
+/* Called by:  main, zx_free_elem, zxid_di_query, zxid_find_epr x2, zxid_mk_mni, zxid_parse_meta, zxid_set_fault, zxid_set_tas3_status */
 void zx_free_elem(struct zx_ctx* c, struct zx_elem_s* x, int free_strs)
 {
   struct zx_elem_s* ae;

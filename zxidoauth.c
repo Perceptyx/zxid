@@ -48,6 +48,7 @@
 
 #if 1
 
+/* Called by:  zxid_mk_jwk x2 */
 char* zxid_bn2b64(zxid_conf* cf, BIGNUM* bn)
 {
   char* bin;
@@ -69,7 +70,7 @@ char* zxid_bn2b64(zxid_conf* cf, BIGNUM* bn)
 /*() Create JWK (json-web-key) document
  * See: https://tools.ietf.org/html/draft-ietf-jose-json-web-key-33 */
 
-/* Called by:  */
+/* Called by:  zxid_mk_jwks x2 */
 char* zxid_mk_jwk(zxid_conf* cf, char* pem, int enc_use)
 {
   char derbuf[4096];
@@ -116,6 +117,7 @@ char* zxid_mk_jwk(zxid_conf* cf, char* pem, int enc_use)
 /*() Create JWKS (json-web-key-set) document
  * See: https://tools.ietf.org/html/draft-ietf-jose-json-web-key-33 */
 
+/* Called by:  zxid_mk_oauth2_dyn_cli_reg_req, zxid_simple_show_jwks */
 char* zxid_mk_jwks(zxid_conf* cf)
 {
   char  pem_buf[4096];
@@ -137,7 +139,7 @@ char* zxid_mk_jwks(zxid_conf* cf)
 /*() Create OAUTH2 Dynamic Client Registration request.
  * See: https://tools.ietf.org/html/draft-ietf-oauth-dyn-reg-20 */
 
-/* Called by:  */
+/* Called by:  zxid_oauth_dynclireg_client */
 char* zxid_mk_oauth2_dyn_cli_reg_req(zxid_conf* cf)
 {
   char* jwks;
@@ -177,6 +179,7 @@ char* zxid_mk_oauth2_dyn_cli_reg_req(zxid_conf* cf)
  * The unparsed JSON for request is in the cgi->post field.
  * See: https://tools.ietf.org/html/draft-ietf-oauth-dyn-reg-20 */
 
+/* Called by:  zxid_simple_show_dynclireg */
 char* zxid_mk_oauth2_dyn_cli_reg_res(zxid_conf* cf, zxid_cgi* cgi)
 {
   char* buf;
@@ -229,7 +232,7 @@ char* zxid_mk_oauth2_dyn_cli_reg_res(zxid_conf* cf, zxid_cgi* cgi)
  * N.B. If you want to pass more than one scope, you have to include "," in middle, e.g.
  * "https://server/scope/read.json\",\"https://server/scope/write.json" */
 
-/* Called by:  */
+/* Called by:  zxid_oauth_rsrcreg_client */
 char* zxid_mk_oauth2_rsrc_reg_req(zxid_conf* cf, const char* rsrc_name, const char* rsrc_icon_uri, const char* rsrc_scope_url, const char* rsrc_type)
 {
   char* buf;
@@ -249,6 +252,7 @@ char* zxid_mk_oauth2_rsrc_reg_req(zxid_conf* cf, const char* rsrc_name, const ch
  * The unparsed JSON for request is in the cgi->post field.
  * See: https://tools.ietf.org/html/draft-hardjono-oauth-resource-reg-03 */
 
+/* Called by:  zxid_simple_show_rsrcreg */
 char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
 {
   char* buf;
@@ -291,7 +295,7 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
 /*() Interpret ZXID standard form fields to construct an OAuth2 Authorization request,
  * which is a redirection URL. */
 
-/* Called by:  zxid_start_sso_url */
+/* Called by:  zxid_oidc_as_call, zxid_start_sso_url */
 struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc)
 {
   struct zx_str* ss;
@@ -462,6 +466,7 @@ struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp
 
 /*() Decode JWT */
 
+/* Called by:  zxid_sp_sso_finalize_jwt */
 char* zxid_decode_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* jwt)
 {
   int len;
@@ -486,7 +491,7 @@ char* zxid_decode_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* j
 
 /*() Construct OAUTH2 / OpenID-Connect1 id_token. */
 
-/* Called by:  zxid_sso_issue_jwt */
+/* Called by:  zxid_sso_issue_jwt x3 */
 char* zxid_mk_jwt(zxid_conf* cf, int claims_len, const char* claims)
 {
   char hash[64 /*EVP_MAX_MD_SIZE*/];
@@ -551,7 +556,7 @@ char* zxid_mk_jwt(zxid_conf* cf, int claims_len, const char* claims)
 /*() Issue OAUTH2 / OpenID-Connect1 (OIDC1) id_token. logpathp is used
  * to return the path to the token so it can be remembered by AZC */
 
-/* Called by:  zxid_oauth2_az_server_sso */
+/* Called by:  zxid_oauth2_az_server_sso x3 */
 char* zxid_sso_issue_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct timeval* srcts, zxid_entity* sp_meta, struct zx_str* acsurl, zxid_nid** nameid, char* logop, struct zx_str** logpathp)
 {
   int rawlen;
@@ -862,6 +867,7 @@ struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
  * N.B. This function is very simplistic as it does not cache the metadata in any way.
  */
 
+/* Called by:  zxid_oauth_call_az_endpoint, zxid_oauth_call_rpt_endpoint, zxid_oauth_dynclireg_client, zxid_oauth_rsrcreg_client */
 char* zxid_oauth_get_well_known_item(zxid_conf* cf, const char* base_uri, const char* key)
 {
   int len;
@@ -888,6 +894,7 @@ char* zxid_oauth_get_well_known_item(zxid_conf* cf, const char* base_uri, const 
 char* iat = 0;
 char* _uma_authn = 0;
 
+/* Called by:  zxid_oauth_call_az_endpoint, zxid_oauth_call_rpt_endpoint, zxumacall_main x2 */
 struct zx_str* zxid_oauth_dynclireg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* as_uri)
 {
   struct zx_str* res;
@@ -916,6 +923,7 @@ struct zx_str* zxid_oauth_dynclireg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_se
   return res;
 }
 
+/* Called by:  zxumacall_main */
 void zxid_oauth_rsrcreg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* as_uri, const char* rsrc_name, const char* rsrc_icon_uri, const char* rsrc_scope_url, const char* rsrc_type)
 {
   struct zx_str* res;
@@ -948,6 +956,7 @@ void zxid_oauth_rsrcreg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, cons
 /*() Call OAUTH2 / UMA1 Resource Protection Token Endpoint and return a token
  * *** still needs a lot of work to turn more generic */
 
+/* Called by: */
 char* zxid_oauth_call_rpt_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri)
 {
   struct zx_str* res;
@@ -989,6 +998,7 @@ char* zxid_oauth_call_rpt_endpoint(zxid_conf* cf, zxid_ses* ses, const char* hos
 /*() Call OAUTH2 / UMA1 Resource Protection Token Endpoint and return a token
  * *** still needs a lot of work to turn more generic */
 
+/* Called by: */
 char* zxid_oauth_call_az_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri, const char* ticket)
 {
   char* req;
@@ -1030,6 +1040,7 @@ char* zxid_oauth_call_az_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host
   return "OK";
 }
 
+/* Called by:  zxumacall_main */
 int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const char* _uma_authn)
 {
   struct zx_md_SingleSignOnService_s* sso_svc;
@@ -1090,6 +1101,7 @@ int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const
  * sensitive key material.
  */
 
+/* Called by:  zxid_oauth_call_token_endpoint */
 static char* zxid_get_app_secret(zxid_conf* cf, const char* sha1_name, const char* logkey)
 {
   fdtype fd;
@@ -1124,6 +1136,7 @@ readerr:
  * extension to the regular SAML metadata).
  */
 
+/* Called by:  zxid_sp_oauth2_dispatch */
 static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 {
   zxid_entity* idp_meta;
@@ -1254,6 +1267,7 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
  * directory. It must have IDPSSODescriptor/@graphURL attribute (this is an
  * extension to the regular SAML metadata). */
 
+/* Called by:  zxid_sp_oauth2_dispatch */
 static int zxid_oauth_call_fb_graph_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* graph_path, const char* more_fields)
 {
   zxid_entity* idp_meta;
@@ -1333,6 +1347,7 @@ static int zxid_oauth_call_fb_graph_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_
 /*() Finalize JWT based SSO, create session from the fields available in the JWT
  * See also: zxid_sp_sso_finalize() in zxidsso.c */
 
+/* Called by:  zxid_sp_dig_oauth_sso_a7n */
 int zxid_sp_sso_finalize_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* jwt)
 {
   char* err = "S"; /* See: RES in zxid-log.pd, section "ZXID Log Format" */
@@ -1441,7 +1456,7 @@ erro:
 
 /*() Extract an assertion from OAUTH2 Az response, and perform SSO */
 
-/* Called by:  zxid_sp_oauth2_dispatch */
+/* Called by:  zxid_sp_oauth2_dispatch x3 */
 static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, char* jwt)
 {
   if (jwt)
@@ -1465,7 +1480,7 @@ static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
  * and populate it back to cgi context.
  */
 
-/* Called by:  zxid_simple_idp_pw_authn, zxid_simple_idp_show_an, zxid_sp_sso_finalize */
+/* Called by:  zxid_sp_oauth2_dispatch */
 static int zxid_decode_oauth2_state(zxid_conf* cf, zxid_cgi* cgi)
 {
   int len;

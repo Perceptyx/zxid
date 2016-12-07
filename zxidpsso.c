@@ -352,7 +352,7 @@ static void zxid_read_ldif_attrs(zxid_conf* cf, zxid_ses* ses, zxid_entity* meta
  * bs_lvl:: 0: DI (do not add any bs), 1: add all bootstraps at sso level,
  *     <= cf->bootstrap_level: add all boostraps, > cf->bootstrap_level: only add di BS. */
 
-/* Called by:  a7n_test, zxid_add_fed_tok2epr, zxid_imreq, zxid_sso_issue_a7n */
+/* Called by:  zxid_add_fed_tok2epr, zxid_imreq, zxid_sso_issue_a7n */
 zxid_a7n* zxid_mk_usr_a7n_to_sp(zxid_conf* cf, zxid_ses* ses, zxid_nid* nameid, zxid_entity* sp_meta, const char* sp_name_buf, int bs_lvl)
 {
   struct zxid_map* sp_aamap;
@@ -417,7 +417,7 @@ zxid_a7n* zxid_mk_usr_a7n_to_sp(zxid_conf* cf, zxid_ses* ses, zxid_nid* nameid, 
 
 /*(i) Check federation, create federation if appropriate. */
 
-/* Called by:  zxid_get_fed_nameid, zxid_imreq, zxid_nidmap_do */
+/* Called by:  zxid_get_fed_nameid, zxid_get_idpnid_at_eid, zxid_imreq, zxid_nidmap_do */
 zxid_nid* zxid_check_fed(zxid_conf* cf, struct zx_str* affil, const char* uid, char allow_create, struct timeval* srcts, struct zx_str* issuer, struct zx_str* req_id, const char* sp_name_buf)
 {
   int got;
@@ -601,7 +601,7 @@ int zxid_add_fed_tok2epr(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, int bs_lvl
 
 /*() Internal function, just to factor out some commonality between SSO and SSOS. */
 
-/* Called by:  a7n_test, x509_test, zxid_idp_sso, zxid_ssos_anreq */
+/* Called by:  zxid_idp_sso, zxid_ssos_anreq */
 zxid_a7n* zxid_sso_issue_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct timeval* srcts, zxid_entity* sp_meta, struct zx_str* acsurl, zxid_nid** nameid, char* logop, struct zx_sp_AuthnRequest_s* ar)
 {
   zxid_a7n* a7n;
@@ -663,6 +663,7 @@ zxid_a7n* zxid_sso_issue_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct
 
 /*() Given uid, look up the idpnid (pairwise pseudonym) as seen by given SP (eid) */
 
+/* Called by: */
 char* zxid_get_idpnid_at_eid(zxid_conf* cf, const char* uid, const char* eid, int allow_create)
 {
   zxid_nid* nameid;
