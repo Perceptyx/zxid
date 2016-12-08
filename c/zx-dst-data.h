@@ -19,7 +19,7 @@
 #endif
 
 /* -------------------------- dst_TestResult -------------------------- */
-/* refby( zx_dap_QueryResponse_s zx_idhrxml_QueryResponse_s ) */
+/* refby( zx_idhrxml_QueryResponse_s zx_dap_QueryResponse_s ) */
 #ifndef zx_dst_TestResult_EXT
 #define zx_dst_TestResult_EXT
 #endif

@@ -112,6 +112,7 @@ public interface zxidjniConstants {
   public final static String ZXID_PCODE_DIR = zxidjniJNI.ZXID_PCODE_DIR_get();
   public final static String ZXID_DCR_DIR = zxidjniJNI.ZXID_DCR_DIR_get();
   public final static String ZXID_RSR_DIR = zxidjniJNI.ZXID_RSR_DIR_get();
+  public final static String ZXID_STATE_DIR = zxidjniJNI.ZXID_STATE_DIR_get();
   public final static int ZXID_MAX_USER = zxidjniJNI.ZXID_MAX_USER_get();
   public final static int ZXID_INIT_MD_BUF = zxidjniJNI.ZXID_INIT_MD_BUF_get();
   public final static int ZXID_INIT_SOAP_BUF = zxidjniJNI.ZXID_INIT_SOAP_BUF_get();

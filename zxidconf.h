@@ -1,6 +1,6 @@
 /* zxidconf.h  -  Configuration of ZXID
  * Copyright (c) 2012-2015 Synergetics (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -18,6 +18,7 @@
  * 16.2.2013, added WD option --Sampo
  * 21.6.2013, added wsp_pat --Sampo
  * 28.5.2015, formatted documentation --Sampo
+ * 7.12.2016, added state storage option --Sampo
  *
  * Most of the configuration options can be set via configuration
  * file /var/zxid/zxid.conf or using -c command line flag(s). In
@@ -899,6 +900,14 @@
  *
  * Does not affect metadata. */
 #define ZXID_LOGUSER 1
+
+/*(c) State storage options
+ * - 0 = Send state inline deflate compressed and safe_base64 encoded
+ * - 1 = Store state locally and send only sha1 name of the state blob
+ * - other values reserved.
+ *
+ * Does not affect metadata. */
+#define ZXID_STATE_OPT 1
 
 /*(c) Set debug option
  * You can also set this via zxid_set_opt().

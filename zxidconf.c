@@ -1,6 +1,6 @@
 /* zxidconf.c  -  Handwritten functions for parsing ZXID configuration file
  * Copyright (c) 2012-2016 Synergetics (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -34,6 +34,7 @@
  *             signature algorithm from certificate. --Sampo
  * 8.1.2016,   added configuration options for signature and digest algorithms --Sampo
  * 6.3.2016,   eliminated obsolete, commented out, code --Sampo
+ * 7.12.2016,  added state storage option --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -1206,6 +1207,7 @@ int zxid_init_conf(zxid_conf* cf, const char* zxid_path)
   cf->log_err_in_act = ZXLOG_ERR_IN_ACT;
   cf->log_act_in_err = ZXLOG_ACT_IN_ERR;
   cf->log_sigfail_is_err = ZXLOG_SIGFAIL_IS_ERR;
+  cf->state_opt      = ZXID_STATE_OPT;
   cf->bus_rcpt       = ZXBUS_RCPT;
   cf->bus_url        = zxid_load_bus_url(cf, 0, ZXID_BUS_URL);
   cf->bus_pw         = ZXID_BUS_PW;
@@ -1945,6 +1947,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
       if (!strcmp(n, "SHOW_CONF"))      { SCAN_INT(v, cf->show_conf); break; }
       if (!strcmp(n, "SHOW_TECH"))      { SCAN_INT(v, cf->show_tech); break; }
       if (!strcmp(n, "STATE"))          { cf->state = v; break; }
+      if (!strcmp(n, "STATE_OPT"))      { SCAN_INT(v, cf->state_opt); break; }
       if (!strcmp(n, "SSO_PAT"))        { cf->sso_pat = v; break; }
       if (!strcmp(n, "SOAP_ACTION_HDR")) { cf->soap_action_hdr = v; break; }
       if (!strcmp(n, "SAMLSIG_DIGEST_ALGO")) { cf->samlsig_digest_algo = v; break; }
@@ -2283,6 +2286,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 "LOG_SIGFAIL_IS_ERR=%d\n"
 "LOG_LEVEL=%d\n"
 "LOGUSER=%d\n"
+"STATE_OPT=%d\n"
 
 "SIG_FATAL=%d\n"
 "NOSIG_FATAL=%d\n"
@@ -2484,6 +2488,7 @@ struct zx_str* zxid_show_conf(zxid_conf* cf)
 		 cf->log_sigfail_is_err,
 		 cf->log_level,
 		 cf->loguser,
+		 cf->state_opt,
   
 		 cf->sig_fatal,
 		 cf->nosig_fatal,

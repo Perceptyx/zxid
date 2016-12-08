@@ -1,6 +1,6 @@
 # zxid/Makefile  -  How to build ZXID (try: make help)
 # Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
-# Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+# Copyright (c) 2010-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
 # Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
 # Author: Sampo Kellomaki (sampo@iki.fi)
 # This is confidential unpublished proprietary source code of the author.
@@ -30,6 +30,7 @@
 # 9.2.2014,  added musl-libc compile --Sampo
 # 29.5.2015  upgraded the version due to addition of two factor authentication --Sampo
 # 3.4.2016,  added rules for zxcached --Sampo
+# 7.12.2016, tweaked to support better subbuilds --Sampo
 #
 # Build so far only tested on Linux, Solaris 8, MacOS 10.3, and mingw-w64. This
 # makefile needs gmake-3.78 or newer.

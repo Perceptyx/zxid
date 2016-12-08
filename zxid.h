@@ -1,6 +1,6 @@
 /* zxid.h  -  Definitions for zxid CGI
  * Copyright (c) 2012-2013 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -25,6 +25,7 @@
  * 14.3.2013   added language/skin dependent templates --Sampo
  * 21.6.2013,  added wsp_pat --Sampo
  * 18.12.2015, applied patch from soconnor, perceptyx --Sampo
+ * 7.12.2016,  added state dir support --Sampo
  */
 
 #ifndef _zxid_h
@@ -367,6 +368,15 @@ struct zxid_conf {
   char  az_fail_mode;        /* What to do when authorization can not be done */
   char  md_authority_ena;
   char  backwards_compat_ena; /* Enable CBC (instead of GCM) and PKCS#1 v1.5 padding, both of which are vulnearable and can compromise modern crypto through Backwards Compatibility Attacks. */
+
+  char  state_opt;     /* Is state stored locally? */
+  char  res1;
+  char  res2;
+  char  res3;
+  char  res4;
+  char  res5;
+  char  res6;
+  char  res7;
 
   char* xmldsig_sig_meth;
   char* xmldsig_digest_algo;
@@ -722,6 +732,7 @@ struct zxid_invite {
 #define ZXID_PCODE_DIR  "pcode/"  /* Mobile pairing codes */
 #define ZXID_DCR_DIR  "dcr/"  /* OAUTH2 Dynamic Client Registrations */
 #define ZXID_RSR_DIR  "rsr/"  /* OAUTH2 Resource Set Registrations */
+#define ZXID_STATE_DIR "sta/" /* Temporary state blobs, e.g. for remembering e=eid&ar=ssoreq */
 #define ZXID_MAX_USER (256)   /* Maximum size of .mni or user file */
 #define ZXID_INIT_MD_BUF   (8*1024-1)  /* Initial size, will automatically reallocate. */
 #define ZXID_INIT_SOAP_BUF (8*1024-1)  /* Initial size, will automatically reallocate. */

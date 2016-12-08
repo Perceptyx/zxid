@@ -2353,6 +2353,70 @@ public class zxidjni implements zxidjniConstants {
     return zxidjniJNI.zxid_conf_backwards_compat_ena_get(zxid_conf.getCPtr(self));
   }
 
+  public static void conf_state_opt_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_state_opt_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_state_opt_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_state_opt_get(zxid_conf.getCPtr(self));
+  }
+
+  public static void conf_res1_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_res1_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_res1_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_res1_get(zxid_conf.getCPtr(self));
+  }
+
+  public static void conf_res2_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_res2_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_res2_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_res2_get(zxid_conf.getCPtr(self));
+  }
+
+  public static void conf_res3_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_res3_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_res3_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_res3_get(zxid_conf.getCPtr(self));
+  }
+
+  public static void conf_res4_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_res4_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_res4_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_res4_get(zxid_conf.getCPtr(self));
+  }
+
+  public static void conf_res5_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_res5_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_res5_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_res5_get(zxid_conf.getCPtr(self));
+  }
+
+  public static void conf_res6_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_res6_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_res6_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_res6_get(zxid_conf.getCPtr(self));
+  }
+
+  public static void conf_res7_set(zxid_conf self, char value) {
+    zxidjniJNI.zxid_conf_res7_set(zxid_conf.getCPtr(self), value);
+  }
+
+  public static char conf_res7_get(zxid_conf self) {
+    return zxidjniJNI.zxid_conf_res7_get(zxid_conf.getCPtr(self));
+  }
+
   public static void conf_xmldsig_sig_meth_set(zxid_conf self, String value) {
     zxidjniJNI.zxid_conf_xmldsig_sig_meth_set(zxid_conf.getCPtr(self), value);
   }
@@ -4410,8 +4474,8 @@ public class zxidjni implements zxidjniConstants {
     return zxidjniJNI.zxid_write_ent_to_cache(zxid_conf.getCPtr(cf), zxid_entity.getCPtr(ent));
   }
 
-  public static zxid_entity parse_meta(zxid_conf cf, SWIGTYPE_p_p_char md, String lim) {
-    long cPtr = zxidjniJNI.zxid_parse_meta(zxid_conf.getCPtr(cf), SWIGTYPE_p_p_char.getCPtr(md), lim);
+  public static zxid_entity parse_meta(zxid_conf cf, SWIGTYPE_p_p_char md, String lim, int iter) {
+    long cPtr = zxidjniJNI.zxid_parse_meta(zxid_conf.getCPtr(cf), SWIGTYPE_p_p_char.getCPtr(md), lim, iter);
     return (cPtr == 0) ? null : new zxid_entity(cPtr, false);
   }
 

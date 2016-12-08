@@ -21,11 +21,13 @@
  * 9.10.2014,  UMA related addtionas, JWK, dynamic client registration, etc. --Sampo
  * 30.11.2016, tweaked to make real life Facebook OAUTH pass --Sampo
  * 2.12.2016,  separated Facebook Connect to a separate flow --Sampo
+ * 7.12.2016,  added storing ssoreq state on disk instead of shipping to other IdP --Sampo
  */
 
 #include "platform.h"
 #include <fcntl.h>
 #include <string.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -292,6 +294,45 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
 
 #endif
 
+/*() Prepare state
+ * Either deflate and safe_base64 encode state for inline passage or
+ * store it in a file and return sha1_name of the file.
+ *
+ * See also:: zxid_decode_state() */
+
+static char* zxid_prepare_statef(zxid_conf* cf, const char* fmt, ...)
+{
+  int olen,len;
+  char* buf;
+  char* state_b64;
+  va_list ap;
+
+  va_start(ap, fmt);
+
+  for (olen = 2047 /* just initial guess */; 1; olen=len) {
+    buf = ZX_ALLOC(cf->ctx, olen+1);
+    len = vsnprintf(buf, len, fmt, ap);
+    if (len <= olen)
+      break;  /* fits */
+    /* Did not fit, try again (second iteration will always be successful) */
+    ZX_FREE(cf->ctx, buf);
+  }
+  buf[len] = 0;  /* MS snprintf() bug */
+
+  va_end(ap);
+
+  if (cf->state_opt) {
+    state_b64 = ZX_ALLOC(cf->ctx, 28);
+    sha1_safe_base64(state_b64, len, buf);
+    write_all_path("prepare_state", "%s" ZXID_STATE_DIR "%s", cf->cpath, state_b64, len, buf);
+  } else {
+    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, len, buf);
+    D("Middle IdP of Proxy IdP flow state(%s)", buf);
+  }
+  ZX_FREE(cf->ctx, buf);
+  return state_b64;
+}
+
 /*() Interpret ZXID standard form fields to construct an OAuth2 Authorization request,
  * which is a redirection URL. */
 
@@ -306,8 +347,6 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* i
   char* state_b64;
   char* prompt;
   char* display;
-  char* st;
-  int st_len;
 
   if (!loc || !loc->len || !loc->s || !loc->s[0]) {
     ERR("Redirection location URL missing. %p", loc);
@@ -334,16 +373,9 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* i
       ERR("RelayState(%s) supplied in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
     }
     /* Carry the original authn req in state */
-    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
-    D("Middle IdP of Proxy IdP flow state(%s)", STRNULLCHK(st));
-    ZX_FREE(cf->ctx, st);
+    state_b64 = zxid_prepare_statef(cf, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
   } else {
-    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
-    D("Primary OAUTH state(%s)", STRNULLCHK(st));
-    ZX_FREE(cf->ctx, st);
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, strlen(cgi->rs), cgi->rs);
+    state_b64 = zxid_prepare_statef(cf, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
   }
   nonce = zxid_mk_id(cf, "OA", ZXID_ID_BITS);
   prompt = BOOL_STR_TEST(cgi->force_authn) ? "login" : 0;
@@ -391,8 +423,6 @@ struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp
   char* state_b64;
   char* prompt;
   char* display;
-  char* st;
-  int st_len;
 
   if (!loc || !loc->len || !loc->s || !loc->s[0]) {
     ERR("FBC Redirection location URL missing. %p", loc);
@@ -421,16 +451,9 @@ struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp
       D("FBC RelayState(%s) supplied in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
     }
     /* Carry the original authn req in state */
-    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
-    D("FBC middle IdP of Proxy IdP flow state(%s)", STRNULLCHK(st));
-    ZX_FREE(cf->ctx, st);
+    state_b64 = zxid_prepare_statef(cf, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
   } else {
-    st = zx_alloc_sprintf(cf->ctx, &st_len, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, st_len, st);
-    D("FBC primary OAUTH state(%s)", STRNULLCHK(st));
-    ZX_FREE(cf->ctx, st);
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, strlen(cgi->rs), cgi->rs);
+    state_b64 = zxid_prepare_statef(cf, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
   }
   //nonce = zxid_mk_id(cf, "FB", ZXID_ID_BITS);
   prompt = BOOL_STR_TEST(cgi->force_authn) ? "login" : 0;
@@ -1326,7 +1349,7 @@ static int zxid_oauth_call_fb_graph_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_
   /* Extract the fields as if it had been implicit mode SSO */
   ses->nid = zx_json_extract_dup(cf->ctx, res->s, "\"id\"");  /* facebook persistent pseudonym */
   ses->uid = ses->nid;
-  D("remote idp addigned nid(%s), also used as uid", STRNULLCHKD(ses->nid));
+  D("remote idp assigned nid(%s), also used as uid", STRNULLCHKD(ses->nid));
 
 #if 0
   ses->access_token = zx_json_extract_dup(cf->ctx, res->s, "\"access_token\"");
@@ -1476,16 +1499,25 @@ static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
  * The two are represented as query string "e=EID&ar=SSOREQ" and then
  * deflated and safe_base64 encoded. Here we need to unpack this
  * and populate it back to cgi context.
- */
+ *
+ * See also:: zxid_prepare_statef() */
 
 /* Called by:  zxid_sp_oauth2_dispatch */
-static int zxid_decode_oauth2_state(zxid_conf* cf, zxid_cgi* cgi)
+static int zxid_decode_state(zxid_conf* cf, zxid_cgi* cgi)
 {
   int len;
   char* p;
   if (!cgi->state || !cgi->state[0])
     return 1;
-  p = zxid_unbase64_inflate(cf->ctx, -2, cgi->state, &len);
+  if (cf->state_opt) {
+    if (strspn(cgi->state, "./")) {
+      ERR("Evil characters in state(%s). This could indicate an attack trying to access filesystem.", cgi->state);
+      return 1;
+    }
+    p = read_all_alloc(cf->ctx, "decode_state", 1, &len, "%s" ZXID_STATE_DIR "%s", cf->cpath, cgi->state);
+  } else {
+    p = zxid_unbase64_inflate(cf->ctx, -2, cgi->state, &len);
+  }
   if (!p)
     return 0;
   D("state decoded(%s) len=%d", p, len);
@@ -1514,7 +1546,7 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
   struct timeval ourts;
   struct timeval srcts = {0,501000};
 
-  ret = zxid_decode_oauth2_state(cf, cgi); /* Recover cgi->eid (e) and cgi->ssoreq (ar) */  
+  ret = zxid_decode_state(cf, cgi); /* Recover cgi->eid (e) and cgi->ssoreq (ar) */  
   if (cgi->code) {  /* OAUTH2 artifact / Authorization Code biding, aka OpenID-Connect1 */
     D("Dereference code(%s)", cgi->code);
     zxid_oauth_call_token_endpoint(cf, cgi, ses);
