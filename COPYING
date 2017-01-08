@@ -1,11 +1,9 @@
-End2End Trust Architecture (e2eta) Software Copying
+ZXID Copying
 
 Copyright (c) 2012-2013 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
-Copyright (c) 2009-2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+Copyright (c) 2009-2012,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
 Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
 Author: Sampo Kellomaki (sampo@iki.fi)
-
-Commercial software. Please write info@synergetics.be for licensing terms.
 
 LICENSE-2.0.txt does not apply. It is only provided for information,
 e.g. on some related software packages.
@@ -41,4 +39,4 @@ The research leading to these results has received funding from the
 European Community's Seventh Framework Programme (FP7/2007-2013) under
 grant agreement number 216287 (TAS3 - Trusted Architecture for Securely
 Shared Services - www.tas3.eu). However, most of the results were
-produced outside the project or after it had ended.
+produced outside the project, before it had started, or after it had ended.

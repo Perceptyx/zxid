@@ -848,9 +848,9 @@ zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
        zx_report_openssl_err("open_bus_url-ssl_ctx");
        goto errout;
      } else {
-       if (errmac_debug>1) {
-	D("OpenSSL header-version(%lx) lib-version(%lx)(%s) %s %s %s %s", OPENSSL_VERSION_NUMBER, SSLeay(), SSLeay_version(SSLEAY_VERSION), SSLeay_version(SSLEAY_CFLAGS), SSLeay_version(SSLEAY_BUILT_ON), SSLeay_version(SSLEAY_PLATFORM), SSLeay_version(SSLEAY_DIR));
-	SSL_CTX_set_info_callback(cf->ssl_ctx, zx_ssl_info_cb);
+       if (errmac_debug>2) {
+         D("OpenSSL header-version(%lx) lib-version(%lx)(%s) %s %s %s %s", OPENSSL_VERSION_NUMBER, SSLeay(), SSLeay_version(SSLEAY_VERSION), SSLeay_version(SSLEAY_CFLAGS), SSLeay_version(SSLEAY_BUILT_ON), SSLeay_version(SSLEAY_PLATFORM), SSLeay_version(SSLEAY_DIR));
+	 SSL_CTX_set_info_callback(cf->ssl_ctx, zx_ssl_info_cb);
       }
       SSL_CTX_set_mode(cf->ssl_ctx, SSL_MODE_AUTO_RETRY);  /* R/W only return when complete. */
       /* Verification strategy: do not attempt verification at SSL layer. Instead
@@ -907,7 +907,7 @@ zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
       goto sslerrout;
     }
 
-    if (errmac_debug>1) D("SSL_version(%s) cipher(%s)",SSL_get_version(bu->ssl),SSL_get_cipher(bu->ssl));
+    if (errmac_debug>2) D("SSL_version(%s) cipher(%s)",SSL_get_version(bu->ssl),SSL_get_cipher(bu->ssl));
 
     vfy_err = SSL_get_verify_result(bu->ssl);
     switch (vfy_err) {

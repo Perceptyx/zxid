@@ -84,6 +84,7 @@ struct zx_root_s* zxid_decode_redir_or_post(zxid_conf* cf, zxid_cgi* cgi, zxid_s
   char* b64msg;
   char* field;
   
+  D_INDENT("decode: ");
   if (cgi->saml_resp && *cgi->saml_resp) {
     field = "SAMLResponse";
     b64msg = cgi->saml_resp;
@@ -92,6 +93,8 @@ struct zx_root_s* zxid_decode_redir_or_post(zxid_conf* cf, zxid_cgi* cgi, zxid_s
     b64msg = cgi->saml_req;
   } else {
     ERR("No SAMLRequest or SAMLResponse field?! %p", cgi);
+err0:
+    D_DEDENT("decode: ");
     return 0;
   }
   
@@ -127,15 +130,15 @@ struct zx_root_s* zxid_decode_redir_or_post(zxid_conf* cf, zxid_cgi* cgi, zxid_s
   if (!r) {
     ERR("Failed to parse redir buf(%.*s)", len, p);
     zxlog(cf, 0, 0, 0, 0, 0, 0, ZX_GET_CONTENT(ses->nameid), "N", "C", "BADXML", 0, "sid(%s) bad redir", STRNULLCHK(ses->sid));
-    return 0;
+    goto err0;
   }
 
   if (chk_dup & 0x02)
-    return r;
+    goto ret_r;
   
   issuer = zxid_extract_issuer(cf, cgi, ses, r);
   if (!issuer)
-    return 0;
+    goto err0;
 
   if (!cgi->sig || !*cgi->sig) {
     D("Redirect or POST was not signed at binding level %d", 0);
@@ -162,6 +165,8 @@ log_msg:
 	zxlog_blob(cf, cf->log_rely_msg, logpath, &id_ss, "dec_redir_post nosig");
       }
     }
+ret_r:
+    D_DEDENT("decode: ");
     return r;
   }
 
@@ -265,6 +270,7 @@ log_msg:
     }
   }
   zx_str_free(cf->ctx, ss);
+  D_DEDENT("decode: ");
   return r;
 }
 

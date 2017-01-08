@@ -3,7 +3,7 @@
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
- * Special grant: zxbusd.c may be used with zxid open source project under
+ * Special grant: zxcached.c may be used with zxid open source project under
  * same licensing terms as zxid itself.
  * $Id$
  *
@@ -20,6 +20,7 @@
  * and for personal data store.
  *
  * See also: https://cloud.github.com/downloads/dustin/memcached/protocol-binary.txt
+ *   mcdb.c, 
  */
 
 #include <pthread.h>
@@ -110,7 +111,6 @@ int zx_ghlen = ZXCACHE_KEYS;
 struct zx_gbucket** zx_gh;  /* the global hash */
 int ak_buf_size = 0;
 int verbose = 1;
-extern int errmac_debug;
 int debugpoll = 0;
 int timeout = 0;
 int nfd = 20;

@@ -318,18 +318,21 @@ path_to_dir:
 
 /* --------- Make zxid config directories --------- */
 
+/* See also: zxid.h:726-738 approximately */
 static const char* mkdirs_list[] = {
 "ses",
-"user",
 "uid",
 "nid",
+"pem",
+"cot",
+"dimd",
+"inv",
 "log",
 "log/rely",
 "log/issue",
-"pem",
-"cot",
-"inv",
-"dimd",
+"art",
+"pcode",
+"sta",
 "dcr",
 "rsr",
 "uid/.all",

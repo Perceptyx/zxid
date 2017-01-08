@@ -574,7 +574,7 @@ directory under the /var/zxid/ses tree.
    |         +-- .ses      The session file
    |         `-- SVC,SHA1  Each bootstrap is kept in its own file
    |
-   +-- user/      Local user accounts (if enabled)
+   +-- uid/       Local user accounts (if enabled)
    |    |
    |    +-- SHA1/ Each local user has a directory whose name is SHA1
    |    |    |    of the user's NameID (idpnid) and IdP Entity ID
@@ -590,22 +590,19 @@ directory under the /var/zxid/ses tree.
    |    |    |    +-- ACCESS
    |    |    |    `-- ACCESS
    |    |    |
-   |    |    +-- .bs/     Local user attribute directory
+   |    |    +-- .bs/     Local user attribute and bootstrap directory
    |    |    |    |
    |    |    |    `-- .at Local user attributes as LDIF (see zxid_ses_to_pool())
    |    |    |    
+   |    |    `-- .pw      User's local login password if any (usually none for SP)
+   |    |
+   |    +-- joe -> SHA1   Login username symlink points to the real user directory
+   |    +-- Sue/          Local user can have directory whose name is the login username
+   |    |    |
+   |    |    +-- .mni     Information needed by Name ID management
    |    |    `-- .pw      User's local password if any (usually none)
    |    |
-   |    `-- SHA1b -> ../uid/Sue   SHA1 can also be symlink to local account
-   |
-   +-- uid/       Local user ID (local login name) to SHA1 mapping
-   |    |
-   |    +-- joe -> ../user/SHA1   Symlink points to the real user directory
-   |    +-- Sue/   Local user can have directory whose name is the uid
-   |         |
-   |         +-- .mni     Information needed by Name ID management
-   |         `-- .pw      User's local password if any (usually none)
-   |    
+   |    `-- SHA1b -> Sue   SHA1 can also be symlink to login username account
    |
    `-- log/       Log files, pid files, and the like
 
@@ -632,9 +629,9 @@ SHA1:: safe base64 encoded SHA1 hash of the content of the EPR. The
     different file names.
 
 The session directory also contains .ses file. The first line
-is as follows (still subject to change, Oct 2007):
+is as follows (still subject to change, Dec 2016):
 
-  NameID|a7n-ref
+  NameID|a7n-ref|sesix|an_ctx|uid
 
 The pipey symbol (|) is a field separator. Future versions
 may define further fields beyound these original two. All other
@@ -642,9 +639,17 @@ lines are reserved for future expansion. Fields:
 
 NameID:: NameID, extracted during SSO
 a7n-ref:: Filesystem path to the SSO assertion.
+sesix:: Session Index sent by IdP. Can be used in Single Logout.
+an_ctx:: Authentication Context. The strength of authentication the session is based on.
+uid:: Local user id, see section User Directory, below.
 
-4.7.2 User directory (user/)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+4.7.2 User directory (uid/)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The main purpose of the local uid/ directory is to support local
+logins on IdP. Since the main objective of ZXID is to support Single Sign On,
+there should be little need to support local logins on Service Providers. Hence uid/
+directory is optional for SPs.
 
 User directories are used for storage of +local account+ information.
 Since many web applications, to which ZXID may be integrated, already
@@ -663,7 +668,7 @@ PS-EPR of the user are remembered.
 
 Each user is represented by a directory whose filename is safe base64
 of the SHA1 hash of the user's NameID and the IdP's Entity ID. The directory can actually
-be a symlink to some other place, such as uid/ directory, see below.
+be a symlink to some other place, such as local login username.
 
 Inside the directory, a file called .mni captures the information
 needed for NameID Management. It is expected that other files
@@ -689,43 +694,30 @@ MNIptr:: If NameID Management has been used to change the
     a local user account directory for the new NameID. Consider
     this as a sort of symlink functionality.
 
-4.7.3 Local UID Directory (uid/)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The main purpose of the local uid/ directory is to support local
-logins. Since the main objective of ZXID is to support Single Sign On,
-there should be little need to support local logins. Hence uid/
-directory is optional.
-
-Often uid/ directory is implemented by providing symlinks to the
-user/ directory. In this case uid/ only acts as an index or
-mapping from local UID to the safe base64 encoded SHA1 of the IdP
-assigned Name ID, see above.
-
-4.7.4 IdP Use of Local UID Directory (uid/)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+4.7.3 IdP Use of User Directory (uid/)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 zxididp uses local uid/ directory to implement the IdP logins and
 to store users federations, bootstraps, and attributes.
 
-  /var/zxid/
+  /var/zxid/idp/
    |
-   +-- idpzxid.conf  Main configuration file
-   +-- idppem/       Our certificates
-   +-- idpcot/       Metadata of CoT partners (metadata cache)
-   +-- idpses/       Sessions
+   +-- zxid.conf  Main configuration file
+   +-- pem/       Our certificates
+   +-- cot/       Metadata of CoT partners (metadata cache)
+   +-- ses/       Sessions
    |    |
    |    +-- SESID/         Each session has its own directory
    |         |
    |         +-- .ses      The session file
    |         `-- SVC,SHA1  Each bootstrap is kept in its own file
    |
-   +-- idpuid/       Local user ID (local login name) to SHA1 mapping
+   +-- uid/       Local user ID (local login name) to SHA1 mapping
    |    |
    |    +-- JOE/  Local user has directory whose name is the login uid
    |    |    |
    |    |    +-- .log      Log of operations regarding the user
-   |    |    +-- .pw       User's local password
+   |    |    +-- .pw       User's local password (usually hashed)
    |    |    +-- .yk       User's yubikey shared aes128 secret in hex
    |    |    +-- .ykspent/ Cache of already used One TIme Passwords
    |    |    |    |
@@ -749,22 +741,22 @@ to store users federations, bootstraps, and attributes.
    |         |    +-- .at         Attributes to be included in each SSO
    |         |    `-- SVC,SHA1    Bootstrap for a service
    |         |
-   |         `-- SP,SHA1/  One directory for each SP
+   |         `-- SP,SHA1/  One directory for each SP or WSP
    |              |
    |              +-- .at         Attributes to be included for this SP
    |              `-- SVC,SHA1    Bootstrap to be included for this SP
    |
-   +-- idpnid/       Index of federated NameIDs, to map to uid
+   +-- nid/       Index of federated NameIDs, to map to uid
    |    |
    |    `-- SVC,SHA1    Bootstrap to be included for this SP
    |         |
    |         `-- NID    Content of the file is uid
    |
-   +-- idpdimd/
+   +-- dimd/
    |    |
    |    `-- SVC,SHA1    Discovery MD registration for a service
    |
-   `-- idplog/       Log files, pid files, and the like
+   `-- log/       Log files, pid files, and the like
 
 When generating SSO assertion, the attributes are collected as follows:
 
@@ -788,7 +780,7 @@ yubikey token and IdP) key is kept in the .yk file. As this is not a
 password has, but rather directly the shared secret, it requires
 rigorous approach to the filesystem security. The fact that .pw and
 .yk are separate files caters for the possibility of user
-authenticating either by yubikey or by password. By default yubikey
+authenticating either by yubikey or by password or both. By default yubikey
 is one factor authentication (in fairly secure and very convenient
 form). If two factor authentication is desired, the password component
 should be prefixed to the UID component, i.e. first user types PIN
@@ -811,7 +803,7 @@ new accounts as well as manipulation of .pw and .yk files.
 96 License
 ==========
 
-Copyright (c) 2010-2011 Sampo Kellomäki (sampo@iki.fi), All Rights Reserved.
+Copyright (c) 2010-2011,2016 Sampo Kellomäki (sampo@iki.fi), All Rights Reserved.
 Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
 Author: Sampo Kellomäki (sampo@iki.fi)
 

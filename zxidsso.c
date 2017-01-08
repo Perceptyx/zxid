@@ -1,6 +1,6 @@
 /* zxidsso.c  -  Handwritten functions for implementing Single Sign-On logic for SP
  * Copyright (c) 2013-2014 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -17,6 +17,7 @@
  * 1.2.2010,  added authentication service client --Sampo
  * 9.3.2011,  added Proxy IdP processing --Sampo
  * 26.10.2013, improved error reporting on credential expired case --Sampo
+ * 8.1.2017,  added p as shortcut for persistent --Sampo
  *
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  */
@@ -45,8 +46,8 @@
 
 /* ============== Generating and sending AuthnReq ============== */
 
-/*() This function makes the policy decision about which profile to
- * use. It is only used if there was no explicit specification in the
+/*() Make the policy decision about which profile to use.
+ * Only used if there was no explicit specification in the
  * CGI form (e.g. "Login (P)" button). Currently it is a stub that
  * always picks the SAML artifact profile. Eventually configuration options
  * or cgi input can be used to determine the profile in a more
@@ -72,34 +73,21 @@ const char* zxid_saml2_map_nid_fmt(const char* f)
 {
   if (!f || !f[0]) {
     ERR("NULL argument %p", f);
-    return "trnsnt";
+    return SAML2_TRANSIENT_NID_FMT;
   }
-#if 0
-  switch (f[0]) {
-  case 'n' /*'none'*/:   return "";
-  case 'p' /*'prstnt'*/: return SAML2_PERSISTENT_NID_FMT;
-  case 't' /*'trnsnt'*/: return SAML2_TRANSIENT_NID_FMT;
-  case 'u' /*'unspfd'*/: return SAML2_UNSPECIFIED_NID_FMT;
-  case 'e' /*'emladr'*/: return SAML2_EMAILADDR_NID_FMT;
-  case 'x' /*'x509sn'*/: return SAML2_X509_NID_FMT;
-  case 'w' /*'windmn'*/: return SAML2_WINDOMAINQN_NID_FMT;
-  case 'k' /*'kerbrs'*/: return SAML2_KERBEROS_NID_FMT;
-  case 's' /*'saml'*/:   return SAML2_ENTITY_NID_FMT;
-  }
-#else
-  if (!strcmp("prstnt", f)) return SAML2_PERSISTENT_NID_FMT;
-  if (!strcmp("trnsnt", f)) return SAML2_TRANSIENT_NID_FMT;
-  if (!strcmp("none",   f)) return "";
-  if (!strcmp("unspfd", f)) return SAML2_UNSPECIFIED_NID_FMT;
-  if (!strcmp("emladr", f)) return SAML2_EMAILADDR_NID_FMT;
-  if (!strcmp("x509sn", f)) return SAML2_X509_NID_FMT;
-  if (!strcmp("windmn", f)) return SAML2_WINDOMAINQN_NID_FMT;
-  if (!strcmp("kerbrs", f)) return SAML2_KERBEROS_NID_FMT;
-  if (!strcmp("saml",   f)) return SAML2_ENTITY_NID_FMT;
-#endif
+  if (!strcmp("p", f) || !strcmp("prstnt", f)) return SAML2_PERSISTENT_NID_FMT;
+  if (!strcmp("t", f) || !strcmp("trnsnt", f)) return SAML2_TRANSIENT_NID_FMT;
+  if (!strcmp("n", f) || !strcmp("none",   f)) return "";
+  if (!strcmp("u", f) || !strcmp("unspfd", f)) return SAML2_UNSPECIFIED_NID_FMT;
+  if (!strcmp("e", f) || !strcmp("emladr", f)) return SAML2_EMAILADDR_NID_FMT;
+  if (!strcmp("x", f) || !strcmp("x509sn", f)) return SAML2_X509_NID_FMT;
+  if (!strcmp("w", f) || !strcmp("windmn", f)) return SAML2_WINDOMAINQN_NID_FMT;
+  if (!strcmp("k", f) || !strcmp("kerbrs", f)) return SAML2_KERBEROS_NID_FMT;
+  if (!strcmp("s", f) || !strcmp("saml",   f)) return SAML2_ENTITY_NID_FMT;
   return f;
 }
 
+#if 0
 /*() Map protocol binding form field to SAML specified URN string. */
 /* Called by: */
 const char* zxid_saml2_map_protocol_binding(const char* b)
@@ -110,11 +98,12 @@ const char* zxid_saml2_map_protocol_binding(const char* b)
   case 'p' /*'post'*/:  return SAML2_POST;
   case 'q' /*'qsimplesig'*/:  return SAML2_POST_SIMPLE_SIGN;
   case 's' /*'soap'*/:  return SAML2_SOAP;
+  case 'o':  return SAML2_PAOS;
   case 'e' /*'ecp'*/:
-    /*case 'paos':*/  return SAML2_PAOS;
   default:      return b;
   }
 }
+#endif
 
 /*() Map SAML protocol binding URN to form field. */
 /* Called by:  zxid_idp_sso x3, zxid_sp_loc_by_index_raw */
@@ -344,7 +333,7 @@ struct zx_str* zxid_start_sso_location(zxid_conf* cf, zxid_cgi* cgi)
 /* ============== Process Response and SSO Assertion ============== */
 
 /*(i) Dereference an artifact to obtain an assertion. This is the last
- * step in artifact SSO profile and involved making a SOAP call to the
+ * step in artifact SSO profile and involves making a SOAP call to the
  * IdP. The artifact is received in saml_art CGI field, <<see:
  * zxid_parse_cgi()>> where SAMLart query string argument is parsed. */
 
@@ -798,12 +787,13 @@ int zxid_sp_sso_finalize(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, zxid_a7n* 
     }
   }
   DD("Creating session... %d", 0);
+  ses->uid = zxid_mk_uid(cf, idp_meta->eid, ses->nid);
   ses->ssores = 0;
   zxid_put_ses(cf, ses);
   zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest bootstrap(s) from attribute statements */
   cgi->msg = "SSO completed and session created.";
   cgi->op = '-';  /* Make sure management screen does not try to redispatch. */
-  zxid_put_user(cf, &ses->nameid->Format->g, &ses->nameid->NameQualifier->g, &ses->nameid->SPNameQualifier->g, ZX_GET_CONTENT(ses->nameid), 0);
+  zxid_put_user_ses(cf, ses);
   DD("Logging... %d", 0);
   zxlog(cf, &ourts, &srcts, 0, issuer, 0, &a7n->ID->g, subj,
 	cgi->sigval, "K", "NEWSES", ses->sid, "sesix(%s)", STRNULLCHKD(ses->sesix));
@@ -863,7 +853,7 @@ int zxid_sp_anon_finalize(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
   zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest attributes and bootstrap(s) */
   cgi->msg = "SSO Failure treated as anonymous login and session created.";
   cgi->op = '-';  /* Make sure management screen does not try to redispatch. */
-  /*zxid_put_user(cf, ses->nameid->Format, ses->nameid->NameQualifier, ses->nameid->SPNameQualifier, ZX_GET_CONTENT(ses->nameid), 0);*/
+  /*zxid_put_user_ses(cf, ses);*/
   zxlog(cf, 0, 0, 0, 0, 0, 0, 0, cgi->sigval, "K", "TMPSSO", "-", 0);
   D_DEDENT("anon_ssof: ");
   return ZXID_SSO_OK;

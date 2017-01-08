@@ -43,8 +43,6 @@
 #include "hiios.h"
 #include "errmac.h"
 
-extern int errmac_debug;
-
 const char* qel_kind[] = {
   "OFF0",
   "poll1",

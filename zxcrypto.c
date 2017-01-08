@@ -467,7 +467,7 @@ RSA* zx_get_rsa_pub_from_cert(X509* cert, char* logkey)
 }
 
 /*() ZXID centralized hook for obtaining random numbers. This backends to
- * OpenSSL random number gnerator and seeds from /dev/urandom where
+ * OpenSSL random number generator and seeds from /dev/urandom where
  * available. If you want to use /dev/random, which may block, you need
  * to recompile with ZXID_TRUE_RAND set to true. */
 

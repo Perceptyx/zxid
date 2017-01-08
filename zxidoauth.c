@@ -770,6 +770,8 @@ struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
   struct zx_str* jwt_logpath = 0;
   char  azc[1024];
   char logop[8];
+
+  D_INDENT("oauth2_az_server_sso: ");
   strcpy(logop, "OAZxxxx");
 
   if (!cgi->client_id || !cgi->redirect_uri || !cgi->nonce) {
@@ -838,6 +840,7 @@ struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
     
     if (jwt_logpath)
       zx_str_free(cf->ctx, jwt_logpath);
+    D_DEDENT("oauth2_az_server_sso: ");
     return zx_strf(cf->ctx, "Location: %s%c"
 		   "code=%s"
 		   "%s%s" CRLF  /* state */
@@ -857,6 +860,7 @@ struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
     
     if (jwt_logpath)
       zx_str_free(cf->ctx, jwt_logpath);
+    D_DEDENT("oauth2_az_server_sso: ");
     return zx_strf(cf->ctx, "Location: %s%c"
 		   "access_token=%s"
 		   "&token_type=bearer"
@@ -874,6 +878,7 @@ struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
  err:
   if (jwt_logpath)
     zx_str_free(cf->ctx, jwt_logpath);
+  D_DEDENT("oauth2_az_server_sso: ");
   return zx_dup_str(cf->ctx, "* ERR");
 }
 
@@ -1198,6 +1203,7 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
     return 0;
   }
   ses->issuer = &idp_meta->ed->entityID->g;
+  ses->idpeid = zx_str_to_c(cf->ctx, ses->issuer);
 #if 1
   if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->IDPSSODescriptor->tokenURL)) {
     ERR("IdP metadata is missing tokenURL field. eid(%s) %p", cgi->eid, idp_meta->ed->IDPSSODescriptor->tokenURL);
@@ -1308,7 +1314,7 @@ static int zxid_oauth_call_fb_graph_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_
 
   D_INDENT("call_graph_ept: ");
 
-  idp_meta = ses->issuer_meta;
+  idp_meta = ses->issuer_meta;  /* ses->issuer sis already populated by token end point call */
   if (!idp_meta || !idp_meta->ed || !idp_meta->ed->IDPSSODescriptor) {
     ERR("Issuer IdP not set or does not support graph API. %p", idp_meta);
     cgi->err = "Issuer IdP not set or does not support graph API";
@@ -1342,14 +1348,30 @@ static int zxid_oauth_call_fb_graph_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_
   buf[len] = 0;  /* MS snprintf() bug */
   
   res = zxid_http_cli(cf, -1, buf, 0, 0, 0, azhdr, 0);
-  ZX_FREE(cf->ctx, buf);
-
+  if (!res)
+    goto grapherr;
   D("%.*s", res->len, res->s);
   
   /* Extract the fields as if it had been implicit mode SSO */
   ses->nid = zx_json_extract_dup(cf->ctx, res->s, "\"id\"");  /* facebook persistent pseudonym */
-  ses->uid = ses->nid;
+  if (!ses->nid) {
+ grapherr:
+    ERR("Call to graph endpoint did not include id. req(%s) res(%.*s)", buf, res?res->len:1, res?res->s:"-");
+    ZX_FREE(cf->ctx, buf);
+    D_DEDENT("call_graph_ept: ");
+    return 0;
+  }
+  ses->uid = zxid_mk_uid(cf, idp_meta->eid, ses->nid);
+  ses->nidfmt = 1;  /* Assume federation */
+  ses->tgt = ses->nid;
+  ses->tgtfmt = 1;  /* Assume federation */
+  ZX_FREE(cf->ctx, buf);
   D("remote idp assigned nid(%s), also used as uid", STRNULLCHKD(ses->nid));
+  zxid_put_user_ses(cf, ses);
+  zxid_put_user_attr(cf, ses,
+		     zx_json_extract_dup(cf->ctx, res->s, "\"name\""),
+		     zx_json_extract_dup(cf->ctx, res->s, "\"email\""),
+		     res);
 
 #if 0
   ses->access_token = zx_json_extract_dup(cf->ctx, res->s, "\"access_token\"");
@@ -1379,7 +1401,7 @@ int zxid_sp_sso_finalize_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const 
   struct timeval ourts;
   struct timeval srcts = {0,501000};
   struct zx_str* logpath;
-  char* p;
+  char* iss;
   char* claims;
 
   ses->jwt = (char*)jwt;
@@ -1407,12 +1429,13 @@ int zxid_sp_sso_finalize_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const 
   ses->tgt = ses->nid;
   ses->tgtfmt = 1;  /* Assume federation */
 
-  p = zx_json_extract_dup(cf->ctx, claims, "\"iss\"");
-  ses->issuer = zx_ref_str(cf->ctx, p);
-  if (!p) {
+  iss = zx_json_extract_dup(cf->ctx, claims, "\"iss\"");
+  if (!iss) {
     ERR("JWT decode: no iss found in jwt(%s)", STRNULLCHKD(jwt));
     goto erro;
   }
+  ses->issuer = zx_ref_str(cf->ctx, iss);
+  ses->idpeid = iss;
 
   D("SSOJWT received. NID(%s) FMT(%d)", ses->nid, ses->nidfmt);
   
@@ -1438,12 +1461,13 @@ int zxid_sp_sso_finalize_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const 
     }
   }
   DD("Creating session... %d", 0);
+  ses->uid = zxid_mk_uid(cf, iss, ses->nid);
   ses->ssores = 0;
   zxid_put_ses(cf, ses);
   //*** zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest attributes and bootstrap(s) */
   cgi->msg = "SSO completed and session created.";
   cgi->op = '-';  /* Make sure management screen does not try to redispatch. */
-  zxid_put_user(cf, 0, 0, 0, zx_ref_str(cf->ctx, ses->nid), 0);
+  zxid_put_user_ses(cf, ses);
   DD("Logging... %d", 0);
   ss.s = ses->nid; ss.len = strlen(ss.s);
   zxlog(cf, &ourts, &srcts, 0, ses->issuer, 0, 0, &ss,
@@ -1510,9 +1534,9 @@ static int zxid_decode_state(zxid_conf* cf, zxid_cgi* cgi)
   if (!cgi->state || !cgi->state[0])
     return 1;
   if (cf->state_opt) {
-    if (strspn(cgi->state, "./")) {
-      ERR("Evil characters in state(%s). This could indicate an attack trying to access filesystem.", cgi->state);
-      return 1;
+    if (strlen(cgi->state) != strspn(cgi->state, safe_basis_64)) {
+      ERR("EVIL state(%s). This could indicate an attack trying to access filesystem.", cgi->state);
+      return 0;
     }
     p = read_all_alloc(cf->ctx, "decode_state", 1, &len, "%s" ZXID_STATE_DIR "%s", cf->cpath, cgi->state);
   } else {
@@ -1546,6 +1570,7 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
   struct timeval ourts;
   struct timeval srcts = {0,501000};
 
+  D_INDENT("sp_oauth2_dp: ");
   ret = zxid_decode_state(cf, cgi); /* Recover cgi->eid (e) and cgi->ssoreq (ar) */  
   if (cgi->code) {  /* OAUTH2 artifact / Authorization Code biding, aka OpenID-Connect1 */
     D("Dereference code(%s)", cgi->code);
@@ -1557,28 +1582,30 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
     ret = zxid_sp_dig_oauth_sso_a7n(cf, cgi, ses, cgi->id_token);
     D("ret=%d ses=%p", ret, ses);
     switch (ret) {
-    case ZXID_OK:      return zx_dup_str(cf->ctx, "K");
-    case ZXID_SSO_OK:  return zx_dup_str(cf->ctx, "O");
+    case ZXID_OK:      D_DEDENT("sp_oauth2_dp: "); return zx_dup_str(cf->ctx, "K");
+    case ZXID_SSO_OK:  D_DEDENT("sp_oauth2_dp: "); return zx_dup_str(cf->ctx, "O");
     case ZXID_IDP_REQ: /* (PXY) Middle IdP of IdP Proxy flow */
+      D_DEDENT("sp_oauth2_dp: ");
       return zx_dup_str(cf->ctx, zxid_simple_ses_active_cf(cf, cgi, ses, 0, 0x1fff));
     case ZXID_FAIL:
       D("*** FAIL, should send back to IdP select %d", 0);
+      D_DEDENT("sp_oauth2_dp: ");
       return zx_dup_str(cf->ctx, "* ERR");
     }
+    D_DEDENT("sp_oauth2_dp: ");
     return zx_dup_str(cf->ctx, "M");  /* Management screen, please. */
   }
   
   if (cgi->access_token) {
-    zxid_oauth_call_fb_graph_endpoint(cf, cgi, ses, "me", "&fields=id,name,email");
     /* The data returned by /me will include id which can be used as pseudonym */
-    // ***
+    if (!zxid_oauth_call_fb_graph_endpoint(cf, cgi, ses, "me", "&fields=id,name,email,first_name,last_name,gender,locale,picture,website")) {
+      D("*** FAIL, should send back to IdP select %d", 0);
+      D_DEDENT("sp_oauth2_dp: ");
+      return zx_dup_str(cf->ctx, "* ERR");
+    }
 
     GETTIMEOFDAY(&ourts, 0);
 
-    ses->nidfmt = 1;  /* Assume federation */
-    ses->tgt = ses->nid;
-    ses->tgtfmt = 1;  /* Assume federation */
-    zxid_put_user(cf, 0, ses->issuer, 0, zx_ref_str(cf->ctx, ses->nid), 0);
     // *** should some signature validation happen here, using issuer (idp) meta?
     cgi->sigval = "N";
     cgi->sigmsg = "Facebook Connect response was not signed.";
@@ -1624,17 +1651,20 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
 	zxid_decode_ssoreq(cf, cgi);
 	cgi->op = 'V';
 	/* case ZXID_IDP_REQ (PXY) process proxy IdP middle IdP role */
+	D_DEDENT("sp_oauth2_dp: ");
 	return zx_dup_str(cf->ctx, zxid_simple_ses_active_cf(cf, cgi, ses, 0, 0x1fff));
       } else {
 	INFO("Middle IdP of Proxy IdP flow did not receive ssoreq from upstream IdP %p", cgi->ssoreq);
       }
     }
+    D_DEDENT("sp_oauth2_dp: ");
     return zx_dup_str(cf->ctx, "O");  /* ZXID_SSO_OK */
   }
   
   if (cf->log_level > 0)
     zxlog(cf, 0, 0, 0, 0, 0, 0, ZX_GET_CONTENT(ses->nameid), "N", "C", "SPOADISP", 0, "sid(%s) unknown req or resp", STRNULLCHK(ses->sid));
   ERR("Unknown request or response %d", 0);
+  D_DEDENT("sp_oauth2_dp: ");
   return zx_dup_str(cf->ctx, "* ERR");
 }
 

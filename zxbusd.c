@@ -108,7 +108,6 @@ char* zxbus_path = ZXBUS_PATH;
 zxid_conf* zx_cf;
 int ak_buf_size = 0;
 int verbose = 1;
-extern int errmac_debug;
 int debugpoll = 0;
 int timeout = 0;
 int nfd = 20;

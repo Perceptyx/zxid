@@ -523,7 +523,8 @@ static int zx_create_dir_with_check(zxid_conf* cf, const char* dir, int create_d
   return 1;
 }
 
-/*() Compute path for logging. Optionally attempt to create the necessary
+/*() Compute path for logging.
+ * Optionally attempt to create the necessary
  * directories if they are missing (you should do `zxcot -dirs' rather than
  * depend on this).
  *
@@ -535,7 +536,8 @@ static int zx_create_dir_with_check(zxid_conf* cf, const char* dir, int create_d
  * kind::   Kind of object, used as path component ("/a7n/" or "/msg/")
  * create_dirs::  Flag: should creating directories be attempted. Usually 1 if intent
  *     is to write a file to the computed path. Usually 0 if the intent is to read.
- * return:: The path, as zx_str or 0 if failure */
+ * return:: The path, as zx_str or 0 if failure. The returned path will be nul
+ *     terminated. The returned path needs to be freed by called. */
 
 /* Called by:  zxbus_send_cmdf, zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_decode_redir_or_post x2, zxid_saml2_post_enc, zxid_saml2_redir_enc, zxid_soap_cgi_resp_body, zxid_sp_oauth2_dispatch, zxid_sp_sso_finalize, zxid_sp_sso_finalize_jwt, zxid_sso_issue_azc, zxid_sso_issue_jwt x3, zxid_wsc_valid_re_env, zxid_wsf_validate_a7n, zxid_wsp_validate */
 struct zx_str* zxlog_path(zxid_conf* cf,
@@ -932,7 +934,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
   }
 
   DD("body(%.*s) body_len=%d", body_len, body_len?body:"", body_len);
-  if (errmac_debug>1)
+  if (errmac_debug>2)
     D("zx-rcpt-sig(%s) sigbuf_len=%d len=%d\nbuf(%s) buflen=%d %x %x", sigbuf, (int)strlen(sigbuf), len, buf, (int)strlen(buf), cf->bus_rcpt, cf->bus_rcpt&0x06);
   else
     D("zx-rcpt-sig(%s) %x", sigbuf, cf->bus_rcpt);

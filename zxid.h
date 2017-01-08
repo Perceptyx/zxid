@@ -26,6 +26,7 @@
  * 21.6.2013,  added wsp_pat --Sampo
  * 18.12.2015, applied patch from soconnor, perceptyx --Sampo
  * 7.12.2016,  added state dir support --Sampo
+ * 8.12.2016,  merged user/ to uid/ --Sampo
  */
 
 #ifndef _zxid_h
@@ -429,7 +430,7 @@ struct zxid_cgi {
   char* ssoreq;        /* ar= Used for conveying original AuthnReq through authn phase. */
   char* cdc;           /* c=  Common Domain Cookie, returned by the CDC reader, also succinctID */
   char* eid;           /* e=, d= Entity ID of an IdP (typically for login) */
-  char* nid_fmt;       /* fn= Name ID format */
+  char* nid_fmt;       /* fn=prstnt (or trnsnt) Name ID format */
   char* affil;         /* fq= SP NameQualifier (such as in affiliation of SPs) */
   char* consent;       /* fy= Whether user consented to the operation and how. */
   char* matching_rule; /* fm= How authn_ctx is to be matched by IdP. */
@@ -518,7 +519,9 @@ struct zxid_ses {
   char* sid;           /* Session ID. Same as in cookie, same as file name */
   char* uid;           /* Local uid (only if local login, like in IdP) */
   char* nid;           /* String representation of Subject NameID. See also nameid. */
-  char* tgt;           /* String representation of Target NameID. See also nameid. */
+  char* tgt;           /* String representation of Target NameID. See also tgtnameid. */
+  char* idpeid;        /* The Entity ID of the IdP that issued assertion. See also nameid. */
+  char* tgteid;        /* The Entity ID of the IdP of tgt. See also tgtnameid. */
   char* sesix;         /* SessionIndex */
   char* ipport;        /* Source IP and port for logging, e.g: "1.2.3.4:5" */
   char* wsc_msgid;     /* Request MessageID, to facilitate Response RelatesTo validation at WSC. */
@@ -720,20 +723,21 @@ struct zxid_invite {
   int expires;    /* Unix seconds since epoch */
 };
 
-#define ZXID_SES_DIR  "ses/"
-#define ZXID_USER_DIR "user/"
-#define ZXID_UID_DIR  "uid/"
-#define ZXID_NID_DIR  "nid/"
-#define ZXID_PEM_DIR  "pem/"
-#define ZXID_COT_DIR  "cot/"
-#define ZXID_DIMD_DIR "dimd/"
-#define ZXID_INV_DIR  "inv/"
-#define ZXID_LOG_DIR  "log/"
-#define ZXID_PCODE_DIR  "pcode/"  /* Mobile pairing codes */
-#define ZXID_DCR_DIR  "dcr/"  /* OAUTH2 Dynamic Client Registrations */
-#define ZXID_RSR_DIR  "rsr/"  /* OAUTH2 Resource Set Registrations */
-#define ZXID_STATE_DIR "sta/" /* Temporary state blobs, e.g. for remembering e=eid&ar=ssoreq */
-#define ZXID_MAX_USER (256)   /* Maximum size of .mni or user file */
+/* See also: mkdirs_list in zxcot.c */
+#define ZXID_SES_DIR   "ses/"   /* Sessions */
+#define ZXID_UID_DIR   "uid/"   /* Local account info: uid/SHA1(idpeid+idpnid) or login username */
+#define ZXID_NID_DIR   "nid/"   /* Registered nameIDs */
+#define ZXID_PEM_DIR   "pem/"   /* Our own certificates and private keys */
+#define ZXID_COT_DIR   "cot/"   /* Circle of Trust */
+#define ZXID_DIMD_DIR  "dimd/"  /* Discovery Metadata registrations of services */
+#define ZXID_INV_DIR   "inv/"   /* People Service Invitations */
+#define ZXID_LOG_DIR   "log/"   /* Logging */
+#define ZXID_ART_DIR   "art/"   /* Artifacts for SAML2 artifact binding */
+#define ZXID_PCODE_DIR "pcode/" /* Mobile pairing codes */
+#define ZXID_STATE_DIR "sta/"   /* Temporary state blobs, e.g. for remembering e=eid&ar=ssoreq */
+#define ZXID_DCR_DIR   "dcr/"   /* OAUTH2 Dynamic Client Registrations */
+#define ZXID_RSR_DIR   "rsr/"   /* OAUTH2 Resource Set Registrations */
+#define ZXID_MAX_USER (256)     /* Maximum size of .mni or user file */
 #define ZXID_INIT_MD_BUF   (8*1024-1)  /* Initial size, will automatically reallocate. */
 #define ZXID_INIT_SOAP_BUF (8*1024-1)  /* Initial size, will automatically reallocate. */
 #define ZXID_MAX_CURL_BUF  (10*1024*1024-1)  /* Buffer reallocation will not grow beyond this. */
@@ -876,7 +880,7 @@ ZXID_DECL char* zxbus_listen_msg(zxid_conf* cf, struct zxid_bus_url* bu);
 ZXID_DECL zxid_entity* zxid_get_ent_file(zxid_conf* cf, const char* sha1_name, const char* logkey);
 ZXID_DECL zxid_entity* zxid_get_ent_cache(zxid_conf* cf, struct zx_str* eid);
 ZXID_DECL int zxid_write_ent_to_cache(zxid_conf* cf, zxid_entity* ent);
-  ZXID_DECL zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim, int iter);
+ZXID_DECL zxid_entity* zxid_parse_meta(zxid_conf* cf, char** md, char* lim, int iter);
 ZXID_DECL zxid_entity* zxid_get_meta_ss(zxid_conf* cf, struct zx_str* url);
 ZXID_DECL zxid_entity* zxid_get_meta(zxid_conf* cf, const char* url);
 ZXID_DECL zxid_entity* zxid_get_ent_ss(zxid_conf* cf, struct zx_str* eid);
@@ -952,7 +956,9 @@ ZXID_DECL int zxid_add_qs2ses(zxid_conf* cf, zxid_ses* ses, char* qs, int apply_
 /* zxiduser */
 
 ZXID_DECL void zxid_user_sha1_name(zxid_conf* cf, struct zx_str* qualif, struct zx_str* nid, char* sha1_name);
-ZXID_DECL int zxid_put_user(zxid_conf* cf, struct zx_str* nidfmt, struct zx_str* idpent, struct zx_str* spqual, struct zx_str* idpnid, char* mniptr);
+ZXID_DECL char* zxid_mk_uid(zxid_conf* cf, const char* idpent, const char* idpnid);
+ZXID_DECL int zxid_put_user_ses(zxid_conf* cf, zxid_ses* ses);
+ZXID_DECL int zxid_put_user_attr(zxid_conf* cf, zxid_ses* ses, const char* cn, const char* email, struct zx_str* fbrest);
 ZXID_DECL zxid_nid* zxid_get_user_nameid(zxid_conf* cf, zxid_nid* oldnid);
 ZXID_DECL void zxid_user_change_nameid(zxid_conf* cf, zxid_nid* oldnid, struct zx_str* newnym);
 ZXID_DECL int zxid_pw_authn(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses);

@@ -1,6 +1,6 @@
 /* zxidutil.h  -  (Private) Utility API functions
  * Copyright (c) 2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2012,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -15,6 +15,7 @@
  * 12.12.2010, separate zxidpriv.h and zxidutil.h from zxid.h --Sampo
  * 10.1.2011,  added TrustPDP support --Sampo
  * 29.5.2015,  tweaked some prototypes --Sampo
+ * 8.1.2017,   trimmed unused functions --Sampo
  */
 
 #ifndef _zxidutil_h
@@ -46,7 +47,7 @@ ZXID_DECL int zx_password_authn(const char* path, char* uid, const char* passw, 
 
 ZXID_DECL int zxid_protocol_binding_map_saml2(struct zx_str* b);
 ZXID_DECL const char* zxid_saml2_map_nid_fmt(const char* f);
-ZXID_DECL const char* zxid_saml2_map_protocol_binding(const char* b);
+  /*ZXID_DECL const char* zxid_saml2_map_protocol_binding(const char* b);*/
 ZXID_DECL char* zxid_saml2_map_authn_ctx(char* c);
 ZXID_DECL void zxid_sigres_map(int sigres, char** sigval, char** sigmsg);
 ZXID_DECL int zxid_map_sec_mech(zxid_epr* epr);
@@ -75,6 +76,8 @@ ZXID_DECL int zxid_call_trustpdp(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, st
 ZXID_DECL int zx_match(const char* pat, const char* target);
 ZXID_DECL char* base64_fancy_raw(const char* p, int len, char* r, const char* basis_64, int line_len, int eol_len, const char* eol, char eq_pad);
 ZXID_DECL char* unbase64_raw(const char* p, const char* lim, char* r, const unsigned char* index_64);
+ZXID_DECL void safe_to_std_b64(int len, char* s);
+ZXID_DECL void std_to_safe_b64(int len, char* s);
 ZXID_DECL char* zx_zlib_raw_deflate(struct zx_ctx* c, int in_len, const char* in, int* out_len);  /* gzip */
 ZXID_DECL char* zx_zlib_raw_inflate(struct zx_ctx* c, int in_len, const char* in, int* out_len);  /* gunzip */
 ZXID_DECL char* zxid_deflate_safe_b64_raw(struct zx_ctx* c, int len, const char* s);

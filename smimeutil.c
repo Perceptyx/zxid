@@ -147,7 +147,7 @@ int get_written_BIO_data(BIO* wbio, char** data)
   char* p;
   if (!data) GOTO_ERR("NULL arg");
   *data = NULL;
-  BIO_flush(wbio);
+  n = BIO_flush(wbio);
   n = BIO_get_mem_data(wbio,&p);
   LOG_PRINT3("get_written_BIO_data: %x %d bytes", p, n);
   if (!((*data)=(char*)OPENSSL_malloc(n+1))) GOTO_ERR("no memory?");

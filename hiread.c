@@ -30,8 +30,6 @@
 
 #include <zx/zx.h>  /* for zx_report_openssl_err() */
 
-extern int errmac_debug;
-
 #define SSL_ENCRYPTED_HINT "ERROR\nmessage:tls-needed\n\nTLS or SSL connection wanted but other end did not speak protocol.\n\0"
 
 /*() Allocate pdu.  First an allocation from per thread pool is

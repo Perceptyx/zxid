@@ -1,6 +1,6 @@
 /* zxpasswd.c  -  Password creation and user management tool
  * Copyright (c) 2012-2015 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -53,7 +53,7 @@
 char* help =
 "zxpasswd  -  Password creation and user management tool R" ZXID_REL "\n\
 Copyright (c) 2012-2015 Synergetics SA (sampo@synergetics.be), All Rights Reserved.\n\
-Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
+Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
 NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0\n\
 See http://www.apache.org/licenses/LICENSE-2.0\n\
 Send well researched bug reports to the author. Home: zxid.org\n\
@@ -66,6 +66,7 @@ Usage: zxpasswd [options] user [udir] <passwd      # Set user's password\n\
   -new             Create New user\n\
   -at 'attr: val'  Append attribute(s) to .bs/.at\n\
   -s exist_uid     Symlink user to an existing user (e.g. yubikey alias)\n\
+  -pxyidp eid      Use together with -s to create proxy IdP account symlink\n\
   -a               Authenticate as user. exit(2) value 0 means success\n\
   -l               List user info. If no user is specified, lists all users.\n\
   -t N             Choose password hash type: 0=plain, 1=MD5 (default), y=yubikey\n\
@@ -91,11 +92,12 @@ char* udir = UDIR;
 char* user = 0;
 char* symlink_user = 0;
 char* at = 0;
+char* pxyidp_eid = 0;
 unsigned char pw_hash[120];
 char pw[1024];
 char userdir[4096];
 char buf[4096];
-struct zx_ctx ctx;
+zxid_conf cf;
 
 /* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxdecode_main, zxumacall_main */
 static void opt(int* argc, char*** argv, char*** env)
@@ -183,7 +185,7 @@ static void opt(int* argc, char*** argv, char*** env)
 	at = strchr(user, ':');
 	*at = 0;
 	++at;
-	printf("%s", zx_mk_basic_auth_b64(&ctx, user, at));
+	printf("%s", zx_mk_basic_auth_b64(cf.ctx, user, at));
 	exit(0);
       }
       break;
@@ -206,6 +208,11 @@ static void opt(int* argc, char*** argv, char*** env)
 
     case 'p':
       switch ((*argv)[0][2]) {
+      case 'x':
+	++(*argv); --(*argc);
+	if ((*argc) < 1) break;
+	pxyidp_eid = (*argv)[0];
+	continue;
       case '\0':
 	is_pin = 1;
 	continue;
@@ -256,9 +263,9 @@ static int list_user(char* userdir, char* udir)
   printf("User dir:              %s\n", userdir);
   /*got =*/ read_all(sizeof(buf), buf, "pw", 0, "%s/%s/.pw", udir, user);
   printf("Password hash:         %s\n", buf);
-  at = read_all_alloc(&ctx, "at", 0, 0, "%s/%s/.bs/.at", udir, user);
+  at = read_all_alloc(cf.ctx, "at", 0, 0, "%s/%s/.bs/.at", udir, user);
   if (at) printf("User attributes:       %s\n", at);
-  at = read_all_alloc(&ctx, "all at", 0, 0, "%s/.all/.bs/.at", udir, 0);
+  at = read_all_alloc(cf.ctx, "all at", 0, 0, "%s/.all/.bs/.at", udir, 0);
   if (at) printf("Common (.all) user attributes: %s\n", buf);
 
   printf("User's Federated SPs\n");
@@ -267,7 +274,7 @@ static int list_user(char* userdir, char* udir)
     if (de->d_name[0] != '.' && de->d_name[strlen(de->d_name)-1] != '~') {
       /*got =*/ read_all(sizeof(buf), buf, "sp at", 0, "%s/%s/.mni", userdir, de->d_name);
       printf("SP specific NameID:  %s (%s)\n", buf, de->d_name);
-      at = read_all_alloc(&ctx, "sp at", 0, 0, "%s/%s/.at", userdir, de->d_name);
+      at = read_all_alloc(cf.ctx, "sp at", 0, 0, "%s/%s/.at", userdir, de->d_name);
       if (at) printf("SP specific attrib:  %s (%s)\n", buf, de->d_name);
     }
 
@@ -297,7 +304,7 @@ static int list_users(char* udir)
     if (de->d_name[0] != '.' && de->d_name[strlen(de->d_name)-1] != '~') {
       /*got =*/ read_all(sizeof(buf), buf, "sp at", 0, "%s/%s/.mni", userdir, de->d_name);
       printf("SP specific NameID:  %s (%s)\n", buf, de->d_name);
-      at = read_all_alloc(&ctx, "sp at", 0, 0, "%s/%s/.bs/.at", userdir, de->d_name);
+      at = read_all_alloc(cf.ctx, "sp at", 0, 0, "%s/%s/.bs/.at", userdir, de->d_name);
       if (at) printf("SP specific attrib:  %s (%s)\n", buf, de->d_name);
     }
   
@@ -400,7 +407,7 @@ int main(int argc, char** argv, char** env)
   
   strcpy(errmac_instance, "\tzxpw");
   zxid_suppress_vpath_warning = 1;
-  zx_reset_ctx(&ctx);
+  zxid_init_conf_ctx(&cf, "/var/zxid/");
   opt(&argc, &argv, &env);
   if (argc)
     user = argv[0];
@@ -422,8 +429,25 @@ int main(int argc, char** argv, char** env)
       return list_users(udir);
   }
 
+  if (pxyidp_eid && symlink_user) {
+    snprintf(userdir, sizeof(userdir)-1, "%s/%s", udir, zxid_mk_uid(&cf, pxyidp_eid, user));
+    userdir[sizeof(userdir)-1] = 0;
+    snprintf(buf, sizeof(buf), "%s/%s", udir, symlink_user);
+    buf[sizeof(buf)-1] = 0; /* must terminate manually as on win32 nul is not guaranteed */
+#ifdef MINGW
+    ERR("Symlink not implemented on Win32. from(%s) (-s %s) path(%s)", buf, symlink_user, userdir);
+#else
+    D("Symlink from(%s) (-s %s) path(%s)", buf, symlink_user, userdir);
+    if (symlink(buf, userdir) == -1) {
+      perror("symlink user alias");
+      return 2;
+    }
+#endif
+    return 0;
+  }
+  
   got = strlen(user);
-  if (got > 32) {  /* Very long user is actually yubikey ticket */
+  if (got > 32) {  /* Very long user is actually a yubikey ticket */
     strcpy(pw, user + got - 32);
     user[got - 32] = 0;
     pwgot = 32;
@@ -445,6 +469,7 @@ int main(int argc, char** argv, char** env)
   /* Create and other user management functions */
   
   if (create) {
+    /* See also zxid_put_user() for account creation. */
     if (MKDIR(userdir, 0770) == -1) {
       ERR("User already exists %s", userdir);
       return 3;

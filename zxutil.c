@@ -181,7 +181,7 @@ int read_all_fd(fdtype fd, char* p, int want, int* got_all)
   return got;   /* N.B. This is the last got, not the total. Use got_all for total. */
 }
 
-/*() Read all data from a file at formatted file name path.
+/*() Read all data to existing buffer from a file at formatted file name path.
  *
  * maxlen:: Length of buffer
  * buf:: Result parameter. This buffer will be filled with data from the file. Caller allocates.
@@ -730,6 +730,43 @@ int hexdmp(const char* msg, const void* p, int len, int max) {
 const char std_basis_64[64]  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; /*=*/
 const char safe_basis_64[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"; /*=*/
 const char pw_basis_64[64]   = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+/*() Inplace conversion from safe base64 to standard version */
+
+void safe_to_std_b64(int len, char* s)
+{
+  char* lim;
+  if (len == -2)
+    len = strlen(s);
+  
+  for (lim = s+len; s < lim; ++s)
+    switch (*s) {
+    case '-': *s = '+'; break;
+    case '_': *s = '/'; break;
+    case '.': *s = '='; break;
+    case 0:   *s = 'X'; break;
+    }
+}
+
+/*() Inplace conversion from standard base64 to safe version.
+ * Also checks for illegal filesystem chars. */
+
+void std_to_safe_b64(int len, char* s)
+{
+  char* lim;
+  if (len == -2)
+    len = strlen(s);
+  
+  for (lim = s+len; s < lim; ++s)
+    switch (*s) {
+    case '+': *s = '-'; break;
+    case '/': *s = '_'; break;
+    case '=': *s = '.'; break;
+    case '.': *s = 'X'; break;
+    case '~': *s = 'X'; break;
+    case 0:   *s = 'X'; break;
+    }
+}
 
 /*() Raw version. Can use any encoding table and arbitrary line length.
  * Known bug: line_len is not fully respected on last line - it can

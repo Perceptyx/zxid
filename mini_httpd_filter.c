@@ -97,7 +97,7 @@ int zxid_pool2env(zxid_conf* cf, zxid_ses* ses, char** envp, int envn, int max_e
 					cf->mod_saml_attr_prefix, name, av->map_val->s);
       }
     } else {
-      if ((errmac_debug & ERRMAC_DEBUG_MASK)>1)
+      if ((errmac_debug & ERRMAC_DEBUG_MASK)>2)
 	D("ATTR(%s)=VAL(%s)", at->name, STRNULLCHKNULL(at->val));
       else
 	D("ATTR(%s)=VAL(%.*s)", at->name, at->val?(int)MIN(35,strlen(at->val)):6, at->val?at->val:"(null)");
@@ -555,6 +555,7 @@ zxid_ses* zxid_mini_httpd_filter(zxid_conf* cf, const char* method, const char* 
   zxid_mini_httpd_check_protocol_url(cf, &cgi, ses, method, uri_path, cookie_hdr);
   
   zxid_is_wsp = 0;
+  D("wsp_pat(%s) uri_path(%s)", cf->wsp_pat, uri_path);
   if (zx_match(cf->wsp_pat, uri_path)) {
     zxid_is_wsp = 1;
     ses = zxid_mini_httpd_wsp(cf, ses, method, uri_path, qs);

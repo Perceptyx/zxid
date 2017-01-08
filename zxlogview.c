@@ -82,7 +82,6 @@ Usage: zxlogview [options] logsign-nopw-cert.pem logenc-nopw-cert.pem <loglines\
 #define DIE(reason) MB fprintf(stderr, "%s\n", reason); exit(2); ME
 
 int verbose = 1;
-extern int errmac_debug;
 int leak_free = 0;
 
 X509* log_verify_cert;

@@ -1,5 +1,5 @@
 /* zxidmni.c  -  Handwritten functions for NameID Management logic for SP
- * Copyright (c) 2010 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -11,6 +11,7 @@
  * 12.10.2007, split from zxidslo.c --Sampo
  * 7.10.2008,  added documentation --Sampo
  * 12.2.2010,  added locking to lazy loading --Sampo
+ * 8.1.2017,   moved some logic  from soap dispatch to zxid_mni_do() --Sampo
  */
 
 #include "platform.h"
@@ -118,8 +119,8 @@ struct zx_str* zxid_sp_mni_redir(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, st
   return zx_dup_str(cf->ctx, "* ERR");
 }
 
-/*() Process <ManageNameIDRequest>, presumably received from IdP. This is very rarely
- * used. */
+/*() Process <ManageNameIDRequest>, presumably received by SP from IdP.
+ * This is very rarely used. */
 
 /* Called by:  zxid_idp_soap_dispatch, zxid_mni_do_ss, zxid_sp_soap_dispatch */
 struct zx_sp_ManageNameIDResponse_s* zxid_mni_do(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx_sp_ManageNameIDRequest_s* mni)
@@ -129,6 +130,9 @@ struct zx_sp_ManageNameIDResponse_s* zxid_mni_do(zxid_conf* cf, zxid_cgi* cgi, z
   
   if (!zxid_chk_sig(cf, cgi, ses, &mni->gg, mni->Signature, mni->Issuer, 0, "ManageNameIDRequest"))
     return 0;
+
+  ses->issuer = ZX_GET_CONTENT(mni->Issuer);
+  ses->idpeid = zx_str_to_c(cf->ctx, ses->issuer);
   
   nid = zxid_decrypt_nameid(cf, mni->NameID, mni->EncryptedID);
   if (!ZX_GET_CONTENT(nid)) {
@@ -138,9 +142,9 @@ struct zx_sp_ManageNameIDResponse_s* zxid_mni_do(zxid_conf* cf, zxid_cgi* cgi, z
   
   newnym = zxid_decrypt_newnym(cf, ZX_GET_CONTENT(mni->NewID), mni->NewEncryptedID);
   if (!newnym) {
-    D("MNI Terminate %d",0);
+    INFO("MNI Terminate %d",0);
   } else {
-    D("MNI Change newnym(%.*s)", newnym->len, newnym->s);
+    INFO("MNI Change newnym(%.*s)", newnym->len, newnym->s);
     zxid_user_change_nameid(cf, nid, newnym);
   }
   return zxid_mk_mni_resp(cf, zxid_OK(cf,0), &mni->ID->g);

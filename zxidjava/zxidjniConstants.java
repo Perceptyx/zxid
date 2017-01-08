@@ -59,7 +59,7 @@ public interface zxidjniConstants {
   public final static String DIGEST_ALGO_SHA512 = zxidjniJNI.DIGEST_ALGO_SHA512_get();
   public final static String SIG_ALGO = zxidjniJNI.SIG_ALGO_get();
   public final static String SIG_ALGO_URLENC = zxidjniJNI.SIG_ALGO_URLENC_get();
-  public final static int SIG_SIZE = zxidjniJNI.SIG_SIZE_get();
+  public final static int SIG_SIZ = zxidjniJNI.SIG_SIZ_get();
   public final static String DIGEST_ALGO = zxidjniJNI.DIGEST_ALGO_get();
   public final static String CANON_ALGO = zxidjniJNI.CANON_ALGO_get();
   public final static String ENVELOPED_ALGO = zxidjniJNI.ENVELOPED_ALGO_get();
@@ -101,7 +101,6 @@ public interface zxidjniConstants {
   public final static int ZXID_PSOBJ_BUDDY = zxidjniJNI.ZXID_PSOBJ_BUDDY_get();
   public final static int ZXID_PSOBJ_COLLECTION = zxidjniJNI.ZXID_PSOBJ_COLLECTION_get();
   public final static String ZXID_SES_DIR = zxidjniJNI.ZXID_SES_DIR_get();
-  public final static String ZXID_USER_DIR = zxidjniJNI.ZXID_USER_DIR_get();
   public final static String ZXID_UID_DIR = zxidjniJNI.ZXID_UID_DIR_get();
   public final static String ZXID_NID_DIR = zxidjniJNI.ZXID_NID_DIR_get();
   public final static String ZXID_PEM_DIR = zxidjniJNI.ZXID_PEM_DIR_get();
@@ -109,10 +108,11 @@ public interface zxidjniConstants {
   public final static String ZXID_DIMD_DIR = zxidjniJNI.ZXID_DIMD_DIR_get();
   public final static String ZXID_INV_DIR = zxidjniJNI.ZXID_INV_DIR_get();
   public final static String ZXID_LOG_DIR = zxidjniJNI.ZXID_LOG_DIR_get();
+  public final static String ZXID_ART_DIR = zxidjniJNI.ZXID_ART_DIR_get();
   public final static String ZXID_PCODE_DIR = zxidjniJNI.ZXID_PCODE_DIR_get();
+  public final static String ZXID_STATE_DIR = zxidjniJNI.ZXID_STATE_DIR_get();
   public final static String ZXID_DCR_DIR = zxidjniJNI.ZXID_DCR_DIR_get();
   public final static String ZXID_RSR_DIR = zxidjniJNI.ZXID_RSR_DIR_get();
-  public final static String ZXID_STATE_DIR = zxidjniJNI.ZXID_STATE_DIR_get();
   public final static int ZXID_MAX_USER = zxidjniJNI.ZXID_MAX_USER_get();
   public final static int ZXID_INIT_MD_BUF = zxidjniJNI.ZXID_INIT_MD_BUF_get();
   public final static int ZXID_INIT_SOAP_BUF = zxidjniJNI.ZXID_INIT_SOAP_BUF_get();

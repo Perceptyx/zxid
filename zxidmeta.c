@@ -1,6 +1,6 @@
 /* zxidmeta.c  -  Handwritten functions for metadata parsing and generation as well as CoT handling
  * Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011, 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011, 2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -28,6 +28,7 @@
  * 11.12.2011, added OrganizationURL support per symlabs-saml-displayname-2008.pdf submitted to OASIS SSTC --Sampo
  * 6.2.2012,   corrected the OrganizationURL to be absolute --Sampo
  * 4.12.2016,  corrected error path where underlying buffer of zxid_entity would be freed --Sampo
+ * 8.1.2017,   enabled artifact resolution service on IdP
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -730,10 +731,7 @@ struct zx_md_IDPSSODescriptor_s* zxid_idp_sso_desc(zxid_conf* cf, struct zx_elem
     UNLOCK(cf->mx, "read certs for our md idp");
   }
 
-#if 0
-  /* *** NI */
   idp_ssod->ArtifactResolutionService = zxid_ar_desc(cf, &idp_ssod->gg, SAML2_SOAP, "?o=S", 0);
-#endif
 
   idp_ssod->SingleLogoutService = zxid_slo_desc(cf, &idp_ssod->gg, SAML2_REDIR, "?o=Q", "?o=Q");
   idp_ssod->SingleLogoutService = zxid_slo_desc(cf, &idp_ssod->gg, SAML2_SOAP, "?o=S", 0);

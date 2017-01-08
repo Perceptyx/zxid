@@ -1,5 +1,5 @@
 /* zxidslo.c  -  Handwritten functions for implementing Single LogOut logic for SP
- * Copyright (c) 2010 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -13,6 +13,7 @@
  * 14.4.2008,  added SimpleSign --Sampo
  * 7.10.2008,  added documentation --Sampo
  * 12.2.2010,  added locking to lazy loading --Sampo
+ * 8.1.2017,   moved some logic from dispatch to zxid_slo_do() --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -170,6 +171,9 @@ int zxid_sp_slo_do(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx_sp_Log
 
   if (!zxid_chk_sig(cf, cgi, ses, &req->gg, req->Signature, req->Issuer, 0, "LogoutRequest"))
     return 0;
+
+  ses->issuer = ZX_GET_CONTENT(req->Issuer);
+  ses->idpeid = zx_str_to_c(cf->ctx, ses->issuer);
 
   if (cf->log_level>0)
     zxlog(cf, 0, 0, 0, 0, 0, 0, ZX_GET_CONTENT(ses->nameid), cgi->sigval, "K", "SLO", ses->sid, "sesix(%.*s)", sesix?sesix->len:1, sesix?sesix->s:"?");

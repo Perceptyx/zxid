@@ -170,7 +170,7 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
 	apr_table_set(sbe, name, av->map_val->s);
       }
     } else {
-      if ((errmac_debug & ERRMAC_DEBUG_MASK)>1)
+      if ((errmac_debug & ERRMAC_DEBUG_MASK)>2)
 	D("ATTR(%s)=VAL(%s)", at->name, STRNULLCHKNULL(at->val));
       else
 	D("ATTR(%s)=VAL(%.*s)", at->name, at->val?(int)MIN(35,strlen(at->val)):6, at->val?at->val:"(null)");
@@ -197,11 +197,10 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
   if (idpnid && idpnid[0] != '-') {
     D("REMOTE_USER(%s)", idpnid);
     apr_table_set(sbe, "REMOTE_USER", idpnid);
-    HRR_set_user(r, idpnid);  /* httpd-2.4 anz framework requires this, 2.2 does not care */
+    HRR_set_user(r, idpnid);  /* set r->user httpd-2.4 anz framework requires this, 2.2 does not care */
   }
   
-  //apr_table_setn(r->subprocess_env,
-  //		 apr_psprintf(r->pool, "%sLDIF", cf->mod_saml_attr_prefix), ldif);
+  //apr_table_setn(r->subprocess_env, apr_psprintf(r->pool, "%sLDIF", cf->mod_saml_attr_prefix), ldif);
   D("SSO OK ret(%d) uri(%s) filename(%s) path_info(%s) user(%s)=%p", ret, (char*)HRR_uri(r), (char*)HRR_filename(r), (char*)HRR_path_info(r), STRNULLCHKD((char*)HRR_user(r)), HRR_user(r));
   return ret;
 }

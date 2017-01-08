@@ -3,11 +3,12 @@
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
- * Special grant: zxbusd.c may be used with zxid open source project under
+ * Special grant: zxdata.c may be used with zxid open source project under
  * same licensing terms as zxid itself.
  * $Id$
  *
  * 3.4.2016, created --Sampo
+ * 13.12.2016, review, comments --Sampo
  *
  * The locking strategy for the global hash keys is a bit unorthodox: the basic
  * idea is to have a global lock protecting writes and we use the relatively
@@ -23,8 +24,11 @@
  *
  * To further simplify matters, keys are never deleted from the global hash
  * and the global hash is never rehashed (its size is tuned at startup
- * using -nkeys option according to available memory, key space slicing
- * and past operational experiences).
+ * using -nkeys option according to the available memory, key space slicing
+ * and past operational experiences). If this memory is not enough, machine
+ * will need to be upgraded, and process restarted with bigger -nkeys (vertical
+ * scaling), or a horizontal scaling with more machines deployed in new slices
+ * will need to be engaged.
  */
 
 #include <string.h>
@@ -157,7 +161,7 @@ const char* zx_val_to_str(struct zx_ctx* c, struct zx_val* val)
 
 /*(-) Find the place in sparse array.
  * The position may be empty (miss) or it may contain pointer to some bucket,
- * but this function fors not check if the key of the bucket matches. */
+ * but this function does not check if the key of the bucket matches. */
 
 /* Called by:  zx_get_by_len_key, zx_global_set_by_len_key, zx_set_by_len_key */
 static struct zx_bucket** zx_bucket_slot_by_len_key(int hlen, struct zx_bucket** h, int len, const char* key)

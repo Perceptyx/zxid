@@ -1,5 +1,5 @@
 /* zxidpool.c  -  Attribute handling
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -11,6 +11,7 @@
  * 4.9.2009, forked from zxidsimp.c --Sampo
  * 1.2.2010, added ses_to methods --Sampo
  * 21.5.2010, added local attribute authority and local EPRs feature --Sampo
+ * 8.12.2016, merged user/ to uid/ --Sampo
  */
 
 #include "platform.h"
@@ -538,11 +539,11 @@ static int zxid_add_at_vals(zxid_conf* cf, zxid_ses* ses, struct zx_sa_Attribute
   if (map && map->dst && *map->dst && map->src && map->src[0] != '*') {
     ses_at = zxid_find_at(ses->at, map->dst);
     if (!ses_at)
-      ses->at = ses_at = zxid_new_at(cf, ses->at, strlen(map->dst), map->dst, 0, 0, "mappd");
+      ses->at = ses_at = zxid_new_at(cf, ses->at, -2, map->dst, 0, 0, "mappd");
   } else {
     ses_at = zxid_find_at(ses->at, name);
     if (!ses_at)
-      ses->at = ses_at = zxid_new_at(cf, ses->at, strlen(name), name, 0, 0, "as is");
+      ses->at = ses_at = zxid_new_at(cf, ses->at, -2, name, 0, 0, "as is");
   }
   ses_at->orig = at;
   ses_at->issuer = issuer;
@@ -599,6 +600,7 @@ static void zxid_add_a7n_at_to_pool(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n)
 }
 
 /*() Add simple attribute to session's attribute pool, applying NEED, WANT, and INMAP.
+ * Copy of name and value are made.
  * Replaces zxid_add_attr_to_pool() */
 
 /* Called by:  chkuid, zxid_add_action_from_body_child, zxid_add_ldif_at2ses, zxid_add_qs2ses, zxid_mini_httpd_process_zxid_simple_outcome, zxid_ses_to_pool x26, zxid_simple_ab_pep x2 */
@@ -614,9 +616,9 @@ void zxid_add_attr_to_ses(zxid_conf* cf, zxid_ses* ses, char* at_name, struct zx
       D("attribute(%s) filtered out by del rule in INMAP", at_name);
     } else {
       if (map && map->dst && *map->dst && map->src && map->src[0] != '*') {
-	ses->at = zxid_new_at(cf, ses->at, strlen(map->dst), map->dst, val->len, val->s, "mappd2");
+	ses->at = zxid_new_at(cf, ses->at, -2, map->dst, val->len, val->s, "mappd2");
       } else {
-	ses->at = zxid_new_at(cf, ses->at, strlen(at_name), at_name, val->len, val->s, "as is2");
+	ses->at = zxid_new_at(cf, ses->at, -2, at_name, val->len, val->s, "as is2");
       }
     }
   } else {
@@ -729,6 +731,9 @@ void zxid_ses_to_pool(zxid_conf* cf, zxid_ses* ses)
   struct zx_sa_Assertion_s* tgta7n;
   char* buf;
   char sha1_name[28];
+  struct zx_str ss;
+  ss.len = 27;
+  ss.s = sha1_name;
 
   D_INDENT("ses2pool: ");
   zxid_get_ses_sso_a7n(cf, ses);
@@ -752,7 +757,8 @@ void zxid_ses_to_pool(zxid_conf* cf, zxid_ses* ses)
   zxid_add_attr_to_ses(cf, ses, "nidfmt", zx_dup_str(cf->ctx, ses->nidfmt?"P":"T"));
   if (nid) {  
     zxid_user_sha1_name(cf, affid, nid, sha1_name);
-    path = zx_strf(cf->ctx, "%s" ZXID_USER_DIR "%s", cf->cpath, sha1_name);
+    zxid_add_attr_to_ses(cf, ses, "localuid", &ss);
+    path = zx_strf(cf->ctx, "%s" ZXID_UID_DIR "%s", cf->cpath, sha1_name);
     zxid_add_attr_to_ses(cf, ses, "localpath",   path);
     buf = read_all_alloc(cf->ctx, "splocal_user_at", 0, 0, "%.*s/.bs/.at", path->len, path->s);
     if (buf) {
@@ -786,7 +792,8 @@ void zxid_ses_to_pool(zxid_conf* cf, zxid_ses* ses)
   zxid_add_attr_to_ses(cf, ses, "tgtfmt",    zx_dup_str(cf->ctx, ses->tgtfmt?"P":"T"));
   if (tgtnid) {
     zxid_user_sha1_name(cf, tgtaffid, tgtnid, sha1_name);
-    path = zx_strf(cf->ctx, "%s" ZXID_USER_DIR "%s", cf->cpath, sha1_name);
+    zxid_add_attr_to_ses(cf, ses, "tgtuid", &ss);
+    path = zx_strf(cf->ctx, "%s" ZXID_UID_DIR "%s", cf->cpath, sha1_name);
     zxid_add_attr_to_ses(cf, ses, "tgtpath",   path);
     buf = read_all_alloc(cf->ctx, "sptgt_user_at", 0, 0, "%.*s/.bs/.at", path->len, path->s);
     if (buf) {
@@ -800,12 +807,12 @@ void zxid_ses_to_pool(zxid_conf* cf, zxid_ses* ses)
   //accr = a7n&&a7n->AuthnStatement&&a7n->AuthnStatement->AuthnContext&&a7n->AuthnStatement->AuthnContext->AuthnContextClassRef&&a7n->AuthnStatement->AuthnContext->AuthnContextClassRef->content&&a7n->AuthnStatement->AuthnContext->AuthnContextClassRef->content?a7n->AuthnStatement->AuthnContext->AuthnContextClassRef->content:0;
   zxid_add_attr_to_ses(cf, ses, "authnctxlevel", accr);
   
-  buf = read_all_alloc(cf->ctx, "splocal.all", 0,0, "%s" ZXID_USER_DIR ".all/.bs/.at" , cf->cpath);
+  buf = read_all_alloc(cf->ctx, "splocal.all", 0,0, "%s" ZXID_UID_DIR ".all/.bs/.at" , cf->cpath);
   if (buf) {
     zxid_add_ldif_at2ses(cf, ses, 0, buf, "splocal.all");
     ZX_FREE(cf->ctx, buf);
   }
-  path = zx_strf(cf->ctx, "%s" ZXID_USER_DIR ".all", cf->cpath);
+  path = zx_strf(cf->ctx, "%s" ZXID_UID_DIR ".all", cf->cpath);
   zxid_cp_usr_eprs2ses(cf, ses, path);
   
   zxid_add_attr_to_ses(cf, ses, "eid",        zxid_my_ent_id(cf));
@@ -861,7 +868,7 @@ int zxid_add_qs2ses(zxid_conf* cf, zxid_ses* ses, char* qs, int apply_map)
       zxid_add_attr_to_ses(cf, ses, n, zx_dup_str(cf->ctx, v));  
     } else {
       D("asis %s=%s", n,v);
-      ses->at = zxid_new_at(cf, ses->at, strlen(n), n, strlen(v), v, "as is3");
+      ses->at = zxid_new_at(cf, ses->at, -2, n, -3, v, "as is3");
     }
   }
   return 1;

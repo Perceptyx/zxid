@@ -44,7 +44,6 @@
 #include "errmac.h"
 
 extern zxid_conf* zx_cf;
-extern int errmac_debug;
 #ifdef MUTEX_DEBUG
 extern pthread_mutexattr_t MUTEXATTR_DECL;
 #endif
@@ -70,7 +69,7 @@ int hi_vfy_peer_ssl_cred(struct hi_thr* hit, struct hi_io* io, const char* eid)
   zxid_entity* meta;
   long vfy_err;
   
-  if (errmac_debug>1) D("SSL_version(%s) cipher(%s)",SSL_get_version(io->ssl),SSL_get_cipher(io->ssl));
+  if (errmac_debug>2) D("SSL_version(%s) cipher(%s)",SSL_get_version(io->ssl),SSL_get_cipher(io->ssl));
   
   vfy_err = SSL_get_verify_result(io->ssl);
   switch (vfy_err) {

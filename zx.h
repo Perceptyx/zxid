@@ -401,7 +401,7 @@ struct zx_el_desc* zx_el_desc_lookup(int tok);
 
 #define SIG_ALGO        SIG_ALGO_RSA_SHA1
 #define SIG_ALGO_URLENC SIG_ALGO_RSA_SHA1_URLENC
-#define SIG_SIZE 1024  /* Maximum size of the base64 encoded signature, for buffer allocation */
+#define SIG_SIZ 1024  /* Maximum size of the base64 encoded signature, for buffer allocation */
 #define DIGEST_ALGO     DIGEST_ALGO_SHA1
 #define CANON_ALGO         "http://www.w3.org/2001/10/xml-exc-c14n#"
 #define ENVELOPED_ALGO     "http://www.w3.org/2000/09/xmldsig#enveloped-signature"

@@ -830,16 +830,26 @@ char* zxid_simple_show_json(zxid_conf* cf, const char* json, int* res_len, int a
   return zxid_simple_show_page(cf, ss, ZXID_AUTO_METAC, ZXID_AUTO_METAH, "J", "application/json", res_len, auto_flags, status);
 }
 
-/*() Helper function to redirect according to auto flags. */
+/*() Helper function to redirect according to auto flags.
+ * Handles also sending cookies with the redirction.
+ *
+ * cf:: Configuration object
+ * ses:: Session object. This is needed to determine any cookies to set.
+ * redir:: URL to redirect to.
+ * qs:: Optional query string to add to the URL. If specified, the query string
+ *     will be separated with question mark ("?").
+ * res_len:: Optional result parameter. Can be specified as NULL.
+ * auto_flags:: Controls the automation level
+ * returns:: zxid_simple status string, which sometimes is the Location header. */
 
 /* Called by:  zxid_show_protected_content_setcookie, zxid_simple_idp_an_ok_do_rest x3, zxid_simple_idp_new_user, zxid_simple_idp_recover_password, zxid_simple_idp_show_an, zxid_simple_show_err, zxid_simple_show_idp_sel */
-static char* zxid_simple_redir_page(zxid_conf* cf, zxid_ses* ses, char* redir, char* rs, int* res_len, int auto_flags)
+static char* zxid_simple_redir_page(zxid_conf* cf, zxid_ses* ses, char* redir, char* qs, int* res_len, int auto_flags)
 {
   char* res;
   struct zx_str* ss;
   D("cf=%p redir(%s)", cf, redir);
   if (auto_flags & ZXID_AUTO_REDIR) {
-    fprintf(stdout, "Location: %s%s%s" CRLF, redir, rs?"?":"", STRNULLCHK(rs));
+    fprintf(stdout, "Location: %s%s%s" CRLF, redir, qs?"?":"", STRNULLCHK(qs));
     if (ses && ses->setcookie)
       fprintf(stdout, "Set-Cookie: %s" CRLF, ses->setcookie);
     if (ses && ses->setptmcookie)
@@ -855,16 +865,16 @@ static char* zxid_simple_redir_page(zxid_conf* cf, zxid_ses* ses, char* redir, c
   if (ses && (ses->setcookie || ses->setptmcookie)) {
     if (ses->setcookie) {
       if (ses->setptmcookie)
-	ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF "Set-Cookie: %s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs), ses->setcookie, ses->setptmcookie);
+	ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF "Set-Cookie: %s" CRLF2, redir, qs?"?":"", STRNULLCHK(qs), ses->setcookie, ses->setptmcookie);
       else
-	ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs), ses->setcookie);
+	ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF2, redir, qs?"?":"", STRNULLCHK(qs), ses->setcookie);
     } else if (ses->setptmcookie) {
-      ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs), ses->setptmcookie);
+      ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF "Set-Cookie: %s" CRLF2, redir, qs?"?":"", STRNULLCHK(qs), ses->setptmcookie);
     } else
       goto nocookie;
   } else {
  nocookie:
-    ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF2, redir, rs?"?":"", STRNULLCHK(rs));
+    ss = zx_strf(cf->ctx, "Location: %s%s%s" CRLF2, redir, qs?"?":"", STRNULLCHK(qs));
   }
   if (res_len)
     *res_len = ss->len;

@@ -1,5 +1,5 @@
 /* zxididpx.c  -  Handwritten functions for IdP dispatch
- * Copyright (c) 2008-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2008-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -27,6 +27,8 @@
 
 /*() Dispatch redirect and post binding requests.
  *
+ * N.B. Artifact resolution SOAP request to IdP is handled in zxid_sp_soap_dispatch()
+ *
  * return:: a string (such as Location: header) and let the caller output it. */
 
 /* Called by:  zxid_simple_ses_active_cf x2 */
@@ -38,36 +40,45 @@ struct zx_str* zxid_idp_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, in
   struct zx_str* ss;
   struct zx_str* ss2;
   struct zx_root_s* r;
+
+  D_INDENT("idp_dp: ");
   ses->sigres = ZXSIG_NO_SIG;
 
-  if (cgi->response_type)  /* OAUTH2 / OpenID-Connect */
+  if (cgi->response_type) {  /* OAUTH2 / OpenID-Connect */
+    D("Entering oauth2_az_server_sso due to cgi->response_type(%s)", cgi->response_type);
+    D_DEDENT("idp_dp: ");
     return zxid_oauth2_az_server_sso(cf, cgi, ses);
+  }
 
   r = zxid_decode_redir_or_post(cf, cgi, ses, chk_dup);
   if (!r)
-    return zx_dup_str(cf->ctx, "* ERR");
-
-  if (r->AuthnRequest)
+    goto err;
+  
+  if (r->AuthnRequest) {
+    D_DEDENT("idp_dp: ");
     return zxid_idp_sso(cf, cgi, ses, r->AuthnRequest);
+  }
   
   if (req = r->LogoutRequest) {
     D("IdP SLO %d", 0);
     if (cf->idp_ena) {  /* *** Kludgy check */
       if (!zxid_idp_slo_do(cf, cgi, ses, req))
-	return zx_dup_str(cf->ctx, "* ERR");
+	goto err;
     } else {
       if (!zxid_sp_slo_do(cf, cgi, ses, req))
-	return zx_dup_str(cf->ctx, "* ERR");
+	goto err;
     }
     /* *** Need to do much more to log out all other SPs of the session. */
+    D_DEDENT("idp_dp: ");
     return zxid_slo_resp_redir(cf, cgi, req);
   }
   
   if (r->LogoutResponse) {
     if (!zxid_saml_ok(cf, cgi, r->LogoutResponse->Status, "SLO resp"))
-      return zx_dup_str(cf->ctx, "* ERR");
+      goto err;
     cgi->msg = "Logout Response OK. Logged out.";
     zxid_del_ses(cf, ses);
+    D_DEDENT("idp_dp: ");
     return zx_dup_str(cf->ctx, "K"); /* Prevent mgmt screen from displaying, show login screen. */
   }
 
@@ -75,31 +86,38 @@ struct zx_str* zxid_idp_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, in
     sp_meta = zxid_get_ent_ss(cf, ZX_GET_CONTENT(r->ManageNameIDRequest->Issuer));
     loc = zxid_sp_loc_raw(cf, cgi, sp_meta, ZXID_MNI_SVC, SAML2_REDIR, 0);
     if (!loc)
-      return 0;  /* *** consider sending error page */
+      goto err;
     ss = zxid_mni_do_ss(cf, cgi, ses, r->ManageNameIDRequest, loc);
     ss2 = zxid_saml2_resp_redir(cf, loc, ss, cgi->rs);
     zx_str_free(cf->ctx, loc);
     zx_str_free(cf->ctx, ss);
+    D_DEDENT("idp_dp: ");
     return ss2;
   }
   
   if (r->ManageNameIDResponse) {
     if (!zxid_saml_ok(cf, cgi, r->ManageNameIDResponse->Status, "MNI resp")) {
       ERR("MNI Response indicates failure. %d", 0);
-      return zx_dup_str(cf->ctx, "* ERR");
+      goto err;
     }
     cgi->msg = "Manage NameID Response OK.";
+    D_DEDENT("idp_dp: ");
     return zx_dup_str(cf->ctx, "M"); /* Defederation doesn't have to mean SLO, show mgmt screen. */
   }
 
   if (cf->log_level > 0)
     zxlog(cf, 0, 0, 0, 0, 0, 0, ZX_GET_CONTENT(ses->nameid), "N", "C", "IDPDISP", 0, "sid(%s) unknown req or resp (loc)", ses->sid);
   ERR("Unknown request or response %p", r);
+ err:
+  D_DEDENT("idp_dp: ");
   return zx_dup_str(cf->ctx, "* ERR");
 }
 
 #if 0
 /*(-) SOAP dispatch can also handle requests and responses received via artifact
+ *
+ * N.B. Artifact resolution SOAP request to IdP is handled in zxid_sp_soap_dispatch()
+ *
  * resolution. However only some combinations make sense.
  * Return 0 for failure, otherwise some success code such as ZXID_SSO_OK
  * *** NOT CALLED FROM ANYWHERE. See zxid_sp_soap_dispatch() for real action */
@@ -112,6 +130,8 @@ int zxid_idp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct z
   struct zxsig_ref refs;
   struct zx_e_Body_s* body;
   struct zx_sp_LogoutRequest_s* req;
+
+  D_INDENT("soap_dp: ");
   ses->sigres = ZXSIG_NO_SIG;
   
   if (!r) goto bad;
@@ -122,15 +142,17 @@ int zxid_idp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct z
 
   if (r->Envelope->Body->ArtifactResolve) {
     D("ArtifactResolve not implemented yet %d",0);
+    //D_DEDENT("soap_dp: ");
     //if (!zxid_saml_ok(cf, cgi, r->Envelope->Body->ArtifactResponse->Status, "ArtResp"))
     //  return 0;
     //return zxid_sp_dig_sso_a7n(cf, cgi, ses, r->Envelope->Body->ArtifactResponse->Response);
   }
   
   if (req = r->Envelope->Body->LogoutRequest) {
-    if (!zxid_idp_slo_do(cf, cgi, ses, req))
+    if (!zxid_idp_slo_do(cf, cgi, ses, req)) {
+      D_DEDENT("soap_dp: ");
       return 0;
-
+    }
     body = zx_NEW_e_Body(cf->ctx,0);
     body->LogoutResponse = zxid_mk_logout_resp(cf, zxid_OK(cf), req->ID);
     if (cf->sso_soap_resp_sign) {
@@ -143,6 +165,7 @@ int zxid_idp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct z
       }
       zx_str_free(cf->ctx, refs.canon);
     }
+    D_DEDENT("soap_dp: ");
     return zxid_soap_cgi_resp_body(cf, ses, body);
   }
 
@@ -160,6 +183,7 @@ int zxid_idp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct z
       }
       zx_str_free(cf->ctx, refs.canon);
     }
+    D_DEDENT("soap_dp: ");
     return zxid_soap_cgi_resp_body(cf, body, ZX_GET_CONTENT(r->Envelope->Body->ManageNameIDRequest->Issuer));
   }
   
@@ -167,6 +191,7 @@ int zxid_idp_soap_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct z
   ERR("Unknown soap request %p", r);
   if (cf->log_level > 0)
     zxlog(cf, 0, 0, 0, 0, 0, 0, ZX_GET_CONTENT(ses->nameid), "N", "C", "IDPDISP", 0, "sid(%s) unknown soap req", ses->sid);
+  D_DEDENT("soap_dp: ");
   return 0;
 }
 

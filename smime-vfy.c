@@ -215,13 +215,13 @@ decrypt(X509* x509, EVP_PKEY* pkey, const char* enc_entity, char** data_out)
     if ((i=BIO_read(p7bio,buf,sizeof(buf))) <= 0) break;
     BIO_write(wbio,buf,i);
   }  
-  BIO_flush(wbio);
+  i=BIO_flush(wbio);
   BIO_free_all(p7bio);
   p7bio = NULL;
   PKCS7_free(p7);
   p7 = NULL;
 
-  LOG_PRINT("decrypt: pump done");
+  LOG_PRINT2("decrypt: pump done",i);
 
   /* Return data (this should now be easier because we just freed
    * some memory) */

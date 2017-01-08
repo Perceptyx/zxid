@@ -136,7 +136,7 @@ static BIO*
 smime_sign_engine(X509* x509, EVP_PKEY* pkey,
 		  const char* mime_entity, int detach)
 {
-  int i;
+  int i=0;
   char buf[4096];
   BIO*  p7bio = NULL;
   BIO*  bio = NULL;
@@ -180,7 +180,7 @@ smime_sign_engine(X509* x509, EVP_PKEY* pkey,
     if (i <= 0) break;
     BIO_write(p7bio,buf,i);
   }
-  BIO_flush(p7bio);
+  i=BIO_flush(p7bio);
   
   LOG_PRINT("data final...");
   if (!PKCS7_dataFinal(p7,p7bio)) GOTO_ERR("PKCS7_dataFinal");
@@ -191,7 +191,7 @@ smime_sign_engine(X509* x509, EVP_PKEY* pkey,
   if (!(bio = BIO_new(BIO_s_mem()))) GOTO_ERR("no memory?");
   LOG_PRINT("Writing data to bio");
   PEM_write_bio_PKCS7(bio,p7);
-  BIO_flush(bio);
+  i=BIO_flush(bio);
   PKCS7_free(p7);
   
   LOG_PRINT2("sig engine done %x", bio);
@@ -202,7 +202,7 @@ err:
   if (p7bio) BIO_free_all(p7bio);
   if (p7)    PKCS7_free(p7);
   if (bio)   BIO_free_all(bio);
-  LOG_PRINT("sig engine error");
+  LOG_PRINT2("sig engine error %d", i);
   return NULL;
 }
 
@@ -379,7 +379,7 @@ encrypt1(X509* x509, const char* mime_entity)
   time_t t;
   char* b;
   char* b64;
-  int   i, n;
+  int   i=0, n;
   char  buf[4096];
   BIO*  p7bio = NULL;
   BIO*  rbio = NULL;
@@ -425,7 +425,7 @@ encrypt1(X509* x509, const char* mime_entity)
     if (i <= 0) break;
     BIO_write(p7bio,buf,i);
   }
-  BIO_flush(p7bio);
+  i=BIO_flush(p7bio);
   
   LOG_PRINT("encrypt1: dataFinal");
   if (!PKCS7_dataFinal(p7,p7bio)) GOTO_ERR("PKCS7_dataFinal");
@@ -436,7 +436,7 @@ encrypt1(X509* x509, const char* mime_entity)
   if (!(wbio = BIO_new(BIO_s_mem()))) GOTO_ERR("no memory?");
   LOG_PRINT("encrypt1: write bio");
   PEM_write_bio_PKCS7(wbio,p7);
-  BIO_flush(wbio);
+  i=BIO_flush(wbio);
   PKCS7_free(p7);
   p7 = NULL;
   
@@ -453,7 +453,7 @@ encrypt1(X509* x509, const char* mime_entity)
   if (!(b = concat(b, b64)))  GOTO_ERR("no memory?");
   
   BIO_free_all(wbio);  /* also frees b64 */
-  LOG_PRINT("encrypt1: OK");
+  LOG_PRINT2("encrypt1: OK %d",i);
 
   t = time(NULL);
   RAND_seed(&t,sizeof(t));

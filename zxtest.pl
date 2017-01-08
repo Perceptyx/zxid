@@ -144,7 +144,7 @@ sub urienc {
 }
 
 ###
-### Custome diff package
+### Custom diff package
 ###
 
 # Erase some common innocent differences

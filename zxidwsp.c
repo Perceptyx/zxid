@@ -83,7 +83,7 @@ static void zxid_add_action_hdr(zxid_conf* cf, zxid_ses* ses, struct zx_e_Envelo
 	if (el_tok = zx_get_el_tok(first)) {
 	  ss = zx_strf(cf->ctx, "%s:%s", first->ns&&first->ns->url?first->ns->url:"", el_tok->name);
 	} else {
-	  ERR("First child element of <e:Body> does not have tag string and is not known token %x", first->g.tok);
+	  ERR("Tried to set <a:Action> SOAP header. First child element of <e:Body> does not have tag string and is not known token %x", first->g.tok);
 	  return;
 	}
       }
@@ -414,9 +414,11 @@ static int zxid_wsf_validate_a7n(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n, co
   zxid_entity* idp_meta;
   zxid_cgi cgi;
   
+  D_INDENT("wsf_valid: ");
   if (!a7n || !a7n->Subject) {
     ERR("%s: Assertion lacking or does not have Subject. %p", lk, a7n);
     zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RQ_IN, "e:Client", "Assertion does not have Subject.", "IDStarMsgNotUnderstood", 0, lk, 0));
+    D_DEDENT("wsf_valid: ");
     return 0;
   }
   
@@ -425,6 +427,7 @@ static int zxid_wsf_validate_a7n(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n, co
   if (!ZX_GET_CONTENT(nameid)) {
     ERR("%s: Assertion does not have Subject->NameID. %p", lk, ses->nameid);
     zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RQ_IN, "e:Client", "Assertion does not have Subject->NameID.", "IDStarMsgNotUnderstood", 0, lk, 0));
+    D_DEDENT("wsf_valid: ");
     return 0;
   }
   
@@ -453,11 +456,14 @@ static int zxid_wsf_validate_a7n(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n, co
     if (!cf->nosig_fatal) {
       ERR("%s: Unable to find metadata for Assertion Issuer(%.*s).", lk, issuer->len, issuer->s);
       zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RQ_IN, "e:Client", "No unable to find SAML metadata for Assertion Issuer.", "ProviderIDNotValid", 0, lk, 0));
+      D_DEDENT("wsf_valid: ");
       return 0;
     } else {
       INFO("%s: Unable to find metadata for Assertion Issuer(%.*s), but configured to ignore this problem (NOSIG_FATAL=0).", lk, issuer->len, issuer->s);
     }
   } else {
+    if (strcmp(lk, "tgt"))
+      ses->uid = zxid_mk_uid(cf, idp_meta->eid, ses->nid);
     if (a7n->Signature && a7n->Signature->SignedInfo && a7n->Signature->SignedInfo->Reference) {
       ZERO(&refs, sizeof(refs));
       refs.sref = a7n->Signature->SignedInfo->Reference;
@@ -472,6 +478,7 @@ static int zxid_wsf_validate_a7n(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n, co
 	if (!cf->nosig_fatal) {
 	  ERR("Assertion not signed. Sigval(%s) %p", STRNULLCHKNULL(cgi.sigval), a7n->Signature);
 	  zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RQ_IN, "e:Client", "Assertion not signed.", TAS3_STATUS_NOSIG, 0, lk, 0));
+	  D_DEDENT("wsf_valid: ");
 	  return 0;
 	} else {
 	  INFO("SSO warn: assertion not signed, but configured to ignore this problem (NOSIG_FATAL=0). Sigval(%s) %p", STRNULLCHKNULL(cgi.sigval), a7n->Signature);
@@ -482,11 +489,13 @@ static int zxid_wsf_validate_a7n(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n, co
   if (cf->sig_fatal && ses->sigres) {
     ERR("Fail due to failed assertion signature sigres=%d", ses->sigres);
     zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RQ_IN, "e:Client", "Assertion signature did not validate.", TAS3_STATUS_BADSIG, 0, lk, 0));
+    D_DEDENT("wsf_valid: ");
     return 0;
   }
   
   if (zxid_validate_cond(cf, &cgi, ses, a7n, zxid_my_ent_id(cf), 0, 0)) {
     /* Fault (ses->curflt) already set in zxid_validate_cond() */
+    D_DEDENT("wsf_valid: ");
     return 0;
   }
   
@@ -500,6 +509,7 @@ static int zxid_wsf_validate_a7n(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n, co
 	if (cf->dup_a7n_fatal) {
 	  zxlog_blob(cf, cf->log_rely_a7n, logpath, a7nss, "wsp_validade dup err");
 	  zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RQ_IN, "e:Client", "Duplicate use of credential (assertion). Replay attack?", TAS3_STATUS_REPLAY, 0, lk, 0));
+	  D_DEDENT("wsf_valid: ");
 	  return 0;
 	}
       }
@@ -508,6 +518,7 @@ static int zxid_wsf_validate_a7n(zxid_conf* cf, zxid_ses* ses, zxid_a7n* a7n, co
       zx_str_free(cf->ctx, a7nss);
     }
   }
+  D_DEDENT("wsf_valid: ");
   return 1;
 }
 
@@ -583,7 +594,8 @@ char* zxid_wsp_validate_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, s
   }
   ses->issuer = zx_dup_zx_str(cf->ctx, hdr->Sender->providerID?
 			      &hdr->Sender->providerID->g : &hdr->Sender->affiliationID->g);
-  
+  ses->idpeid = zx_str_to_c(cf->ctx, ses->issuer);
+
   /* Validate message signature (*** add Issuer trusted check, CA validation, etc.) */
   
   if (!(sec = hdr->Security)) {
@@ -630,14 +642,16 @@ char* zxid_wsp_validate_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, s
     }
   }
 
-  if (!zxid_timestamp_chk(cf, ses, sec->Timestamp, &ourts, &ses->srcts, TAS3_PEP_RQ_IN,"e:Client"))
+  if (!zxid_timestamp_chk(cf, ses, sec->Timestamp, &ourts, &ses->srcts, TAS3_PEP_RQ_IN,"e:Client")) {
+    D_DEDENT("valid: ");
     return 0;
+  }
   
   /* Check Requester Identity */
 
   ses->a7n = zxid_dec_a7n(cf, sec->Assertion, sec->EncryptedAssertion);
   if (ses->a7n && ses->a7n->Subject) {
-    if (!zxid_wsf_validate_a7n(cf, ses, ses->a7n, "req", &ses->srcts)) {
+    if (!zxid_wsf_validate_a7n(cf, ses, ses->a7n, "req", &ses->srcts)) { /* Populates ses->nameid */
       D_DEDENT("valid: ");
       return 0;
     }
@@ -691,6 +705,7 @@ char* zxid_wsp_validate_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, s
 	     && obl->AttributeAssignment->AttributeId) {
 	  if (ZX_STR_EQ(&obl->AttributeAssignment->AttributeId->g, TAS3_PLEDGE)) {
 	    if (!zxid_eval_sol1(cf, ses, ses->rcvd_usagedir, cf->wsp_localpdp_obl_req)) {
+	      D_DEDENT("valid: ");
 	      return 0;
 	    }
 	  } else if (ZX_STR_EQ(&obl->AttributeAssignment->AttributeId->g, TAS3_REQUIRE)) {
@@ -711,15 +726,16 @@ char* zxid_wsp_validate_env(zxid_conf* cf, zxid_ses* ses, const char* az_cred, s
     }
   }
 
+  zxid_put_user_ses(cf, ses);
   zxid_put_ses(cf, ses);
   zxid_ses_to_pool(cf, ses);
   zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest attributes and bootstrap(s) */
-  zxid_put_user(cf, &ses->nameid->Format->g, &ses->nameid->NameQualifier->g, &ses->nameid->SPNameQualifier->g, ZX_GET_CONTENT(ses->nameid), 0);
   zxlogwsp(cf, ses, "K", "PNEWSES", ses->sid, 0);
   
   /* Call Rq-In PDP */
 
   if (!zxid_query_ctlpt_pdp(cf, ses, az_cred, env, TAS3_PEP_RQ_IN, "e:Server", cf->pepmap_rqin)) {
+    D_DEDENT("valid: ");
     return 0;
   }
   
@@ -763,8 +779,11 @@ char* zxid_wsp_validate(zxid_conf* cf, zxid_ses* ses, const char* az_cred, const
   struct zx_str* logpath;
   struct zx_root_s* r;
 
+  D_INDENT("val0: ");
   if (!cf || !ses || !enve) {
     ERR("Missing config, session, or envelope argument %p %p %p (programmer error)", cf,ses,enve);
+ zero:
+    D_DEDENT("val0: ");
     return 0;
   }
 
@@ -772,7 +791,7 @@ char* zxid_wsp_validate(zxid_conf* cf, zxid_ses* ses, const char* az_cred, const
   if (!enve_start) {
     ERR("SOAP request does not have Envelope element %d", 0);
     D_XML_BLOB(cf, "NO ENVELOPE SOAP request", -2, enve);
-    return 0;
+    goto zero;
   }
   
   ss.s = (char*)enve_start;
@@ -787,7 +806,7 @@ char* zxid_wsp_validate(zxid_conf* cf, zxid_ses* ses, const char* az_cred, const
       if (*p == '"')
 	*p = '\'';
     zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RQ_IN, "e:Client", "Malformed XML", "IDStarMsgNotUnderstood", 0, msg, 0));
-    return 0;
+    goto zero;
   }
   p = zxid_wsp_validate_env(cf, ses, az_cred, r->Envelope);
   ZX_FREE(cf->ctx, r);
@@ -795,19 +814,20 @@ char* zxid_wsp_validate(zxid_conf* cf, zxid_ses* ses, const char* az_cred, const
   logpath = zxlog_path(cf, ses->issuer, ses->wsp_msgid, ZXLOG_RELY_DIR, ZXLOG_MSG_KIND, 1);
   if (!logpath) {
     ERR("Log path not valid, empty issuer? %p %p", ses->issuer, ses->wsp_msgid);
-    return 0;
+    goto zero;
   }
   if (zxlog_dup_check(cf, logpath, "validate request")) {
     if (cf->dup_msg_fatal) {
       zxlog_blob(cf, cf->log_rely_msg, logpath, &ss, "validate request dup err");
       zxid_set_fault(cf, ses, zxid_mk_fault(cf, 0, TAS3_PEP_RS_IN, "e:Client", "Duplicate Message.", "DuplicateMsg", 0, 0, 0));
-      return 0;
+      goto zero;
     } else {
       INFO("Duplicate message detected, but configured to ignore this (DUP_MSG_FATAL=0). %d",0);
     }
   }
   zxlog_blob(cf, cf->log_rely_msg, logpath, &ss, "validate request");
   zxlogwsp(cf, ses, "K", "VALID", logpath->s, 0);
+  D_DEDENT("val0: ");
   return p;
 }
 

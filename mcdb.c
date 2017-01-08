@@ -3,7 +3,7 @@
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
- * Special grant: http.c may be used with zxid open source project under
+ * Special grant: mcdb.c may be used with zxid open source project under
  * same licensing terms as zxid itself.
  * $Id$
  *
@@ -348,7 +348,7 @@ static void mcdb_got_ack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   parent = resp->parent;
   ASSERT(parent);
   
-  if (errmac_debug>1)
+  if (errmac_debug>2)
     D("ACK par_%p->len=%d rq_%p->len=%d\nparent->body(%.*s)\n   req->body(%.*s)", parent, parent->ad.delivb.len, resp->req, resp->req->ad.mcdb.len, parent->ad.delivb.len, parent->ad.delivb.body, resp->req->ad.mcdb.len, resp->req->ad.mcdb.body);
   else
     D("ACK par_%p->len=%d rq_%p->len=%d", parent, parent->ad.delivb.len, resp->req, resp->req->ad.mcdb.len);

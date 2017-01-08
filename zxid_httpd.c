@@ -1014,7 +1014,7 @@ int main(int argc, char** av)
       (void) printf("%s\n", SERVER_SOFTWARE);
       exit(0);
     }
-    if (!strcmp(av[an], "-D")) { ++errmac_debug; D("debug=0x%x", errmac_debug); }
+    if (!strcmp(av[an], "-D")) { ++errmac_debug; INFO("debug=0x%x", errmac_debug); }
     else if (!strcmp(av[an], "-S") && an + 1 < argc)  { ++an; certfile = av[an]; do_ssl = 1; }
     else if (!strcmp(av[an], "-Y") && an + 1 < argc)  { ++an; cipher = av[an]; }
     else if (!strcmp(av[an], "-zx") && an + 1 < argc) { ++an; zxid_conf_str = av[an]; }

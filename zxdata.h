@@ -3,14 +3,14 @@
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
- * Special grant: hiios.h may be used with zxid open source project under
+ * Special grant: zxdata.h may be used with zxid open source project under
  * same licensing terms as zxid itself.
  * $Id$
  *
  * 6.4.2016,  created --Sampo
  *
  * The zxcached incorporates an in-memory database implemented using a
- * global hash wich points to data items that may be either raw data or
+ * global hash which points to data items that may be either raw data or
  * in their own right data structures, such as local hashes. Basically
  * same hash (and array) definitions are applied to both, but there
  * are differences in locking and key allocation.
@@ -39,7 +39,7 @@
 #define ZXVAL_INT  1
 #define ZXVAL_DBL  2
 #define ZXVAL_STR  3
-#define ZXVAL_BOOL 4  /* value stored in val.ue.i */
+#define ZXVAL_BOOL 4    /* value stored in val.ue.i */
 #define ZXVAL_ARY  5
 #define ZXVAL_HASH 6
 #define ZXVAL_KEYVAL 7  /* unhashed array of key value pairs (lazy hash when deserializing) */
@@ -91,7 +91,7 @@ struct zx_gbucket {
   struct zx_bucket b;
   long long updatens;  /* 64bit last update timestamp (ns) for replication, see clock_gettime(2) */
   long long expiryns;  /* 64bit seconds since unix epoch */
-  struct hi_lock mut;
+  struct hi_lock mut;  /* data lock */
   unsigned char symkey[32]; /* AES256 (or other algo) symmetric encryption key */
 };
 

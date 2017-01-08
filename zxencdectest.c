@@ -351,6 +351,7 @@ void covimp_test()       /* -r 5 */
   printf("s=%s\n", zxid_saml2_map_nid_fmt("s"));
   printf("X=%s\n", zxid_saml2_map_nid_fmt("X"));
 
+#if 0
   printf("r=%s\n", zxid_saml2_map_protocol_binding("r"));
   printf("a=%s\n", zxid_saml2_map_protocol_binding("a"));
   printf("p=%s\n", zxid_saml2_map_protocol_binding("p"));
@@ -358,6 +359,7 @@ void covimp_test()       /* -r 5 */
   printf("s=%s\n", zxid_saml2_map_protocol_binding("s"));
   printf("e=%s\n", zxid_saml2_map_protocol_binding("e"));
   printf("X=%s\n", zxid_saml2_map_protocol_binding("X"));
+#endif
 
   printf("NULL=%d\n",       zxid_protocol_binding_map_saml2(0));
   printf("SAML2_REDIR=%d\n", zxid_protocol_binding_map_saml2(zx_ref_str(cf->ctx, SAML2_REDIR)));

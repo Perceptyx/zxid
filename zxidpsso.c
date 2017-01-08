@@ -1,6 +1,5 @@
 /* zxidpsso.c  -  Handwritten functions for implementing Single Sign-On logic on IdP
- * Copyright (c) 2009-2010 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
- * Copyright (c) 2008-2009 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2008-2010,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -11,6 +10,7 @@
  * 4.9.2009,   added persistent nameid support --Sampo
  * 24.11.2009, fixed handling of transient nameid --Sampo
  * 12.2.2010,  added locking to lazy loading --Sampo
+ * 8.1.2017,   added SAML2 artifact binding support --Sampo
  *
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  */
@@ -35,8 +35,8 @@
 /*() Helper function to sign, if needed, and log the issued assertion.
  * Checks for Assertion ID duplicate and returns 0 on
  * failure (i.e. duplicate), 1 on success. The ret_logpath argument,
- * if not NULL, allows returnign the logpath to caller, e.g. to use
- * as an artifact (caller frees). */
+ * if not NULL, allows returning the logpath to caller, e.g. to use
+ * as an artifact (caller frees). The logpath will be nul terminated. */
 
 /* Called by:  zxid_add_fed_tok2epr, zxid_idp_sso x3, zxid_imreq, zxid_map_val_ss */
 int zxid_anoint_a7n(zxid_conf* cf, int sign, zxid_a7n* a7n, struct zx_str* issued_to, const char* lk, const char* uid, struct zx_str** ret_logpath)
@@ -611,6 +611,7 @@ zxid_a7n* zxid_sso_issue_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct
   struct zx_str* affil;
   zxid_nid* tmpnameid;
   char sp_name_buf[ZXID_MAX_SP_NAME_BUF];
+  D_INDENT("issue_a7n: ");
   D("sp_eid(%s)", sp_meta->eid);
   if (!nameid)
     nameid = &tmpnameid;
@@ -620,12 +621,12 @@ zxid_a7n* zxid_sso_issue_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct
   
   nidpol = ar ? ar->NameIDPolicy : 0;
   if (!cgi->allow_create && nidpol && nidpol->AllowCreate && nidpol->AllowCreate->g.s) {
-    D("No allow_create from form, extract from SAMLRequest (%.*s) len=%d", nidpol->AllowCreate->g.len, nidpol->AllowCreate->g.s, nidpol->AllowCreate->g.len);
+    D("allow_create from form lacking, extract from SAMLRequest (%.*s) len=%d", nidpol->AllowCreate->g.len, nidpol->AllowCreate->g.s, nidpol->AllowCreate->g.len);
     cgi->allow_create = XML_TRUE_TEST(&nidpol->AllowCreate->g) ? '1':'0';
   }
 
   if ((!cgi->nid_fmt || !cgi->nid_fmt[0]) && nidpol && nidpol->Format && nidpol->Format->g.s) {
-    D("No Name ID Format from form, extract from SAMLRequest (%.*s) len=%d", nidpol->Format->g.len, nidpol->Format->g.s, nidpol->Format->g.len);
+    D("Name ID Format from form lacking, extract from SAMLRequest (%.*s) len=%d", nidpol->Format->g.len, nidpol->Format->g.s, nidpol->Format->g.len);
     cgi->nid_fmt = nidpol->Format->g.len == sizeof(SAML2_TRANSIENT_NID_FMT)-1
       && !memcmp(nidpol->Format->g.s, SAML2_TRANSIENT_NID_FMT, sizeof(SAML2_TRANSIENT_NID_FMT)-1)
       ? "trnsnt" : "prstnt";
@@ -636,7 +637,7 @@ zxid_a7n* zxid_sso_issue_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct
   issuer = ar ? ZX_GET_CONTENT(ar->Issuer) : 0;  /* *** must arrange AR issuer somehow */
   affil = nidpol && nidpol->SPNameQualifier ? &nidpol->SPNameQualifier->g : issuer;
   zxid_nice_sha1(cf, sp_name_buf, sizeof(sp_name_buf), affil, affil, 7);
-  D("sp_name_buf(%s)  allow_create=%d", sp_name_buf, cgi->allow_create);
+  D("sp_name_buf(%s)  allow_create=%d nid_fmt(%s)", sp_name_buf, cgi->allow_create, cgi->nid_fmt);
 
   *nameid = zxid_get_fed_nameid(cf, issuer, affil, ses->uid, sp_name_buf, cgi->allow_create,
 				(cgi->nid_fmt && !strcmp(cgi->nid_fmt, "trnsnt")),
@@ -655,9 +656,10 @@ zxid_a7n* zxid_sso_issue_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct
   sc->SubjectConfirmationData = zx_NEW_sa_SubjectConfirmationData(cf->ctx, &sc->gg);
   if (acsurl)
     sc->SubjectConfirmationData->Recipient = zx_ref_len_attr(cf->ctx, &sc->SubjectConfirmationData->gg, zx_Recipient_ATTR, acsurl->len, acsurl->s);
-  sc->SubjectConfirmationData->NotOnOrAfter
-    = zx_ref_len_attr(cf->ctx, &sc->SubjectConfirmationData->gg, zx_NotOnOrAfter_ATTR, a7n->Conditions->NotOnOrAfter->g.len, a7n->Conditions->NotOnOrAfter->g.s);
+  
+  sc->SubjectConfirmationData->NotOnOrAfter = zx_ref_len_attr(cf->ctx, &sc->SubjectConfirmationData->gg, zx_NotOnOrAfter_ATTR, a7n->Conditions->NotOnOrAfter->g.len, a7n->Conditions->NotOnOrAfter->g.s);
 
+  D_DEDENT("issue_a7n: ");
   return a7n;
 }
 
@@ -679,9 +681,77 @@ char* zxid_get_idpnid_at_eid(zxid_conf* cf, const char* uid, const char* eid, in
   return zx_str_to_c(cf->ctx, &nameid->gg.g);
 }
 
-/*(i) Generate SSO assertion and ship it to SP by chosen binding. User has already
- * logged in by the time this is called. See also zxid_ssos_anreq()
- * and zxid_oauth2_az_server_sso() */
+/*() Format an artifact and then store it on disk to reference data.
+ * The artifact is "stored" by forming a symlink, named after artfact,
+ * to the actual assertion.
+ * Artifact format is documented in [SAML2bind] (saml-bindings-2.0-os.pdf) sec 3.4.4, pp. 28-29.
+ * See also: zxid_idp_artifact_do()
+ */
+
+static char* zxid_generate_artifact(zxid_conf* cf, struct zx_str* a7npath)
+{
+  struct zx_str* eid;
+  char  buf[4+20+20];
+  char* b64;
+  char* p;
+  int len;
+  char artpath[ZXID_MAX_BUF];
+
+  if (!a7npath || !a7npath->len) {
+    ERR("Missing assertion path %p", a7npath);
+    return 0;
+  }
+
+  buf[0] = 0x00;
+  buf[1] = 0x04;  /* SAML2 TypeCode */
+  buf[2] = 0x00;
+  buf[3] = 0x00;  /* EndPoint Index: leave as zero (i.e. ignore) as there is only one */
+  eid = zxid_my_ent_id(cf);
+  SHA1((unsigned char*)eid->s, eid->len, (unsigned char*)buf+4); /* SourceID = Succinct Entity ID */
+  zx_str_free(cf->ctx, eid);
+  zx_rand(buf+4+20, 20);  /* MessageHandle: random bits are difficult to guess */
+  
+  len = SIMPLE_BASE64_LEN(4+20+20);
+  b64 = ZX_ALLOC(cf->ctx, len+1);
+  p = base64_fancy_raw(buf, 4+20+20, b64, safe_basis_64, 1<<31, 0, 0, '=');
+  *p = 0;
+
+  name_from_path(artpath, sizeof(artpath), "%s" ZXID_ART_DIR "%s", cf->cpath, b64);
+  if (symlink(a7npath->s, artpath)) {
+    perror("symlink artifact");
+    ERR("symlinking artifact failed a7npath(%s), artpath(%s)", a7npath->s, artpath);
+  }
+
+  safe_to_std_b64(p-b64, b64);
+  return b64;
+}
+
+/*() Generate SOAP envelope with ECP header */
+
+static struct zx_str* zxid_generate_ecp_env(zxid_conf* cf, struct zx_str* acsurl, struct zx_sp_Response_s* resp)
+{
+  struct zx_str* ss;
+  struct zx_e_Envelope_s* e;
+  e = zx_NEW_e_Envelope(cf->ctx,0);
+  
+  e->Header = zx_NEW_e_Header(cf->ctx, &e->gg);
+  e->Header->ecp_Response = zx_NEW_ecp_Response(cf->ctx, &e->Header->gg);
+  e->Header->ecp_Response->mustUnderstand = zx_dup_attr(cf->ctx, &e->Header->ecp_Response->gg, zx_e_mustUnderstand_ATTR, "1");
+  e->Header->ecp_Response->actor = zx_ref_attr(cf->ctx, &e->Header->ecp_Response->gg, zx_e_actor_ATTR, SOAP_ACTOR_NEXT);
+  e->Header->ecp_Response->AssertionConsumerServiceURL = zx_ref_len_attr(cf->ctx, &e->Header->ecp_Response->gg, zx_AssertionConsumerServiceURL_ATTR, acsurl->len, acsurl->s);
+  
+  e->Body = zx_NEW_e_Body(cf->ctx, &e->gg);
+  e->Body->Response = resp;
+  
+  ss = zx_easy_enc_elem_opt(cf, &e->gg);
+  zx_free_elem(cf->ctx, &e->gg, 0);
+  return ss;
+}
+
+/*(i) Generate SSO assertion and ship it to SP by chosen binding.
+ * User has already logged in by the time this is called.
+ * Returns string that can be used as CGI response (but does not actually output it).
+ * See also zxid_ssos_anreq() and zxid_oauth2_az_server_sso() */
 
 /* Called by:  zxid_idp_dispatch */
 struct zx_str* zxid_idp_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zx_sp_AuthnRequest_s* ar)
@@ -700,20 +770,20 @@ struct zx_str* zxid_idp_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct 
   zxid_nid* nameid;
   zxid_a7n* a7n;
   struct zx_sp_Response_s* resp;
-  struct zx_e_Envelope_s* e;
   char* p;
   char logop[8];
+  D_INDENT("idp_sso: ");
   strcpy(logop, "IDPxxxx");
 
   if (!ar || !ZX_GET_CONTENT(ar->Issuer)) {
     ERR("No Issuer found in AuthnRequest %p", ar);
-    return zx_dup_str(cf->ctx, "* ERR");
+    goto err;
   }
 
   sp_meta = zxid_get_ent_ss(cf, ZX_GET_CONTENT(ar->Issuer));
   if (!sp_meta) {
     ERR("The metadata for Issuer of the AuthnRequest could not be found or fetched %d", 0);
-    return zx_dup_str(cf->ctx, "* ERR");
+    goto err;
   }
   D("sp_eid(%s)", sp_meta->eid);
 
@@ -747,7 +817,7 @@ struct zx_str* zxid_idp_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct 
       D("Preferred binding not supported by SP metadata, using first ACS entry from metadata %d", 0);
       if (!sp_meta->ed || !sp_meta->ed->SPSSODescriptor || !sp_meta->ed->SPSSODescriptor->AssertionConsumerService || !sp_meta->ed->SPSSODescriptor->AssertionConsumerService->Location) {
 	ERR("SP metadata does not contain any AssertionConsumerService. Can not complete SSO (SP metadata problem) %d", 0);
-	return zx_dup_str(cf->ctx, "* ERR");
+	goto err;
       }
       acsurl = &sp_meta->ed->SPSSODescriptor->AssertionConsumerService->Location->g;
       binding = zxid_protocol_binding_map_saml2(&sp_meta->ed->SPSSODescriptor->AssertionConsumerService->Binding->g);
@@ -776,75 +846,80 @@ struct zx_str* zxid_idp_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct 
     resp = zxid_mk_saml_resp(cf, a7n, cf->post_a7n_enc?sp_meta:0);
     payload = zxid_anoint_sso_resp(cf, cf->sso_sign & ZXID_SSO_SIGN_RESP, resp, ar);
     if (!payload)
-      return zx_dup_str(cf->ctx, "* ERR");
-    zx_str_free(cf->ctx, payload);
-
-    /* Generate SOAP envelope with ECP header */
-
-    e = zx_NEW_e_Envelope(cf->ctx,0);
-
-    e->Header = zx_NEW_e_Header(cf->ctx, &e->gg);
-    e->Header->ecp_Response = zx_NEW_ecp_Response(cf->ctx, &e->Header->gg);
-    e->Header->ecp_Response->mustUnderstand = zx_dup_attr(cf->ctx, &e->Header->ecp_Response->gg, zx_e_mustUnderstand_ATTR, "1");
-    e->Header->ecp_Response->actor = zx_ref_attr(cf->ctx, &e->Header->ecp_Response->gg, zx_e_actor_ATTR, SOAP_ACTOR_NEXT);
-    e->Header->ecp_Response->AssertionConsumerServiceURL = zx_ref_len_attr(cf->ctx, &e->Header->ecp_Response->gg, zx_AssertionConsumerServiceURL_ATTR, acsurl->len, acsurl->s);
-
-    e->Body = zx_NEW_e_Body(cf->ctx, &e->gg);
-    e->Body->Response = resp;
-    
-    ss = zx_easy_enc_elem_opt(cf, &e->gg);
+      goto err;
+    zx_str_free(cf->ctx, payload); /* called anoint only for sig and logging, throw away result */
 
     zxlog(cf, 0, &srcts, 0, ZX_GET_CONTENT(ar->Issuer), 0, &a7n->ID->g, ZX_GET_CONTENT(nameid), "N", "K", logop, ses->uid, "PAOS2");
-
-
+    
+    ss = zxid_generate_ecp_env(cf, acsurl, resp);     /* Generate SOAP envelope with ECP header */
+    
     /* *** Check what HTTP level headers PAOS needs */
-    return zx_strf(cf->ctx, "Content-type: text/xml\r\nContent-Length: %d\r\n%s%s%s\r\n%.*s",
-		   ss->len,
-		   ses->setcookie?"Set-Cookie: ":"", ses->setcookie?ses->setcookie:"", ses->setcookie?"\r\n":"",
-		   ss->len, ss->s);
+    payload = zx_strf(cf->ctx, "Content-type: text/xml\r\nContent-Length: %d\r\n%s%s%s\r\n%.*s",
+		      ss->len,
+		      ses->setcookie?"Set-Cookie: ":"",
+		      ses->setcookie?ses->setcookie:"",
+		      ses->setcookie?"\r\n":"",
+		      ss->len, ss->s);
+    zx_str_free(cf->ctx, ss);
+    /* resp and a7n were freed by zxid_generate_ecp_env() */
+    D_DEDENT("idp_sso: ");
+    return payload;
 
   case 'q':
     D("SAML2 BRWS-POST-SIMPLE-SIGN ep(%.*s)", acsurl->len, acsurl->s);
 
     if (!zxid_anoint_a7n(cf, cf->sso_sign & ZXID_SSO_SIGN_A7N_SIMPLE, a7n, ZX_GET_CONTENT(ar->Issuer), "SSOA7N", ses->uid, 0))
-      return zx_dup_str(cf->ctx, "* ERR");
+      goto err;
     resp = zxid_mk_saml_resp(cf, a7n, cf->post_a7n_enc?sp_meta:0);
     payload = zxid_anoint_sso_resp(cf, 0, resp, ar);
     if (!payload)
-      return zx_dup_str(cf->ctx, "* ERR");
+      goto err;
+    
     ss = zxid_saml2_post_enc(cf, "SAMLResponse", payload, cgi->rs, 1, acsurl);
     zx_str_free(cf->ctx, payload);
     if (!ss)
-      return zx_dup_str(cf->ctx, "* ERR");
+      goto err;
 
     zxlog(cf, 0, &srcts, 0, ZX_GET_CONTENT(ar->Issuer), 0, &a7n->ID->g, ZX_GET_CONTENT(nameid), "N", "K", logop, ses->uid, "SIMPSIG");
 
-    return zx_strf(cf->ctx, "Content-type: text/html\r\nContent-Length: %d\r\n%s%s%s\r\n%.*s",
-		   ss->len,
-		   ses->setcookie?"Set-Cookie: ":"", ses->setcookie?ses->setcookie:"", ses->setcookie?"\r\n":"",
-		   ss->len, ss->s);
+    payload = zx_strf(cf->ctx, "Content-type: text/html\r\nContent-Length: %d\r\n%s%s%s\r\n%.*s",
+		      ss->len,
+		      ses->setcookie?"Set-Cookie: ":"",
+		      ses->setcookie?ses->setcookie:"",
+		      ses->setcookie?"\r\n":"",
+		      ss->len, ss->s);
+    zx_str_free(cf->ctx, ss);
+    zx_free_elem(cf->ctx, &resp->gg, 0);  /* also frees a7n because it is referenced */
+    D_DEDENT("idp_sso: ");
+    return payload;
 
   case 'p':
     D("SAML2 BRWS-POST ep(%.*s)", acsurl->len, acsurl->s);
 
     if (!zxid_anoint_a7n(cf, cf->sso_sign & ZXID_SSO_SIGN_A7N, a7n, ZX_GET_CONTENT(ar->Issuer), "SSOA7N", ses->uid, 0))
-      return zx_dup_str(cf->ctx, "* ERR");
+      goto err;
     resp = zxid_mk_saml_resp(cf, a7n, cf->post_a7n_enc?sp_meta:0);
     payload = zxid_anoint_sso_resp(cf, cf->sso_sign & ZXID_SSO_SIGN_RESP, resp, ar);
     if (!payload)
-      return zx_dup_str(cf->ctx, "* ERR");
-    
+      goto err;
+
     ss = zxid_saml2_post_enc(cf, "SAMLResponse", payload, cgi->rs, 0, acsurl);
     zx_str_free(cf->ctx, payload);
     if (!ss)
-      return zx_dup_str(cf->ctx, "* ERR");
+      goto err;
     
     zxlog(cf, 0, &srcts, 0, ZX_GET_CONTENT(ar->Issuer), 0, &a7n->ID->g, ZX_GET_CONTENT(nameid), "N", "K", logop, ses->uid, "BRWS-POST");
     
-    return zx_strf(cf->ctx, "Content-type: text/html\r\nContent-Length: %d\r\n%s%s%s\r\n%.*s",
-		   ss->len,
-		   ses->setcookie?"Set-Cookie: ":"", ses->setcookie?ses->setcookie:"", ses->setcookie?"\r\n":"",
-		   ss->len, ss->s);
+    payload = zx_strf(cf->ctx, "Content-type: text/html\r\nContent-Length: %d\r\n%s%s%s\r\n%.*s",
+		      ss->len,
+		      ses->setcookie?"Set-Cookie: ":"",
+		      ses->setcookie?ses->setcookie:"",
+		      ses->setcookie?"\r\n":"",
+		      ss->len, ss->s);
+    zx_str_free(cf->ctx, ss);
+    zx_free_elem(cf->ctx, &resp->gg, 0);  /* also frees a7n because it is referenced */
+    D_DEDENT("idp_sso: ");
+    return payload;
     
   case 'a':
     D("SAML2 BRWS-ART ep(%.*s)", acsurl->len, acsurl->s);
@@ -854,32 +929,31 @@ struct zx_str* zxid_idp_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct 
       cf->log_issue_a7n = 1;
     }
     if (!zxid_anoint_a7n(cf, cf->sso_sign & ZXID_SSO_SIGN_A7N, a7n, ZX_GET_CONTENT(ar->Issuer), "SSOA7N", ses->uid, &logpath))
-      return zx_dup_str(cf->ctx, "* ERR");
-    resp = zxid_mk_saml_resp(cf, a7n, 0);
-    payload = zxid_anoint_sso_resp(cf, cf->sso_sign & ZXID_SSO_SIGN_RESP, resp, ar);
-    if (!payload)
-      return zx_dup_str(cf->ctx, "* ERR");
-    
-    //ss = zxid_saml2_post_enc(cf, "SAMLResponse", pay_load, ar->RelayState);  *** redirect
-    /* *** Do artifact processing: artifact can be the file name in /var/zxid/idplog/issue/SPEID/art/ */
+      goto err;
 
-    ERR("Trying to use SAML2 Artifact Binding, but code not fully implemented. %d", 0);
+    p = zxid_generate_artifact(cf, logpath);
+    if (!p)
+      goto err;
 
     zxlog(cf, 0, &srcts, 0, ZX_GET_CONTENT(ar->Issuer), 0, &a7n->ID->g, ZX_GET_CONTENT(nameid), "N", "K", logop, ses->uid, "BRWS-ART");
 
-    ss = zx_strf(cf->ctx, "Location: %.*s%c"
-		 "SAMLResponse=%.*s" CRLF
-		 "%s%s%s",   /* Set-Cookie */
-		 acsurl->len, acsurl->s, (memchr(acsurl->s, '?', acsurl->len) ? '&' : '?'),
-		 payload->len, payload->s,
-		 (ses->setcookie?"Set-Cookie: ":""), (ses->setcookie?ses->setcookie:""), (ses->setcookie?CRLF:""));
-    zx_str_free(cf->ctx, payload);
+    ss = zx_strf(cf->ctx, "Location: %.*s%cSAMLart=%s" CRLF
+		 "%s%s%s" CRLF,   /* Set-Cookie */
+		 acsurl->len, acsurl->s, (memchr(acsurl->s, '?', acsurl->len) ? '&' : '?'), p,
+		 ses->setcookie?"Set-Cookie: ":"",
+		 ses->setcookie?ses->setcookie:"",
+		 ses->setcookie?CRLF:"");
+    ZX_FREE(cf->ctx, p);
+    zx_free_elem(cf->ctx, &a7n->gg, 0);
+    D_DEDENT("idp_sso: ");
     return ss;
     
   default:
     NEVER("Unknown or unsupported binding %d", binding);
   }
 
+ err:
+  D_DEDENT("idp_sso: ");
   return zx_dup_str(cf->ctx, "* ERR");
 }
 

@@ -1,5 +1,6 @@
 /* zxidmk.c  -  Handwritten nitty-gritty functions for constructing various elems
  * Copyright (c) 2006-2011 Symlabs (symlabs@symlabs.com), All Rights Reserved.
+ * Copyright (c) 2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
@@ -11,6 +12,7 @@
  * 8.10.2007, added signing ArtifactResolve --Sampo
  * 7.10.2008, added documentation --Sampo
  * 24.8.2009, added XACML stuff --Sampo
+ * 8.1.2017,  documentation tweaks --Sampo
  */
 
 #include "platform.h"
@@ -118,6 +120,25 @@ struct zx_sp_ArtifactResolve_s* zxid_mk_art_deref(zxid_conf* cf, struct zx_elem_
   }
   return ar;
 }
+
+/*() Create XML data structure for <ArtifactResponse> element. Low level API. */
+
+/* Called by:  zxid_idp_soap_dispatch, zxid_slo_resp_redir, zxid_sp_soap_dispatch */
+struct zx_sp_ArtifactResponse_s* zxid_mk_art_resp(zxid_conf* cf, struct zx_str* req_id, struct zx_sp_Response_s* resp)
+{
+  struct zx_sp_ArtifactResponse_s* r = zx_NEW_sp_ArtifactResponse(cf->ctx,0);
+  r->Issuer = zxid_my_issuer(cf, &r->gg);
+  r->ID = zxid_mk_id_attr(cf, &r->gg, zx_ID_ATTR, "r", ZXID_ID_BITS);
+  r->Version = zx_ref_attr(cf->ctx, &r->gg, zx_Version_ATTR, SAML2_VERSION);
+  r->IssueInstant = zxid_date_time_attr(cf, &r->gg, zx_IssueInstant_ATTR, time(0));
+  if (req_id)
+    r->InResponseTo = zx_ref_len_attr(cf->ctx, &r->gg, zx_InResponseTo_ATTR, req_id->len, req_id->s);
+  r->Status = zxid_OK(cf, &r->gg);
+  zx_add_kid(&r->gg, &resp->gg);
+  r->Response = resp;
+  return r;
+}
+
 
 /*() Create SAML protocol <Status> element, given various levels of error input. */
 
@@ -303,7 +324,8 @@ struct zx_sp_ManageNameIDRequest_s* zxid_mk_mni(zxid_conf* cf, zxid_nid* nid, st
   return r;
 }
 
-/*() Create XML data structure for <ManageNameIDResponse> element. Low level API.*/
+/*() Create XML data structure for <ManageNameIDResponse> element.
+ * Low level API. */
 
 /* Called by:  zxid_mni_do, zxid_mni_do_ss */
 struct zx_sp_ManageNameIDResponse_s* zxid_mk_mni_resp(zxid_conf* cf, struct zx_sp_Status_s* st, struct zx_str* req_id)

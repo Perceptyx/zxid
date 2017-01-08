@@ -364,7 +364,7 @@ void zx_gl_CircularArea_REV_distanceUnit(struct zx_gl_CircularArea_s* x);
 
 #endif
 /* -------------------------- gl_CivilData -------------------------- */
-/* refby( zx_gl_AreaComparison_s zx_gl_ChangeArea_s zx_gl_geoinfo_s zx_gl_pd_s ) */
+/* refby( zx_gl_ChangeArea_s zx_gl_geoinfo_s zx_gl_pd_s zx_gl_AreaComparison_s ) */
 #ifndef zx_gl_CivilData_EXT
 #define zx_gl_CivilData_EXT
 #endif
@@ -1147,7 +1147,7 @@ void zx_gl_EllipticalArea_REV_distanceUnit(struct zx_gl_EllipticalArea_s* x);
 
 #endif
 /* -------------------------- gl_EncryptedResourceID -------------------------- */
-/* refby( zx_gl_Query_s zx_gl_Delete_s zx_gl_Create_s zx_gl_Modify_s ) */
+/* refby( zx_gl_Query_s zx_gl_Create_s zx_gl_Modify_s zx_gl_Delete_s ) */
 #ifndef zx_gl_EncryptedResourceID_EXT
 #define zx_gl_EncryptedResourceID_EXT
 #endif
@@ -1198,7 +1198,7 @@ void zx_gl_EncryptedResourceID_REV_EncryptedKey(struct zx_gl_EncryptedResourceID
 
 #endif
 /* -------------------------- gl_Extension -------------------------- */
-/* refby( zx_gl_DeleteResponse_s zx_gl_Subscription_s zx_gl_ModifyResponse_s zx_gl_Query_s zx_gl_eqop_s zx_gl_NotifyResponse_s zx_gl_AreaComparison_s zx_gl_QueryItem_s zx_gl_Delete_s zx_gl_Create_s zx_gl_ChangeArea_s zx_gl_QueryResponse_s zx_gl_shape_s zx_gl_CivilData_s zx_gl_Modify_s zx_gl_geoinfo_s zx_gl_Notify_s zx_gl_pd_s zx_gl_Trigger_s zx_gl_CreateResponse_s zx_gl_ItemSelection_s ) */
+/* refby( zx_gl_ChangeArea_s zx_gl_Trigger_s zx_gl_Query_s zx_gl_NotifyResponse_s zx_gl_eqop_s zx_gl_CreateResponse_s zx_gl_Create_s zx_gl_geoinfo_s zx_gl_Notify_s zx_gl_ModifyResponse_s zx_gl_pd_s zx_gl_DeleteResponse_s zx_gl_AreaComparison_s zx_gl_QueryItem_s zx_gl_Modify_s zx_gl_Delete_s zx_gl_QueryResponse_s zx_gl_Subscription_s zx_gl_ItemSelection_s zx_gl_shape_s zx_gl_CivilData_s ) */
 #ifndef zx_gl_Extension_EXT
 #define zx_gl_Extension_EXT
 #endif
@@ -1339,7 +1339,7 @@ void zx_gl_Identifier_REV_edition(struct zx_gl_Identifier_s* x);
 
 #endif
 /* -------------------------- gl_ItemData -------------------------- */
-/* refby( zx_gl_ModifyResponse_s zx_gl_Notification_s zx_gl_CreateResponse_s ) */
+/* refby( zx_gl_CreateResponse_s zx_gl_ModifyResponse_s zx_gl_Notification_s ) */
 #ifndef zx_gl_ItemData_EXT
 #define zx_gl_ItemData_EXT
 #endif
@@ -1384,7 +1384,7 @@ void zx_gl_ItemData_PUT_changeFormat(struct zx_gl_ItemData_s* x, struct zx_attr_
 
 #endif
 /* -------------------------- gl_ItemSelection -------------------------- */
-/* refby( zx_gl_Subscription_s zx_gl_Create_s zx_gl_Modify_s ) */
+/* refby( zx_gl_Create_s zx_gl_Modify_s zx_gl_Subscription_s ) */
 #ifndef zx_gl_ItemSelection_EXT
 #define zx_gl_ItemSelection_EXT
 #endif
@@ -1636,7 +1636,7 @@ void zx_gl_LineString_REV_coord(struct zx_gl_LineString_s* x);
 
 #endif
 /* -------------------------- gl_LinearRing -------------------------- */
-/* refby( zx_gl_innerBoundaryIs_s zx_gl_outerBoundaryIs_s ) */
+/* refby( zx_gl_outerBoundaryIs_s zx_gl_innerBoundaryIs_s ) */
 #ifndef zx_gl_LinearRing_EXT
 #define zx_gl_LinearRing_EXT
 #endif
@@ -2803,7 +2803,7 @@ void zx_gl_RefItem_PUT_subscriptionID(struct zx_gl_RefItem_s* x, struct zx_attr_
 
 #endif
 /* -------------------------- gl_ResourceID -------------------------- */
-/* refby( zx_gl_Query_s zx_gl_Delete_s zx_gl_Create_s zx_gl_Modify_s ) */
+/* refby( zx_gl_Query_s zx_gl_Create_s zx_gl_Modify_s zx_gl_Delete_s ) */
 #ifndef zx_gl_ResourceID_EXT
 #define zx_gl_ResourceID_EXT
 #endif
@@ -2839,7 +2839,7 @@ void zx_gl_ResourceID_PUT_id(struct zx_gl_ResourceID_s* x, struct zx_attr_s* y);
 
 #endif
 /* -------------------------- gl_Status -------------------------- */
-/* refby( zx_gl_DeleteResponse_s zx_gl_ModifyResponse_s zx_gl_Status_s zx_gl_NotifyResponse_s zx_gl_QueryResponse_s zx_gl_CreateResponse_s ) */
+/* refby( zx_gl_NotifyResponse_s zx_gl_CreateResponse_s zx_gl_ModifyResponse_s zx_gl_DeleteResponse_s zx_gl_QueryResponse_s zx_gl_Status_s ) */
 #ifndef zx_gl_Status_EXT
 #define zx_gl_Status_EXT
 #endif
@@ -3079,7 +3079,7 @@ void zx_gl_Trigger_REV_Extension(struct zx_gl_Trigger_s* x);
 
 #endif
 /* -------------------------- gl_coord -------------------------- */
-/* refby( zx_gl_CircularArcArea_s zx_gl_Box_s zx_gl_CircularArea_s zx_gl_EllipticalArea_s zx_gl_LineString_s zx_gl_Point_s zx_gl_LinearRing_s ) */
+/* refby( zx_gl_Box_s zx_gl_CircularArea_s zx_gl_CircularArcArea_s zx_gl_EllipticalArea_s zx_gl_LinearRing_s zx_gl_LineString_s zx_gl_Point_s ) */
 #ifndef zx_gl_coord_EXT
 #define zx_gl_coord_EXT
 #endif
@@ -3757,7 +3757,7 @@ void zx_gl_resp_req_PUT_type(struct zx_gl_resp_req_s* x, struct zx_attr_s* y);
 
 #endif
 /* -------------------------- gl_shape -------------------------- */
-/* refby( zx_gl_GeometryCollection_s zx_gl_AreaComparison_s zx_gl_ChangeArea_s zx_gl_geoinfo_s zx_gl_pd_s ) */
+/* refby( zx_gl_ChangeArea_s zx_gl_geoinfo_s zx_gl_pd_s zx_gl_AreaComparison_s zx_gl_GeometryCollection_s ) */
 #ifndef zx_gl_shape_EXT
 #define zx_gl_shape_EXT
 #endif

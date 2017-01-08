@@ -426,12 +426,12 @@ extern int trace;   /* this gets manipulated by -v or similar flag */
 extern char errmac_instance[64];
 #endif
 
-#define ERRMAC_DEBUG_MASK   0x03  /* 0 = no debug, 1=minimal info debug, 2=bit more, 3=lot more */
-#define ERRMAC_XMLDBG       0x04
-#define ERRMAC_HIIOS        0x08
-#define ERRMAC_INOUT        0x10
-#define MOD_AUTH_SAML_INOUT 0x20
-#define CURL_INOUT          0x40  /* Back Channel */
+#define ERRMAC_DEBUG_MASK   0x03  /* 0 = no debug, 1=minimal info, 2=normal debug, 3=more */
+#define ERRMAC_XMLDBG       0x04  /* Send important input and output to xml.dbg file */
+#define ERRMAC_HIIOS        0x08  /* Enable hiios I/O engine relevant debugging */
+#define ERRMAC_INOUT        0x10  /* Dump all front side input and output */
+#define MOD_AUTH_SAML_INOUT 0x20  /* Dump input and output or mod_auth_saml or mini_httpd_filter */
+#define CURL_INOUT          0x40  /* Dump all Back Channel input and output */
 
 extern int errmac_debug;          /* Defined in zxidlib.c */
 extern char errmac_indent[256];   /* Defined in zxidlib.c *** Locking issues? */
@@ -450,15 +450,20 @@ extern FILE* errmac_debug_log;    /* Defined in zxidlib.c as 0 alias to stderr *
 #ifdef VERBOSE
 # define D(format,...) (void)((fprintf(ERRMAC_DEBUG_LOG, "%d %10s:%-3d %-16s %s d %s" format "\n", getpid(), __FILE__, __LINE__, __FUNCTION__, ERRMAC_INSTANCE, errmac_indent, ## __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
 # define DD D
+# define DV(format,...) (void)(((errmac_debug&ERRMAC_DEBUG_MASK)>2) && (fprintf(ERRMAC_DEBUG_LOG, "%d %10s:%-3d %-16s %s v %s" format "\n", getpid(), __FILE__, __LINE__, __FUNCTION__, ERRMAC_INSTANCE, errmac_indent, ## __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
+
 #else
 # ifdef USE_PTHREAD
 #  ifdef USE_AKBOX_FN
 #   define D(format,...) (void)((errmac_debug&ERRMAC_DEBUG_MASK)>1 && (fprintf(ERRMAC_DEBUG_LOG, "%d.%lx %04x:%-4d %s d %s" format "\n", getpid(), (long)pthread_self(), AKBOX_FN(__FUNCTION__), __LINE__, ERRMAC_INSTANCE, errmac_indent, __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
+#   define DV(format,...) (void)((errmac_debug&ERRMAC_DEBUG_MASK)>2 && (fprintf(ERRMAC_DEBUG_LOG, "%d.%lx %04x:%-4d %s v %s" format "\n", getpid(), (long)pthread_self(), AKBOX_FN(__FUNCTION__), __LINE__, ERRMAC_INSTANCE, errmac_indent, __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
 #  else
 #   define D(format,...) (void)((errmac_debug&ERRMAC_DEBUG_MASK)>1 && (fprintf(ERRMAC_DEBUG_LOG, "%d.%lx %10s:%-3d %-16s %s d %s" format "\n", getpid(), (long)pthread_self(), __FILE__, __LINE__, __FUNCTION__, ERRMAC_INSTANCE, errmac_indent, __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
+#   define DV(format,...) (void)((errmac_debug&ERRMAC_DEBUG_MASK)>2 && (fprintf(ERRMAC_DEBUG_LOG, "%d.%lx %10s:%-3d %-16s %s v %s" format "\n", getpid(), (long)pthread_self(), __FILE__, __LINE__, __FUNCTION__, ERRMAC_INSTANCE, errmac_indent, __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
 #  endif
 # else
 #  define D(format,...) (void)((errmac_debug&ERRMAC_DEBUG_MASK)>1 && (fprintf(ERRMAC_DEBUG_LOG, "%d %10s:%-3d %-16s %s d %s" format "\n", getpid(), __FILE__, __LINE__, __FUNCTION__, ERRMAC_INSTANCE, errmac_indent, ## __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
+#  define DV(format,...) (void)((errmac_debug&ERRMAC_DEBUG_MASK)>2 && (fprintf(ERRMAC_DEBUG_LOG, "%d %10s:%-3d %-16s %s v %s" format "\n", getpid(), __FILE__, __LINE__, __FUNCTION__, ERRMAC_INSTANCE, errmac_indent, ## __VA_ARGS__), fflush(ERRMAC_DEBUG_LOG)))
 # endif
 # define DD(format,...)  /* Documentative */
 #endif

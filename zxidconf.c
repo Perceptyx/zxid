@@ -320,7 +320,13 @@ void zxid_url_set(zxid_conf* cf, const char* burl)
 
 #define IS_RULE(rule, val) (!memcmp((rule), (val), sizeof(val)-1) && (rule)[sizeof(val)-1] == '$')
 
-/*() Create new (common pool) attribute and add it to a linked list */
+/*() Create new (common pool) attribute and add it to a linked list
+ * A copy of the name and (optional) val are made (allocated).
+ * If lengths are specified as -2, strlen() is used to find the lengths.
+ * In special case of multivalued attribute, the multivalues are kept
+ * in linked list hanging from the first value. In this case the other
+ * values have NULL name field.
+ * Returns the newly allocated attribute object. */
 
 /* Called by:  zxid_add_at_vals x3, zxid_add_attr_to_ses x2, zxid_add_qs2ses, zxid_load_atsrc, zxid_load_need */
 struct zxid_attr* zxid_new_at(zxid_conf* cf, struct zxid_attr* at, int name_len, char* name, int val_len, char* val, char* lk)
@@ -328,22 +334,29 @@ struct zxid_attr* zxid_new_at(zxid_conf* cf, struct zxid_attr* at, int name_len,
   struct zxid_attr* aa = ZX_ZALLOC(cf->ctx, struct zxid_attr);
   aa->n = at;
   at = aa;
-  COPYVAL(at->name, name, name+name_len);
+  if (name_len == -2)
+    name_len = name?strlen(name):0;
+  if (name)
+    COPYVAL(at->name, name, name+name_len);  /* allocates */
+  if (val_len == -2)
+    val_len = val?strlen(val):0;
   if (val)
-    COPYVAL(at->val, val, val+val_len);
-  D("%s:\tATTR(%.*s)=(%.*s)", lk, name_len, name, MIN(val_len, 80), STRNULLCHK(val));
+    COPYVAL(at->val, val, val+val_len);  /* allocates */
+  D("%s:\tATTR(%.*s)=(%.*s)", lk, name_len, STRNULLCHK(name), MIN(val_len, 80), STRNULLCHK(val));
   return aa;
 }
 
-/*() Reverse of zxid_new_at(). */
+/*() Reverse of zxid_new_at(). Frees attribute name, value, and object. */
 
 /* Called by:  zxid_free_atsrc, zxid_free_need */
 void zxid_free_at(struct zxid_conf *cf, struct zxid_attr *attr)
 {
   while (attr) {
-    struct zxid_attr *next = attr->n;
-    ZX_FREE(cf->ctx, attr->name);
-    if (attr->val) ZX_FREE(cf->ctx, attr->val);
+    struct zxid_attr* next = attr->n;
+    if (attr->name)
+      ZX_FREE(cf->ctx, attr->name);
+    if (attr->val)
+      ZX_FREE(cf->ctx, attr->val);
     ZX_FREE(cf->ctx, attr);
     attr = next;
   }

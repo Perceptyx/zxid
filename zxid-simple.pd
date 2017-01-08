@@ -167,7 +167,7 @@ tgt_*:: Any attribute starting by "tgt_" refers to the target identity
     They are prefixed so that their provenance is clear. SP administrator
     can add these attributes by editing tgtpath/.bs/.at file, which is in LDIF format.
 
-    It is also possible to define SP site global attributes in /var/zxid/user/.all/.bs/.at
+    It is also possible to define SP site global attributes in /var/zxid/uid/.all/.bs/.at
     file, in LDIF format. Since these are common to all users of SP, there is
     no prefix.
 

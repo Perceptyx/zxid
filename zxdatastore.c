@@ -3,7 +3,7 @@
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
- * Special grant: zxbusd.c may be used with zxid open source project under
+ * Special grant: zxdatastore.c may be used with zxid open source project under
  * same licensing terms as zxid itself.
  * $Id$
  *
@@ -112,7 +112,7 @@ int zx_global_write(zxid_conf* cf, int ghkeylen, const char* ghkey, const unsign
  * The scanning is implemented "in-memory" using memory mapped file.
  *
  * NOT YET IMPLEMENTED: After the full update has been processed,
- * the rest of the file is read an partial updates are applied,
+ * the rest of the file is read and partial updates are applied,
  * thus bringing the value completely up to date.
  *
  * During all these operations voluntary lock on file, using

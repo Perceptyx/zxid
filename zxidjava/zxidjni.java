@@ -3132,6 +3132,22 @@ public class zxidjni implements zxidjniConstants {
     return zxidjniJNI.zxid_ses_tgt_get(zxid_ses.getCPtr(self));
   }
 
+  public static void ses_idpeid_set(zxid_ses self, String value) {
+    zxidjniJNI.zxid_ses_idpeid_set(zxid_ses.getCPtr(self), value);
+  }
+
+  public static String ses_idpeid_get(zxid_ses self) {
+    return zxidjniJNI.zxid_ses_idpeid_get(zxid_ses.getCPtr(self));
+  }
+
+  public static void ses_tgteid_set(zxid_ses self, String value) {
+    zxidjniJNI.zxid_ses_tgteid_set(zxid_ses.getCPtr(self), value);
+  }
+
+  public static String ses_tgteid_get(zxid_ses self) {
+    return zxidjniJNI.zxid_ses_tgteid_get(zxid_ses.getCPtr(self));
+  }
+
   public static void ses_sesix_set(zxid_ses self, String value) {
     zxidjniJNI.zxid_ses_sesix_set(zxid_ses.getCPtr(self), value);
   }
@@ -4663,8 +4679,16 @@ public class zxidjni implements zxidjniConstants {
     zxidjniJNI.zxid_user_sha1_name(zxid_conf.getCPtr(cf), qualif, nid, sha1_name);
   }
 
-  public static int put_user(zxid_conf cf, String nidfmt, String idpent, String spqual, String idpnid, String mniptr) {
-    return zxidjniJNI.zxid_put_user(zxid_conf.getCPtr(cf), nidfmt, idpent, spqual, idpnid, mniptr);
+  public static String mk_uid(zxid_conf cf, String idpent, String idpnid) {
+    return zxidjniJNI.zxid_mk_uid(zxid_conf.getCPtr(cf), idpent, idpnid);
+  }
+
+  public static int put_user_ses(zxid_conf cf, zxid_ses ses) {
+    return zxidjniJNI.zxid_put_user_ses(zxid_conf.getCPtr(cf), zxid_ses.getCPtr(ses));
+  }
+
+  public static int put_user_attr(zxid_conf cf, zxid_ses ses, String cn, String email, String fbrest) {
+    return zxidjniJNI.zxid_put_user_attr(zxid_conf.getCPtr(cf), zxid_ses.getCPtr(ses), cn, email, fbrest);
   }
 
   public static zxid_nid get_user_nameid(zxid_conf cf, zxid_nid oldnid) {

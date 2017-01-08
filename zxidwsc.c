@@ -607,7 +607,7 @@ struct zx_str* zxid_call_epr(zxid_conf* cf, zxid_ses* ses, zxid_epr* epr, const 
     D_DEDENT("call: ");
     return 0;
   }
-  if (errmac_debug > 1) { ret = zx_easy_enc_elem_opt(cf, &env->gg);  D("sending(%.*s) enve(%s)", ret->len, ret->s, enve); }
+  if (errmac_debug > 2) { ret = zx_easy_enc_elem_opt(cf, &env->gg);  D("sending(%.*s) enve(%s)", ret->len, ret->s, enve); }
   
   /* Call Rq-Out PDP */
 

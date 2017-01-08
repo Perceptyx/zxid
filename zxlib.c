@@ -467,7 +467,7 @@ struct zx_elem_s* zx_add_kid_before(struct zx_elem_s* father, int before, struct
 }
 
 /*() Add Signature right after sa:Issuer. This assumes father is
- * already in forward order (i.e. zx_reverse_elem_lists() was already
+ * already in forward order, i.e. zx_reverse_elem_lists() was already
  * called. */
 
 /* Called by:  zxid_anoint_a7n, zxid_anoint_sso_resp, zxid_az_soap x2, zxid_idp_soap_dispatch x2, zxid_idp_sso, zxid_mk_art_deref, zxid_sp_mni_soap, zxid_sp_slo_soap, zxid_sp_soap_dispatch x6, zxid_ssos_anreq */

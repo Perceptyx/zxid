@@ -269,7 +269,7 @@ public class zxidjniJNI {
   public final static native String DIGEST_ALGO_SHA512_get();
   public final static native String SIG_ALGO_get();
   public final static native String SIG_ALGO_URLENC_get();
-  public final static native int SIG_SIZE_get();
+  public final static native int SIG_SIZ_get();
   public final static native String DIGEST_ALGO_get();
   public final static native String CANON_ALGO_get();
   public final static native String ENVELOPED_ALGO_get();
@@ -850,6 +850,10 @@ public class zxidjniJNI {
   public final static native String zxid_ses_nid_get(long jarg1);
   public final static native void zxid_ses_tgt_set(long jarg1, String jarg2);
   public final static native String zxid_ses_tgt_get(long jarg1);
+  public final static native void zxid_ses_idpeid_set(long jarg1, String jarg2);
+  public final static native String zxid_ses_idpeid_get(long jarg1);
+  public final static native void zxid_ses_tgteid_set(long jarg1, String jarg2);
+  public final static native String zxid_ses_tgteid_get(long jarg1);
   public final static native void zxid_ses_sesix_set(long jarg1, String jarg2);
   public final static native String zxid_ses_sesix_get(long jarg1);
   public final static native void zxid_ses_ipport_set(long jarg1, String jarg2);
@@ -1135,7 +1139,6 @@ public class zxidjniJNI {
   public final static native long new_zxid_invite();
   public final static native void delete_zxid_invite(long jarg1);
   public final static native String ZXID_SES_DIR_get();
-  public final static native String ZXID_USER_DIR_get();
   public final static native String ZXID_UID_DIR_get();
   public final static native String ZXID_NID_DIR_get();
   public final static native String ZXID_PEM_DIR_get();
@@ -1143,10 +1146,11 @@ public class zxidjniJNI {
   public final static native String ZXID_DIMD_DIR_get();
   public final static native String ZXID_INV_DIR_get();
   public final static native String ZXID_LOG_DIR_get();
+  public final static native String ZXID_ART_DIR_get();
   public final static native String ZXID_PCODE_DIR_get();
+  public final static native String ZXID_STATE_DIR_get();
   public final static native String ZXID_DCR_DIR_get();
   public final static native String ZXID_RSR_DIR_get();
-  public final static native String ZXID_STATE_DIR_get();
   public final static native int ZXID_MAX_USER_get();
   public final static native int ZXID_INIT_MD_BUF_get();
   public final static native int ZXID_INIT_SOAP_BUF_get();
@@ -1305,7 +1309,9 @@ public class zxidjniJNI {
   public final static native void zxid_add_attr_to_ses(long jarg1, long jarg2, String jarg3, String jarg4);
   public final static native int zxid_add_qs2ses(long jarg1, long jarg2, String jarg3, int jarg4);
   public final static native void zxid_user_sha1_name(long jarg1, String jarg2, String jarg3, String jarg4);
-  public final static native int zxid_put_user(long jarg1, String jarg2, String jarg3, String jarg4, String jarg5, String jarg6);
+  public final static native String zxid_mk_uid(long jarg1, String jarg2, String jarg3);
+  public final static native int zxid_put_user_ses(long jarg1, long jarg2);
+  public final static native int zxid_put_user_attr(long jarg1, long jarg2, String jarg3, String jarg4, String jarg5);
   public final static native long zxid_get_user_nameid(long jarg1, long jarg2);
   public final static native void zxid_user_change_nameid(long jarg1, long jarg2, String jarg3);
   public final static native int zxid_pw_authn(long jarg1, long jarg2, long jarg3);

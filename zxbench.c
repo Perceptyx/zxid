@@ -74,7 +74,6 @@ Usage: zxbench [options] <saml-assertion.xml >reencoded-a7n.xml\n\
 
 int ak_buf_size = 0;
 int verbose = 1;
-extern int errmac_debug;
 int timeout = 0;
 int gcthreshold = 0;
 int leak_free = 0;

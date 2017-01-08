@@ -180,7 +180,7 @@ set_eid:
       case 'h': cgi->pxy_count = v;       break;   /* fh */
 	/*case 'i': cgi->idp_list = v;    break;*/ /* fi */
       case 'm': cgi->matching_rule = v;   break;   /* fm */
-      case 'n': cgi->nid_fmt = v;         D("nid_fmt=%s", cgi->nid_fmt); break;     /* fn */
+      case 'n': cgi->nid_fmt = v;         D("nid_fmt=%s", cgi->nid_fmt); break;     /* fn=prstnt */
       case 'p': cgi->ispassive = v[0];    D("ispassive=%c", cgi->ispassive); break; /* fp */
       case 'q': cgi->affil = v;           break;   /* fq */
       case 'r': cgi->rs = zxid_deflate_safe_b64_raw(cf->ctx, -2, v); break;         /* fr */

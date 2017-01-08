@@ -583,7 +583,7 @@
  * Other methods depend on the WSC_ACTION_HDR option with following special values:
  *
  * 0 (null):: No Action header will be generated,
- * "#ses":: Look for key "Action" in session attribute pool
+ * "#ses":: Look for key "Action" in session attribute pool (not implemented 201612)
  * "#body1st":: Special value that will use the name of the first child element
  *     of the <e:Body> tag.
  * "#body1stns":: Same as #body1st, but will prefix by namespace URI
@@ -715,7 +715,7 @@
  * It will also attempt to set a cookie by that name when new session
  * is created (but this may rely on some support in the calling app,
  * generally the need to set a cookie is expressed by presence of
- * setcookie attribute in the LDIF entry. setcookie specifies what
+ * setcookie attribute in the returned LDIF entry. setcookie specifies what
  * should appear in the Set-Cookie HTTP header of HTTP response).
  *
  * Does not affect metadata. */
@@ -744,7 +744,7 @@
  * may be useful on its own right if your application does not yet have
  * such system. If it already has, you probably want to continue to use
  * the application's own system. Local accounts are stored under
- * /var/zxid/user/SHA1
+ * /var/zxid/uid/SHA1
  *
  * Does not affect metadata. */
 #define ZXID_USER_LOCAL 1
@@ -756,6 +756,7 @@
 #define ZXID_IDP_ENA 0
 
 /*(c) IdP Proxying, i.e. IdP can be SP towards another IdP.
+ *
  * Affects metadata. */
 #define ZXID_IDP_PXY_ENA 0
 
@@ -770,7 +771,7 @@
  * Whether limited Authentication Service functionality is enabled.
  * Please note that the AuthenticationService implementation at present (2010)
  * is incomplete and fails to properly authenticate and authorize the caller
- * system entity, i.e. anyone who knows a username and password can call it
+ * system entity, i.e. anyone who knows a username and password can call it.
  *
  * Does not affect metadata. */
 #define ZXID_AS_ENA 0
@@ -902,9 +903,17 @@
 #define ZXID_LOGUSER 1
 
 /*(c) State storage options
- * - 0 = Send state inline deflate compressed and safe_base64 encoded
- * - 1 = Store state locally and send only sha1 name of the state blob
- * - other values reserved.
+ * 
+ * Controls how SSO user interface flow state is remembered from
+ * one step to next.
+ *
+ * - 0 = Send state inline deflate compressed and safe_base64 encoded.
+ *   Tends to result in longer and uglier URLs and may in some cases
+ *   be analyzed by middlemen. Requires less disk I/O.
+ * - 1 = Store state locally and send only sha1 name of the state blob.
+ *   Results shorter URLs and prevents analysis by middlemen at cost
+ *   of some extra I/O.
+ * - Other values are reserved.
  *
  * Does not affect metadata. */
 #define ZXID_STATE_OPT 1
@@ -913,12 +922,16 @@
  * You can also set this via zxid_set_opt().
  *
  * - 0 = debug output off
- * - 3 = debug on
+ * - 1 = info level messages only
+ * - 2 = terse debug
+ * - 3 = verbose debug
+ * - 0x04 = bit to enable log/xml.dbg, e.g. 0x07 gives verbose debugging with xml.dbg
+ * - 0x7f = enable all debugging options for copious output
  *
  * other values are reserved, experimental, or otherwise undocumented.
  * Setting debug option will enable numerous, sometimes copious, debugging
  * messages to stderr, which often ends in web server's error.log file.
- * This option may also create log/xml.dbg file.
+ * This option may also create log/xml.dbg file. See errmac.h for details.
  *
  * Does not affect metadata. */
 #define ZXID_DEBUG 0
@@ -955,7 +968,7 @@
 #define ZXID_BUS_PW 0
 
 /*(c) How Audit Bus receipts are issued
- * 0x00 = no receipt, 0x01 = plain, 0x03 SHA, 0x05 = RSA-SHA.
+ * 0x00 = no receipt, 0x01 = plain, 0x03 = SHA, 0x05 = RSA-SHA.
  * In 0x05 case the actual signing algorithm depends on key type of sign_key (see metadata)
  * and the ZXID_BLOGSIG_DIGEST_ALGO setting.
  *
@@ -989,7 +1002,7 @@
  * ignoring InclusiveNamespaces/@PrefixList, yet
  * it still supplies such list. The miscanonicalization
  * leads namespaces missing. This has been reported to Scott Cantor as of 20101005
- * Set this option to 0x01 to avvoid the trouble.
+ * Set this option to 0x01 to avoid the trouble.
  *
  * Does not affect metadata. */
 
@@ -1018,7 +1031,7 @@
  * to be perfect, not to speak of timezone misconfigurations and the
  * dreaded officially introduced time errors (e.g. daylight "savings" time),
  * you can configure some slop in how the timeout is evaluated. For production
- * use something like 60 seconds could be a good value. 3600 = 1 hour, 86400 = 1 day.
+ * use, something like 60 seconds could be a good value. 3600 = 1 hour, 86400 = 1 day.
  * All servers of CoT MUST use GMT (aka UTC), not local timezones. You can synchronize
  * clocks with ntpdate pool.ntp.org (see man ntpdate).
  *
@@ -1071,12 +1084,6 @@
  * Does not affect metadata. */
 #define ZXID_REMOTE_USER_ENA 1
 
-/*(c) Query String if None Given
- * Does not affect metadata.
- */
-
-#define ZXID_DEFAULTQS ""   /* Default Query String used by mod_auth_saml for protected page */
-
 /*(c) WSP Pattern
  * Any URL matching this pattern is treated as web service call rather
  * than SSO attempt. Understood by mod_auth_saml, zxid_httpd and mini_httpd_zxid.
@@ -1101,6 +1108,36 @@
  * Does not affect metadata. */
 #define ZXID_SSO_PAT "**"
 
+/*(c) Optional Login URL Pattern
+ * If a page matching OPTIONAL_LOGIN_PAT is accessed, then
+ *
+ * a. If session is already active, session is used and attributes of session
+ *    are visible to the page.
+ * b. If no session is active, then no login is requested, unless the
+ *    URL matches BURL.
+ *
+ * N.B. This option tries to do what many people try to use ANON_OK for.
+ *
+ * Does not affect metadata. */
+#define ZXID_OPTIONAL_LOGIN_PAT 0
+
+/*(c) Query String if None Given
+ *
+ * Example:
+ *
+ *    DEFAULTQS=l1https://idsso.com/idp=1%26fc=1%26fn=p
+ *
+ * If protected content is acceessed, and there is no session, and
+ * OPTIONAL_LOGIN_PAT does not match (and SSO_PAT matches), then
+ * process the request as if the query string had indicated IdP
+ * selection form click specifying profile 1 (artifact) of idsso.com.
+ * Note the URI encoding of the ampersands.
+ *
+ * Does not affect metadata.
+ */
+
+#define ZXID_DEFAULTQS ""   /* Default Query String used by mod_auth_saml for protected page */
+
 /*(c) Anonymous can see protected content
  * If ANON_OK is set and matches the local URL - see zx_match(), SSO failure
  * does not block protected content from being
@@ -1121,19 +1158,6 @@
  *
  * Does not affect metadata. */
 #define ZXID_ANON_OK 0
-
-/*(c) Optional Login URL Pattern
- * If a page matching OPTIONAL_LOGIN_PAT is accessed, then
- *
- * a. If session is already active, session is used and attributes of session
- *    are visible to the page.
- * b. If no session is active, then no login is requested, unless the
- *    URL matches BURL.
- *
- * N.B. This option tries to do what many people try to use ANON_OK for.
- *
- * Does not affect metadata. */
-#define ZXID_OPTIONAL_LOGIN_PAT 0
 
 /*(c) Required Authentication Context Class Ref
  * This can be used

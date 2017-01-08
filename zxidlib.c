@@ -200,7 +200,7 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
   EVP_PKEY* sign_pkey;
   struct zx_str id_str;
   struct zx_str* logpath;
-  char* sigbuf[SIG_SIZE];
+  char* sigbuf[SIG_SIZ];
   char* zbuf;
   char* url;
   char* sig;
@@ -227,7 +227,7 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
   alloc_len = MAX((field_len + 1 + payload->len
 		   + sizeof("&RelayState=")-1 + rs_len
 		   + sizeof("&SigAlg=")-1 + MAX(sizeof(SIG_ALGO),sizeof(SIG_ALGO_RSA_SHA512))-1
-		   + sizeof(ETSIGNATURE_EQ)-1 + SIG_SIZE),
+		   + sizeof(ETSIGNATURE_EQ)-1 + SIG_SIZ),
 		  SIMPLE_BASE64_LEN(payload->len));
   url = p = ZX_ALLOC(cf->ctx, alloc_len + 1);  /* +1 for nul term */
 
@@ -266,7 +266,7 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
     p += sizeof(ETSIGNATURE_EQ)-1;
     sig = p;
     p = base64_fancy_raw(zbuf, zlen, p, std_basis_64, 1<<31, 0, 0, '=');
-    ASSERTOPI(p-url, <, alloc_len);  /* Check sig did not overrun its fixed size alloc SIG_SIZE */
+    ASSERTOPI(p-url, <, alloc_len);  /* Check sig did not overrun its fixed size alloc SIG_SIZ */
     slen = p-sig;
     ZX_FREE(cf->ctx, zbuf);
     
@@ -289,7 +289,7 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
 	zx_str_free(cf->ctx, logpath);
       }
     }
-    ASSERTOPI(SIG_SIZE-1, >, slen);
+    ASSERTOPI(SIG_SIZ-1, >, slen);
     memcpy(sigbuf, sig, slen);
     sigbuf[slen] = 0;
   } else {
@@ -298,7 +298,7 @@ struct zx_str* zxid_saml2_post_enc(zxid_conf* cf, char* field, struct zx_str* pa
 
   p = base64_fancy_raw(payload->s, payload->len, url, std_basis_64, 1<<31, 0, 0, '=');
   *p = 0;
-  ASSERTOPI(p-url, <=, alloc_len); /* Check sig didn't overrun its fixed size alloc SIG_SIZE */  
+  ASSERTOPI(p-url, <=, alloc_len); /* Check sig didn't overrun its fixed size alloc SIG_SIZ */  
 
   /* Template based POST page, see post.html */
   ZERO(&cgi, sizeof(cgi));

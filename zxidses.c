@@ -197,32 +197,42 @@ int zxid_get_ses(zxid_conf* cf, zxid_ses* ses, const char* sid)
   DD("ses(%s)", ses->sesbuf);
   ses->sid = zx_dup_cstr(cf->ctx, sid);
 
-  ses->nid = ses->sesbuf;
+  ses->nid = ses->sesbuf;       /* 1 */
   p = strchr(ses->sesbuf, '|');
   if (!p) goto out;
   *p++ = 0;
 
-  ses->sso_a7n_path = p;
+  ses->idpeid = p;              /* 2 */
   p = strchr(p, '|');
   if (!p) goto out;
   *p++ = 0;
 
-  ses->sesix = p;
+  ses->nidfmt = ONE_OF_3(*p, '0', 'T', 't')?0:1;  /* 3 */
   p = strchr(p, '|');
   if (!p) goto out;
   *p++ = 0;
 
-  ses->an_ctx = p;
+  ses->sso_a7n_path = p;        /* 4 */
   p = strchr(p, '|');
   if (!p) goto out;
   *p++ = 0;
 
-  ses->uid = p;
+  ses->sesix = p;               /* 5 */
   p = strchr(p, '|');
   if (!p) goto out;
   *p++ = 0;
 
-  ses->an_instant = atol(p);
+  ses->an_ctx = p;              /* 6 */
+  p = strchr(p, '|');
+  if (!p) goto out;
+  *p++ = 0;
+
+  ses->uid = p;                 /* 7 */
+  p = strchr(p, '|');
+  if (!p) goto out;
+  *p++ = 0;
+
+  ses->an_instant = atol(p);    /* 8 */
 
  out:
   D("GOT sesdir(%s" ZXID_SES_DIR "%s) uid(%s) nid(%s) sso_a7n_path(%s) sesix(%s) an_ctx(%s)", cf->cpath, ses->sid, STRNULLCHK(ses->uid), STRNULLCHK(ses->nid), STRNULLCHK(ses->sso_a7n_path), STRNULLCHK(ses->sesix), STRNULLCHK(ses->an_ctx));
@@ -245,7 +255,7 @@ int zxid_put_ses(zxid_conf* cf, zxid_ses* ses)
 
   if (ses->sid) {
     if (strlen(ses->sid) != strspn(ses->sid, safe_basis_64)) {
-      ERR("EVIL Session ID(%s)", ses->sid);
+      ERR("EVIL Session ID(%s). This could indicate an attack trying to access filesystem.", ses->sid);
       return 0;
     }
   } else {  /* New session */
@@ -264,13 +274,16 @@ int zxid_put_ses(zxid_conf* cf, zxid_ses* ses)
   buf = ZX_ALLOC(cf->ctx, ZXID_MAX_SES);
   if (!write_all_path_fmt("put_ses", ZXID_MAX_SES, buf,
 			  "%s" ZXID_SES_DIR "%s/.ses", cf->cpath, ses->sid,
-			  "%s|%s|%s|%s|%s|%d|",
-			  STRNULLCHK(ses->nid),
-			  STRNULLCHK(ses->sso_a7n_path),
-			  STRNULLCHK(ses->sesix),
-			  STRNULLCHK(ses->an_ctx),
-			  STRNULLCHK(ses->uid),
-			  ses->an_instant)) {
+			  /*1  2  3  4  5  6  7  8 */
+			  "%s|%s|%c|%s|%s|%s|%s|%d|",
+			  STRNULLCHK(ses->nid),          /* 1 */
+			  STRNULLCHK(ses->idpeid),       /* 2 */
+			  ONE_OF_4(ses->nidfmt, 0, '0', 'T', 't')?'0':'1',  /* 3 */
+			  STRNULLCHK(ses->sso_a7n_path), /* 4 */
+			  STRNULLCHK(ses->sesix),        /* 5 */
+			  STRNULLCHK(ses->an_ctx),       /* 6 */
+			  STRNULLCHK(ses->uid),          /* 7 */
+			  ses->an_instant)) {            /* 8 */
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "S", "EFILE", ses->sid, "writing ses fail, permissions?");
     ZX_FREE(cf->ctx, buf);
     return 0;
