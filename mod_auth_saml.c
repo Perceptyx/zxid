@@ -1,6 +1,6 @@
 /* mod_auth_saml.c  -  Handwritten functions for Apache mod_auth_saml module
  * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2008-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -23,6 +23,7 @@
  * 9.3.2015,  refactored to isolate httpd version dependencies to httpdglue.c --Sampo
  * 20151218,  added special placeholder user "-anon-" for the 2.4 optional_login_pat case --Sampo
  * 20160306,  eliminated some commented out code --Sampo
+ * 20170109,  improvement on processing DEFAULTQS when accessing protected pages directly --Sampo
  *
  * To configure this module add to httpd.conf something like
  *
@@ -525,10 +526,12 @@ static int chkuid(request_rec* r)
 	return OK;
       }
     }
-    if (HRR_args(r) && ((char*)HRR_args(r))[0] == 'l') {
+#if 0
+    if (HRR_args(r) && ((char*)HRR_args(r))[0] == 'l') {   /* *** what is the purpose of this? */
       D("Detect login(%s)", (char*)HRR_args(r));
     } else
       cgi.op = 'E';   /* Trigger IdP selection screen */
+#endif
     D("other page: no_ses uri(%s) templ(%s) tf(%s) k(%s)", uri, STRNULLCHKNULL(cgi.templ), STRNULLCHKNULL(cf->idp_sel_templ_file), STRNULLCHKNULL(cgi.skin));
   }
 step_up:

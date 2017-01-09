@@ -1,6 +1,6 @@
 /* zxutil.c  -  Utility functions
  * Copyright (c) 2012-2013 Synergetics (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -17,6 +17,7 @@
  * 21.6.2013, added wild card matcher --Sampo
  * 30.11.2013, fixed read 1 past end in base64_fancy_raw() found by valgrind --Sampo
  * 4.12.2016, added tolerance for ...&name&... cgi arg meaning arg without value (FB) --Sampo
+ * 20170109   added safe <-> std base64 conversion functions --Sampo
  */
 
 #include "platform.h"

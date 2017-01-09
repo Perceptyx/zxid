@@ -1,6 +1,6 @@
 /* zxidconf.h  -  Configuration of ZXID
  * Copyright (c) 2012-2015 Synergetics (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011, 2016-2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -19,6 +19,7 @@
  * 21.6.2013, added wsp_pat --Sampo
  * 28.5.2015, formatted documentation --Sampo
  * 7.12.2016, added state storage option --Sampo
+ * 20170109   added VALID_OPT=0x02 to disable peer verification --Sampo
  *
  * Most of the configuration options can be set via configuration
  * file /var/zxid/zxid.conf or using -c command line flag(s). In
@@ -1021,10 +1022,12 @@
  * Turning them on will reduce security as validations are not made.
  *
  * 0x01 Skip response header validation entirely, see zxid_wsc_valid_re_env()
+ * 0x02 Suppress TLS level VERIFYPEER checking
  *
  * Does not affect metadata. */
 #define ZXID_VALID_OPT 0x00
 #define ZXID_VALID_OPT_SKIP_RESP_HDR 0x01
+#define ZXID_VALID_OPT_NO_TLS_VERIFYPEER 0x02
 
 /*(c) Time Slop
  * Because clock sychronization amoung the servers in the CoT is unlikely

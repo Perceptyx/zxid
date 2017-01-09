@@ -1,6 +1,6 @@
 /* zxcot.c  -  CoT (Circle-of-Trust) management tool: list CoT, add metadata to CoT
  * Copyright (c) 2012-2016 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -10,6 +10,7 @@
  * 27.8.2009, created --Sampo
  * 24.4.2012, obsoleted PATH=/var/zxid/idp. From now on, just use /var/zxid/ or VPATH --Sampo
  * 20160306,  eliminated some commented out code --Sampo
+ * 20170109,  improved documentation, added mode directories to -dirs
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -33,7 +34,7 @@
 char* help =
 "zxcot  -  Circle-of-Trust and metadata management tool R" ZXID_REL "\n\
 Copyright (c) 2012-2013 Synergetics SA (sampo@synergetics.be), All Rights Reserved.\n\
-Copyright (c) 2009-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
+Copyright (c) 2009-2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
 NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0\n\
 See http://www.apache.org/licenses/LICENSE-2.0\n\
 Send well researched bug reports to the author. Home: http://zxid.org\n\
@@ -73,7 +74,7 @@ Usage: zxcot [options] [cotdir]         # Gives listing of metadata\n\
   -h               This help message\n\
   --               End of options\n\
 \n\
-HTTP_HOST=idp.cloud-identity.eu SCRIPT_NAME=/idp e2etacot -c 'CPATH=/d/relifex/e2eta/' -m\n\
+HTTP_HOST=idsso.com SERVER_PORT=443 SCRIPT_NAME=/idp zxcot -c 'CPATH=/d/web/zxid/' -m\n\
 zxcot -e http://idp.tas3.pt:8081/zxididp?o=S 'TAS3 Default Discovery Service (ID-WSF 2.0)' http://idp.tas3.pt:8081/zxididp?o=B urn:liberty:disco:2006-08 | zxcot -b\n\
 \n";
 

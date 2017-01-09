@@ -1,6 +1,6 @@
 /* zxidsimp.c  -  Handwritten zxid_simple() API
  * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -30,6 +30,7 @@
  * 16.4.2016, fixed premature nul termination in Location redirects, added cookies ot redirects --Sampo
  * 8.10.2016, added possibility of specifying default skin in configuration --Sampo
  * 1.12.2016, added generation of OAUTH2 state --Sampo
+ * 20170109,  improvement on processing DEFAULTQS when accessing protected pages directly --Sampo
  *
  * Login button abbreviations
  * A2 = SAML 2.0 Artifact Profile
@@ -1593,9 +1594,12 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
     chdir(cf->wd);
 
   D("op(%c) cf=%p cgi=%p ses=%p auto=%x wd(%s)", cgi->op?cgi->op:'-', cf, cgi, ses, auto_flags, STRNULLCHKD(cf->wd));
-  if (!cgi->op && cf->defaultqs && cf->defaultqs[0]) {
-    zxid_parse_cgi(cf, cgi, cf->defaultqs);
-    INFO("DEFAULTQS(%s) op(%c)", cf->defaultqs, cgi->op?cgi->op:'-');
+  if (!cgi->op) {
+    if (cf->defaultqs && cf->defaultqs[0]) {
+      zxid_parse_cgi(cf, cgi, cf->defaultqs);
+      INFO("DEFAULTQS(%s) op(%c)", cf->defaultqs, cgi->op?cgi->op:'-');
+    } else
+      cgi->op = 'E';  /* Trigger IdP selection screen */
   }
   
   switch (cgi->op) {

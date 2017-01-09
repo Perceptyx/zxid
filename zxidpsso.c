@@ -713,7 +713,7 @@ static char* zxid_generate_artifact(zxid_conf* cf, struct zx_str* a7npath)
   
   len = SIMPLE_BASE64_LEN(4+20+20);
   b64 = ZX_ALLOC(cf->ctx, len+1);
-  p = base64_fancy_raw(buf, 4+20+20, b64, safe_basis_64, 1<<31, 0, 0, '=');
+  p = base64_fancy_raw(buf, 4+20+20, b64, safe_basis_64, 1<<31, 0, 0, '.');
   *p = 0;
 
   name_from_path(artpath, sizeof(artpath), "%s" ZXID_ART_DIR "%s", cf->cpath, b64);

@@ -407,10 +407,11 @@ int zxid_sp_deref_art(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
     for (ar_svc = idp_meta->ed->IDPSSODescriptor->ArtifactResolutionService;
 	 ar_svc;
 	 ar_svc = (struct zx_md_ArtifactResolutionService_s*)ar_svc->gg.g.n) {
+      DD("Looking for art res svc tok=%x %p",ar_svc->gg.g.tok,ar_svc);
       if (ar_svc->gg.g.tok != zx_md_ArtifactResolutionService_ELEM)
 	continue;
       if (ar_svc->Binding  && !memcmp(SAML2_SOAP, ar_svc->Binding->g.s, ar_svc->Binding->g.len)
-	  && ar_svc->index && !memcmp(end_pt_ix, ar_svc->index->g.s, ar_svc->index->g.len)
+	  && (ar_svc->index?!memcmp(end_pt_ix, ar_svc->index->g.s, ar_svc->index->g.len):1)
 	  && ar_svc->Location)
 	break;
     }

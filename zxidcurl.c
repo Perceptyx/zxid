@@ -1,6 +1,6 @@
 /* zxidcurl.c  -  libcurl interface for making SOAP calls and getting metadata
  * Copyright (c) 2013-2015 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011, 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011, 2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2008 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -19,6 +19,7 @@
  * 27.5.2014,  Added feature to stop parsing after end of first top level tag has been seen --Sampo
  * 8.6.2015,   Fixed bug relating to unset action header --Sampo
  * 5.12.2016,  Make use of CURLOPT_ERRORBUFFER feature --Sampo
+ * 20170109    added VALID_OPT=0x02 to disable peer verification --Sampo
  *
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  *           http://curl.haxx.se/libcurl/
@@ -172,8 +173,11 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
   curl_easy_setopt(cf->curl, CURLOPT_WRITEDATA, &rc);
   curl_easy_setopt(cf->curl, CURLOPT_WRITEFUNCTION, zxid_curl_write_data);
   curl_easy_setopt(cf->curl, CURLOPT_NOPROGRESS, 1);
-  //curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYPEER, 0);  /* *** arrange verification */
-  //curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYHOST, 0);  /* *** arrange verification */
+  if (cf->valid_opt & ZXID_VALID_OPT_NO_TLS_VERIFYPEER) {   /* 0x02 */
+    INFO("TLS peer verification disabled by VALID_OPT=0x02. Connection is not secure. Set VALID_OPT=0 to ensure secure connections. %x", cf->valid_opt);
+    curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYPEER, 0);  /* do not verify cert chain */
+    curl_easy_setopt(cf->curl, CURLOPT_SSL_VERIFYHOST, 0);  /* do not verify hostname in cert */
+  }
   //curl_easy_setopt(cf->curl, CURLOPT_CERTINFO, 1);
 
   if (!(flags & 0x02)) {
@@ -182,7 +186,7 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
   }
   
   if (flags & 0x01)
-    curl_easy_setopt(cf->curl, CURLOPT_HEADER, 1); /* response shall have Heacers CRLF CRLF Body */
+    curl_easy_setopt(cf->curl, CURLOPT_HEADER, 1); /* response shall have Headers CRLF CRLF Body */
 
   if (url_len == -1)
     url_len = strlen(url);
