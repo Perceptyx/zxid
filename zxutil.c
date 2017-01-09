@@ -1164,8 +1164,9 @@ char* zx_zap_inplace_raw(char* s, const char* zap)
 #define URL_BAD(x) (((x)<=' ')||((x)>=0x7f)||ONE_OF_4((x),'+','%','=','&')||ONE_OF_2((x),'#','?'))
 #endif
 
-/*() Compute length of the URL encoded string. The encoding is done
- * to characters listed in URL_BAD() macro in zxutil.c.
+/*() Compute length of the URL encoded string.
+ * The encoding is done to characters listed in URL_BAD() macro in zxutil.c.
+ * Aka: URI encoding uri_encode
  * return: Required buffer size, including nul term. Subtract 1 for string length. */
 
 /* Called by: */

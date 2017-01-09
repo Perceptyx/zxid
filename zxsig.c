@@ -1,5 +1,5 @@
 /* zxsig.c  -  Signature generation and validation
- * Copyright (c) 2010 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Copyright (c) 2015-2016 Synergetics (sampo@synergetics.be), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
@@ -18,6 +18,7 @@
  * 18.12.2015, applied patch from soconnor, perceptyx, adding algos --Sampo
  * 7.1.2016,   made hash algorithm for generated signatures more configurable --Sampo
  * 6.3.2016,   eliminated obsolete, commented out, code --Sampo
+ * 20170109   reduced debug output verbosity --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  */
@@ -844,8 +845,8 @@ int zx_report_openssl_err(const char* logkey)
 #endif
 
   D("%s: len=%d data(%.*s)", lk, len, len, data);
-  D("%s: data above %d", lk, hexdump("data: ", data, data+len, 4096));
-  D("%s: digest above %d", lk, hexdump("digest: ", mdbuf, mdbuf+mdlen, 64));
+  DV("%s: data above %d", lk, hexdump("data: ", data, data+len, 4096));
+  DV("%s: digest above %d", lk, hexdump("digest: ", mdbuf, mdbuf+mdlen, 64));
 
   if (!priv_key) {
     ERR(priv_key_missing_msg, geteuid(), getegid());
@@ -863,7 +864,7 @@ int zx_report_openssl_err(const char* logkey)
     if (RSA_sign(EVP_MD_type(evp_digest), mdbuf, mdlen, (unsigned char*)*sig, (unsigned int*)&len, rsa)) {
       DD("data = %s, SHA1 sig = %s, siglen = %d", data, *sig, len);
       D("RSA siglen = %d", len);
-      D("%s: sig above %d", lk, hexdump("sig: ", *sig, *sig+len, 1024));
+      DV("%s: sig above %d", lk, hexdump("sig: ", *sig, *sig+len, 1024));
       return len;
     }
 #else
@@ -999,9 +1000,9 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
   else if (!strcmp(mdalg, "SHA512")) { SHA512((unsigned char*)data, len, mdbuf); nid = NID_sha512; }
   else { SHA1((unsigned char*)data, len, mdbuf); nid = NID_sha1; }
 #endif
-  D("%s: vfy data len=%d above %d", lk, len, hexdump("data: ", data, data+len, 8192));
-  D("%s: vfy sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 8192));
-  D("%s: vfy md above %d", lk, hexdump("md: ", mdbuf, mdbuf+64, 64));
+  DV("%s: vfy data len=%d above %d", lk, len, hexdump("data: ", data, data+len, 8192));
+  DV("%s: vfy sig above %d",  lk, hexdump("sig: ",  sig,  sig+siglen, 8192));
+  DV("%s: vfy md above %d", lk, hexdump("md: ", mdbuf, mdbuf+64, 64));
   
   evp_pubk = X509_get_pubkey(cert);
   if (!evp_pubk) {

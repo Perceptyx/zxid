@@ -136,9 +136,9 @@ struct zx_sp_ArtifactResponse_s* zxid_mk_art_resp(zxid_conf* cf, struct zx_str* 
   r->Status = zxid_OK(cf, &r->gg);
   zx_add_kid(&r->gg, &resp->gg);
   r->Response = resp;
+  zx_reverse_elem_lists(&r->gg);
   return r;
 }
-
 
 /*() Create SAML protocol <Status> element, given various levels of error input. */
 

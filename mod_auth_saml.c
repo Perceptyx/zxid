@@ -127,7 +127,7 @@ static void set_cookies(zxid_conf* cf, request_rec* r, const char* setcookie, co
  * This is considered internal function to mod_auth_saml, called by chkuid().
  * You should not call this directly, unless you know what you are doing.
  *
- * return:: Apache error code, typically OK, which allows Apache continue
+ * return:: Apache error code, typically OK (==0), which allows Apache continue
  *     processing the request. */
 
 /* Called by:  chkuid x3 */
@@ -304,6 +304,7 @@ static char* read_post(zxid_conf* cf, request_rec* r)
  * Called from httpd-2.2.8/server/request.c: ap_process_request_internal()
  * ap_run_check_user_id(). Return value is processed in modules/http/http_request.c
  * and redirect is in ap_die(), http_protocol.c: ap_send_error_response()
+ * Return value OK == 0 allows the page to proceed.
  *
  * It seems this function will in effect be called twice by Apache internals: once
  * to see if it would succeed and second time to actually do the work. This is rather
@@ -332,7 +333,7 @@ static int chkuid(request_rec* r)
   cgi.qs = r?HRR_args(r):0;
 
   //D("request_rec sizeof=%d offset(r->uri)=%d offset(r->user)=%d", sizeof(request_rec), (void*)(uri)-(void*)r, (void*)(&(r->user))-(void*)r);
-  D("===== START %s req=%p uri(%s) args(%s) pid=%d cwd(%s)", ZXID_REL, r, r?STRNULLCHKNULL(uri):"(r null)", r?STRNULLCHKNULL(HRR_args(r)):"(r null)", getpid(), getcwd(buf,sizeof(buf)));
+  INFO("===== START %s req=%p uri(%s) args(%s) pid=%d cwd(%s)", ZXID_REL, r, r?STRNULLCHKNULL(uri):"(r null)", r?STRNULLCHKNULL(HRR_args(r)):"(r null)", getpid(), getcwd(buf,sizeof(buf)));
   if (cf->wd && *cf->wd)
     chdir(cf->wd);  /* Ensure the working dir is not / (sometimes Apache httpd changes dir) */
   D_INDENT("chkuid: ");
@@ -408,7 +409,7 @@ static int chkuid(request_rec* r)
   /* Check if we are supposed to enter zxid due to URL suffix - to
    * process protocol messages rather than ordinary pages. To do this
    * correctly we need to ignore the query string part. We are looking
-   * here at exact match, like /protected/saml, rather than any of
+   * here at an exact match, like /protected/saml, rather than any of
    * the other documents under /protected/ (which are handled in the
    * else clause). Both then and else -clause URLs are defined as requiring
    * SSO by virtue of the web server configuration. */

@@ -1341,7 +1341,6 @@ static char* zxid_show_protected_content_setcookie(zxid_conf* cf, zxid_cgi* cgi,
       D("The PTM epr could not be discovered. Has it been registered at discovery service? Is there a discovery service? %p", epr);
     }
   }
-  // *** check cf->redir_to_content here
   ses->rs = cgi->rs;
   if (cgi->rs && cgi->rs[0] && cgi->rs[0] != '-') {
     /* N.B. RelayState was set by chkuid() "some other page" section by setting cgi.rs

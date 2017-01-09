@@ -685,8 +685,7 @@ char* zxid_get_idpnid_at_eid(zxid_conf* cf, const char* uid, const char* eid, in
  * The artifact is "stored" by forming a symlink, named after artfact,
  * to the actual assertion.
  * Artifact format is documented in [SAML2bind] (saml-bindings-2.0-os.pdf) sec 3.4.4, pp. 28-29.
- * See also: zxid_idp_artifact_do()
- */
+ * See also: zxid_idp_artifact_do() */
 
 static char* zxid_generate_artifact(zxid_conf* cf, struct zx_str* a7npath)
 {
@@ -717,13 +716,16 @@ static char* zxid_generate_artifact(zxid_conf* cf, struct zx_str* a7npath)
   *p = 0;
 
   name_from_path(artpath, sizeof(artpath), "%s" ZXID_ART_DIR "%s", cf->cpath, b64);
+  D("symlink a7npath(%s), artpath(%s)", a7npath->s, artpath);
   if (symlink(a7npath->s, artpath)) {
     perror("symlink artifact");
     ERR("symlinking artifact failed a7npath(%s), artpath(%s)", a7npath->s, artpath);
   }
 
   safe_to_std_b64(p-b64, b64);
-  return b64;
+  p = zx_url_encode(cf->ctx, p-b64, b64, 0);
+  ZX_FREE(cf->ctx, b64);
+  return p;
 }
 
 /*() Generate SOAP envelope with ECP header */
@@ -937,9 +939,10 @@ struct zx_str* zxid_idp_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct 
 
     zxlog(cf, 0, &srcts, 0, ZX_GET_CONTENT(ar->Issuer), 0, &a7n->ID->g, ZX_GET_CONTENT(nameid), "N", "K", logop, ses->uid, "BRWS-ART");
 
-    ss = zx_strf(cf->ctx, "Location: %.*s%cSAMLart=%s" CRLF
+    ss = zx_strf(cf->ctx, "Location: %.*s%cSAMLart=%s&RelayState=%s" CRLF
 		 "%s%s%s" CRLF,   /* Set-Cookie */
 		 acsurl->len, acsurl->s, (memchr(acsurl->s, '?', acsurl->len) ? '&' : '?'), p,
+		 STRNULLCHKD(cgi->rs),
 		 ses->setcookie?"Set-Cookie: ":"",
 		 ses->setcookie?ses->setcookie:"",
 		 ses->setcookie?CRLF:"");
