@@ -186,7 +186,7 @@ struct zx_str* zx_strf(struct zx_ctx* c, const char* f, ...);  /* data is new me
 char* zx_alloc_sprintf(struct zx_ctx* c, int* retlen, const char* f, ...);
 void  zx_str_free(struct zx_ctx* c, struct zx_str* ss);   /* free both ss->s and ss */
 char* zx_str_to_c(struct zx_ctx* c, struct zx_str* ss);
-void  zx_str_conv(struct zx_str* ss, int* out_len, char** out_s);  /* SWIG typemap friendly */
+void  zx_str_conv(struct zx_str* ss, int* out_len, char** out_s); /* SWIG typemap friendly convert */
 int   zx_str_cmp(struct zx_str* a, struct zx_str* b);
 int   zx_str_ends_in(struct zx_str* ss, int len, const char* suffix);
 #define ZX_STR_EQ(ss, cstr) ((ss) && (cstr) && (ss)->s && (ss)->len == strlen(cstr) && !memcmp((cstr), (ss)->s, (ss)->len))

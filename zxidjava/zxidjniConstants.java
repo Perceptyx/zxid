@@ -179,6 +179,7 @@ public interface zxidjniConstants {
   public final static int ZXID_OIDC1_CODE = zxidjniJNI.ZXID_OIDC1_CODE_get();
   public final static int ZXID_OIDC1_ID_TOK_TOK = zxidjniJNI.ZXID_OIDC1_ID_TOK_TOK_get();
   public final static int ZXID_FBC_CODE = zxidjniJNI.ZXID_FBC_CODE_get();
+  public final static int ZXID_MOBCONN_CODE = zxidjniJNI.ZXID_MOBCONN_CODE_get();
   public final static int ZXID_SLO_SVC = zxidjniJNI.ZXID_SLO_SVC_get();
   public final static int ZXID_MNI_SVC = zxidjniJNI.ZXID_MNI_SVC_get();
   public final static int ZXID_ACS_SVC = zxidjniJNI.ZXID_ACS_SVC_get();
@@ -246,6 +247,7 @@ public interface zxidjniConstants {
   public final static String SAML2_POST_SIMPLE_SIGN = zxidjniJNI.SAML2_POST_SIMPLE_SIGN_get();
   public final static String SAML2_URI = zxidjniJNI.SAML2_URI_get();
   public final static String OAUTH2_REDIR = zxidjniJNI.OAUTH2_REDIR_get();
+  public final static String MOBCONN1_REDIR = zxidjniJNI.MOBCONN1_REDIR_get();
   public final static String FBC28_REDIR = zxidjniJNI.FBC28_REDIR_get();
   public final static String SAML2_AP_BASIC = zxidjniJNI.SAML2_AP_BASIC_get();
   public final static String SAML2_AP_X500 = zxidjniJNI.SAML2_AP_X500_get();

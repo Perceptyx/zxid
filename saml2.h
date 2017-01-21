@@ -88,7 +88,11 @@
 
 #define OAUTH2_REDIR   "urn:zxid:OAUTH:2.0:bindings:HTTP-Redirect"
 
-/* Facebook Connect 2.8 specifics */
+/* Mobile Connect 1.0 (based on OIDC1) specifics */
+
+#define MOBCONN1_REDIR   "urn:mobconn:1.0:bindings:HTTP-Redirect-Discovery"
+
+/* Facebook Connect 2.8 (based on OAUTH2) specifics */
 
 #define FBC28_REDIR   "urn:fbc:2.8:bindings:HTTP-Redirect"
 

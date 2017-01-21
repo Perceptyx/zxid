@@ -274,6 +274,8 @@ ZXID_DECL struct zx_sa_Attribute_s* zxid_mk_sa_attribute(zxid_conf* cf, struct z
 
 /* zxidoauth */
 
+ZXID_DECL char* zxid_get_app_secret(zxid_conf* cf, const char* sha1_name, const char* logkey);
+ZXID_DECL char* zxid_prepare_statef(zxid_conf* cf, const char* fmt, ...);
 ZXID_DECL struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses);
 ZXID_DECL char* zxid_idp_oauth2_token_and_check_id(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* res_len, int auto_flags);
 ZXID_DECL struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses);

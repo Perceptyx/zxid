@@ -1227,7 +1227,8 @@ char* zx_url_encode(struct zx_ctx* c, int in_len, const char* in, int* out_len)
   return out;
 }
 
-/*() Base64 encode and URL encode concatenation "uid:password" as in HTTP basic authentication */
+/*() Base64 encode concatenation "uid:password" and wrap it as Authorization Basic HTTP header
+ * See also: http://www.ietf.org/rfc/rfc2617.txt */
 
 /* Called by:  opt, zxid_oauth_call_az_endpoint, zxid_oauth_call_rpt_endpoint, zxid_oauth_rsrcreg_client */
 char* zx_mk_basic_auth_b64(struct zx_ctx* c, const char* uid, const char* pw)
@@ -1238,12 +1239,18 @@ char* zx_mk_basic_auth_b64(struct zx_ctx* c, const char* uid, const char* pw)
   int len;
 
   p = zx_alloc_sprintf(c, &len, "%s:%s", uid, pw);
-  b64 = ZX_ALLOC(c, SIMPLE_BASE64_LEN(len));
+  b64 = ZX_ALLOC(c, SIMPLE_BASE64_LEN(len)+1);
   q = base64_fancy_raw(p, len, b64, std_basis_64, 10000000, 0, 0, '=');
   ZX_FREE(c, p);
-  p = zx_url_encode(c, q-b64, b64, 0);
+  *q = 0;
+
+  p = zx_alloc_sprintf(c, 0, "Authorization: Basic %s", b64);
   ZX_FREE(c, b64);
   return p;
+#if 0
+  p = zx_url_encode(c, q-b64, b64, 0);
+  return p;
+#endif
 }
 
 /*() Parse one fragment of a query string (QUERY_STRING querystring).
@@ -1485,7 +1492,8 @@ const char* zx_json_extract_raw(const char* hay, const char* key, int* len)
   return s;
 }
 
-/*() Extract simple scalar string from JSON document. Return newly allocated memory.
+/*() Extract simple scalar string from JSON document.
+ * Return newly allocated memory with nul termination.
  * N.B. The key specification MUST include the quotes, e.g. "\"yourkey\""
  */
 

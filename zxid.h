@@ -1,6 +1,6 @@
 /* zxid.h  -  Definitions for zxid CGI
  * Copyright (c) 2012-2013 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -27,6 +27,7 @@
  * 18.12.2015, applied patch from soconnor, perceptyx --Sampo
  * 7.12.2016,  added state dir support --Sampo
  * 8.12.2016,  merged user/ to uid/ --Sampo
+ * 20170119    added support for Mobile Connect --Sampo
  */
 
 #ifndef _zxid_h
@@ -135,6 +136,11 @@ struct zxid_entity_s {
   char  sha1_name[28];  /* 27 chars (+1 that is overwritten with nul) */
   struct zx_md_EntityDescriptor_s* ed;  /* Metadata */
   struct zxid_map* aamap;  /* Optional. Read from /var/zxid/idpuid/.all/sp_name_buf/.cf */
+  char* az_url;         /* OpenID Connect authorization endpoint (from discovery or otherwise) */
+  char* token_url;      /* OIDC token endpoint */
+  char* userinfo_url;   /* OIDC userinfo endpoint */
+  char* client_id;      /* OIDC (extracted from discovery or metadata) */
+  char* client_secret;  /* OIDC (extracted from discovery or pem directory) */
 #ifdef USE_OPENSSL
   X509* tls_cert;
   X509* sign_cert;
@@ -461,6 +467,7 @@ struct zxid_cgi {
   char* rest;          /* OAUTH2 Resource Set Registration: RESTful part of the URI */
   char* response_type; /* OAuth2 / OpenID-Connect (OIDC1), used to detect An/Az req */
   char* client_id;     /* OAuth2 */
+  char* client_secret; /* OAuth2, see also ses->client_secret */
   char* scope;         /* OAuth2 */
   char* denied_scopes; /* OAuth2, FBC */
   char* granted_scopes; /* OAuth2, FBC */
@@ -483,6 +490,8 @@ struct zxid_cgi {
   char* iso29115;      /* OAuth2 */
   char* schema;        /* OAuth2 */
   char* id;            /* OAuth2 */
+  char* token_url;     /* Mobile Connect Discovery */
+  char* userinfo_url;  /* Mobile Connect Discovery */
 #if 0
   char* name;          /* OAuth2 */
   char* given_name;    /* OAuth2 */
@@ -502,6 +511,8 @@ struct zxid_cgi {
   char* address;       /* OAuth2 */
   char* updated_time;  /* OAuth2 */
 #endif
+  char* sub_id;        /* Mobile Connect / OIDC1 */
+  char* mcc_mnc;       /* Mobile Connect */
   char* inv;           /* Invitation ID */
   char* pcode;         /* Mobile pairing code */
   char* skin;
@@ -1052,8 +1063,7 @@ ZXID_DECL struct zx_sp_Status_s* zxid_OK(zxid_conf* cf, struct zx_elem_s* father
 
 /* zxidoauth */
 
-ZXID_DECL struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc);
-ZXID_DECL struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc);
+  ZXID_DECL struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc, int flags);
 ZXID_DECL char* zxid_mk_jwks(zxid_conf* cf);
 ZXID_DECL char* zxid_mk_oauth2_dyn_cli_reg_req(zxid_conf* cf);
 ZXID_DECL char* zxid_mk_oauth2_dyn_cli_reg_res(zxid_conf* cf, zxid_cgi* cgi);
@@ -1065,6 +1075,11 @@ ZXID_DECL void zxid_oauth_rsrcreg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses*
 ZXID_DECL char* zxid_oauth_call_rpt_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri);
 ZXID_DECL char* zxid_oauth_call_az_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host_id, const char* as_uri, const char* ticket);
 ZXID_DECL int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const char* _uma_authn);
+
+/* zxidoidc */
+
+ZXID_DECL struct zx_str* zxid_mk_mobconn_disco_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc);
+ZXID_DECL struct zx_str* zxid_mk_mobconn_disco_call(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc);
 
 /* zxidmkwsf */
 
@@ -1223,7 +1238,8 @@ ZXID_DECL char* zxid_get_idpnid_at_eid(zxid_conf* cf, const char* uid, const cha
 #define ZXID_SAML2_URI 7
 #define ZXID_OIDC1_CODE 8
 #define ZXID_OIDC1_ID_TOK_TOK 9
-#define ZXID_FBC_CODE 10
+#define ZXID_FBC_CODE 10  /* 'a' Facebook Connect (almost, but not quite, same as OIDC) */
+#define ZXID_MOBCONN_CODE 11 /* 'b' OIDC1 discovery followed by An with Mobile Connect profile */
 
 /* Service enumerators */
 

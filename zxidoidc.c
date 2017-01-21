@@ -1,5 +1,5 @@
 /* zxidoidc.c  -  Handwritten nitty-gritty functions for OpenID Connect 1.0 (openid-connect oidc)
- * Copyright (c) 2011-2014 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2011-2014,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -17,6 +17,7 @@
  *
  * 11.12.2011, created --Sampo
  * 9.10.2014, adapted from zxidoauth.c --Sampo
+ * 20170119   added Mobile Connect Discovery --Sampo
  */
 
 #include "platform.h"
@@ -29,317 +30,326 @@
 #include "saml2.h"   /* for bindings like OAUTH2_REDIR */
 #include "c/zx-data.h"
 
-/*() Interpret ZXID standard form fields to construct a XML structure for AuthnRequest */
+/*() Interpret ZXID standard form fields to construct a Mobile Connect 1.0
+ * Discovery request, which is a redirection URL. */
 
-/* Called by:  zxid_oidc_as_call, zxid_start_sso_url */
-struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, struct zx_str* loc, char* relay_state)
+/* Called by:  zxid_start_sso_url */
+struct zx_str* zxid_mk_mobconn_disco_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc)
 {
   struct zx_str* ss;
-  struct zx_str* nonce;
-  struct zx_str* eid;
-  char* eid_url_enc;
   char* redir_url_enc;
   char* state_b64;
-  char* prompt;
-  char* display;
+  //char* basic_b64;
+  char* client_id;
+  char* client_secret;
+  char* colon;
 
-  if (!loc) {
-    ERR("Redirection location URL missing. %d", 0);
+  if (!loc || !loc->len || !loc->s || !loc->s[0]) {
+    ERR("Mobile Connect Discovery Redirection location URL missing. %p", loc);
     return 0;
   }
-  
+
+  D("redir loc(%.*s) %p %p", loc->len, loc->s, loc, loc->s);
   redir_url_enc = zx_url_encode(cf->ctx, strlen(cf->burl), cf->burl, 0);
-  eid = zxid_my_ent_id(cf);
-  eid_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
-  zx_str_free(cf->ctx, eid);
   
-  if (relay_state)
-    state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, strlen(relay_state), relay_state);
-  else
-    state_b64 = 0;
-  nonce = zxid_mk_id(cf, "OA", ZXID_ID_BITS);
-  prompt = BOOL_STR_TEST(cgi->force_authn) ? "login" : 0;
-  prompt = BOOL_STR_TEST(cgi->consent && cgi->consent[0]) ? (prompt?"login+consent":"consent") : prompt;
-  display = BOOL_STR_TEST(cgi->ispassive) ? "none" : 0;
+  /* The chosen IdP's Entity ID is in cgi->eid and we need to encode this to state
+   * so we can continue the flow once user is sent back from the discovery. */
+
+  if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP scenario */
+    if (cgi->rs) {
+      D("MobConn ignoring RelayState(%s) supplied in middle IdP of Proxy IdP flow.", cgi->rs);
+    }
+    /* Carry the original authn req in state */
+    state_b64 = zxid_prepare_statef(cf, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
+  } else {
+    state_b64 = zxid_prepare_statef(cf, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
+  }
+  
+  if (idp_meta->ed && idp_meta->ed->appId && idp_meta->ed->appId->g.len && idp_meta->ed->appId->g.s && idp_meta->ed->appId->g.s[0]) {
+    /* Per IdP app_id (aka client_id) instead of SP chosen eid */
+    D("appId(%.*s)", idp_meta->ed->appId->g.len, idp_meta->ed->appId->g.s);
+    client_id = zx_str_to_c(cf->ctx, &idp_meta->ed->appId->g);
+  } else {
+    client_id = zxid_my_ent_id_cstr(cf);
+  }
+  client_secret = zxid_get_app_secret(cf, idp_meta->sha1_name, "mobconn disco req");
+#if 1
+  /* Apparently the only way to pass Basic auth credentials in redirect
+   * is to encode them to domain name part of URL like
+   *   https://user:pass@domain/rest/of/url
+   * Thus this convoluted code to insert them in the middle.
+   * However, due to phising danger, this method is increasingly
+   * being disabled on browsers
+   *   https://support.microsoft.com/en-us/help/834489/internet-explorer-does-not-support-user-names-and-passwords-in-web-site-addresses-http-or-https-urls
+   *   https://bugs.chromium.org/p/chromium/issues/detail?id=82250#c7
+   */
+  
+  colon = zx_memmem(loc->s, loc->len, "://", 3);  /* Find colon in https:// */
+  if (!colon) {
+    ERR("Malformed URL(%.*s)", loc->len, loc->s);
+    return 0;
+  }
+  ss = zx_strf(cf->ctx,
+	       "%.*s://%s:%s@%.*s"
+	       "%cRedirect_URL=%s%%3fo=O"
+	       "%s%s"           /* &state= */
+	       "%s%.3s"         /* &Selected-MCC= */
+	       "%s%.2s",        /* &Selected-MNC= */
+	       colon - loc->s, loc->s,
+	       client_id, client_secret,
+	       loc->len-(colon + 3 - loc->s), colon+3,
+	       (memchr(loc->s, '?', loc->len)?'&':'?'),
+	       redir_url_enc,
+	       state_b64?"&state=":"", STRNULLCHK(state_b64),
+	       cgi->mcc_mnc?"&Selected-MCC=":"", STRNULLCHK(cgi->mcc_mnc),
+	       cgi->mcc_mnc?"&Selected-MNC=":"", cgi->mcc_mnc?cgi->mcc_mnc+4:"");
+  
+  D("MOBCONN DISCO REQ(%.*s)", ss->len, ss->s);
+  ZX_FREE(cf->ctx, client_secret);
+  ZX_FREE(cf->ctx, client_id);
+#else
+  basic_b64 = zx_mk_basic_auth_b64(cf->ctx, client_id, client_secret);
+  ZX_FREE(cf->ctx, client_secret);
+  ZX_FREE(cf->ctx, client_id);
   
   ss = zx_strf(cf->ctx,
-	       "%.*s%cresponse_type=token+id_token"
-	       "&client_id=%s"
-	       "&scope=openid+profile+email+address"
-	       "&redirect_uri=%s%%3fo=O"
-	       "&nonce=%.*s"
+	       "%.*s%cRedirect_URL=%s%%3fo=O"
 	       "%s%s"           /* &state= */
-	       "%s%s"           /* &display= */
-	       "%s%s"           /* &prompt= */
-	       CRLF2,
+	       "%s%.3s"         /* &Selected-MCC= */
+	       "%s%.2s"         /* &Selected-MNC= */
+	       CRLF "Authorization: Basic %s",
 	       loc->len, loc->s, (memchr(loc->s, '?', loc->len)?'&':'?'),
-	       eid_url_enc,
 	       redir_url_enc,
-	       nonce->len, nonce->s,
 	       state_b64?"&state=":"", STRNULLCHK(state_b64),
-	       display?"&display=":"", STRNULLCHK(display),
-	       prompt?"&prompt=":"", STRNULLCHK(prompt)
-	       );
-  D("OAUTH2 AZ REQ(%.*s)", ss->len, ss->s);
+	       cgi->mcc_mnc?"&Selected-MCC=":"", STRNULLCHK(cgi->mcc_mnc),
+	       cgi->mcc_mnc?"&Selected-MNC=":"", cgi->mcc_mnc?cgi->mcc_mnc+4:"",
+	       basic_b64);
+  
+  D("MOBCONN DISCO REQ(%.*s)", ss->len, ss->s);
+  ZX_FREE(cf->ctx, basic_b64);
+#endif
   if (errmac_debug & ERRMAC_INOUT) INFO("%.*s", ss->len, ss->s);
-  zx_str_free(cf->ctx, nonce);
-  ZX_FREE(cf->ctx, state_b64);
-  ZX_FREE(cf->ctx, eid_url_enc);
+  if (state_b64) ZX_FREE(cf->ctx, state_b64);
+  //ZX_FREE(cf->ctx, eid_url_enc);
   ZX_FREE(cf->ctx, redir_url_enc);
   return ss;
 }
 
-/*() Construct OAUTH2 / OpenID-Connect1 id_token. */
+/*() Extract endpoints from Mobile Connect Discovery
+ * (without really parsing the JSON). Populates info to idp_meta
+ * Sample input:
 
-/* Called by:  zxid_sso_issue_jwt x3 */
-char* zxid_mk_jwt(zxid_conf* cf, int claims_len, char* claims)
+ {"ttl":1484838543087,"response":{"serving_operator":"Example Operator B","country":"Spain","currency":"EUR","apis":{"operatorid":{"link":[{"href":"http://operator-b.sandbox2.mobileconnect.io/oidc/authorize","rel":"authorization"},{"href":"http://operator-b.sandbox2.mobileconnect.io/oidc/accesstoken","rel":"token"},{"href":"http://operator-b.sandbox2.mobileconnect.io/oidc/userinfo","rel":"userinfo"},{"href":"openid profile email","rel":"scope"}]}},"client_id":"a405e6fa-d1bf-4857-a3fa-094dba842211","client_secret":"885b5efe-71f7-4f9b-8dd2-f6338e393bfa"}}
+
+ {"ttl":1484838543087,
+  "response":{
+   "serving_operator":"Example Operator B",
+   "country":"Spain",
+   "currency":"EUR",
+   "apis":{
+     "operatorid":{
+       "link":[
+         {"href":"http://operator-b.sandbox2.mobileconnect.io/oidc/authorize",
+          "rel":"authorization"},
+         {"href":"http://operator-b.sandbox2.mobileconnect.io/oidc/accesstoken",
+          "rel":"token"},
+         {"href":"http://operator-b.sandbox2.mobileconnect.io/oidc/userinfo",
+          "rel":"userinfo"},{"href":"openid profile email","rel":"scope"}
+       ]
+     }
+   },
+   "client_id":"a405e7fa-d1bf-4857-a3fa-094dba842211",
+   "client_secret":"885b5efe-71f7-4f9b-8dd2-f6338e393bfa"
+  }
+ }
+ * N.B. The buffer is modified during parsing (some curlies overwritten by nuls).
+ */
+
+static void zxid_mobconn_parse_discovery(zxid_conf* cf, zxid_entity* idp_meta, char* buf)
 {
-  char hash[64 /*EVP_MAX_MD_SIZE*/];
-  char* jwt_hdr;
-  int hdr_len;
-  char* b64;
+  char* href;
+  char* rel;
   char* p;
-  int len = SIMPLE_BASE64_LEN(claims_len);
-  
-  switch (cf->oaz_jwt_sigenc_alg) {
-  case 'n':
-    jwt_hdr = "{\"typ\":\"JWT\",\"alg\":\"none\"}";
-    hdr_len = strlen(jwt_hdr);
-    len += SIMPLE_BASE64_LEN(hdr_len) + 1 + 1;    
-    break;
-  case 'h':
-    jwt_hdr = "{\"typ\":\"JWT\",\"alg\":\"HS256\"}";
-    hdr_len = strlen(jwt_hdr);
-    len += SIMPLE_BASE64_LEN(hdr_len) + 1 + 1 + 86 /* siglen conservative estimate */;    
-    break;
-  case 'r':
-    jwt_hdr = "{\"typ\":\"JWT\",\"alg\":\"RS256\"}";
-    hdr_len = strlen(jwt_hdr);
-    len += SIMPLE_BASE64_LEN(hdr_len) + 1 + 1 + 500 /* siglen conservative estimate */;    
-    break;
-  default:
-    ERR("Unrecognized OAZ_JWT_SIGENC_ALG spec(%c). See zxid-conf.pd or zxidconf.h for documentation.", cf->oaz_jwt_sigenc_alg);
-    return 0;
+  char* q;
+
+  idp_meta->client_id = zx_json_extract_dup(cf->ctx, buf, "\"client_id\"");
+  idp_meta->client_secret = zx_json_extract_dup(cf->ctx, buf, "\"client_secret\"");
+  p = strstr(buf, "\"link\":[{");
+  if (!p) {
+ bad:
+    ERR("Malformed discovery response json(%s) p(%s)", buf, STRNULLCHK(p));
+    return;
   }
-  
-  b64 = ZX_ALLOC(cf->ctx, len+1);
-  p = base64_fancy_raw(jwt_hdr, hdr_len, b64, safe_basis_64, 1<<31, 0, 0, 0);
-  *p++ = '.';
-  p = base64_fancy_raw(claims, claims_len, p, safe_basis_64, 1<<31, 0, 0, 0);
-  *p = 0;
-  
-  switch (cf->oaz_jwt_sigenc_alg) {
-  case 'n':
-    *p++ = '.';
-    *p = 0;
-    break;
-  case 'h':
-    if (!cf->hmac_key[0])
-      zx_get_symkey(cf, "hmac.key", cf->hmac_key);
-    zx_hmac_sha256(cf->ctx, ZX_SYMKEY_LEN, cf->hmac_key, p-b64, b64, hash, &len);
-    *p++ = '.';
-    p = base64_fancy_raw(hash, len, p, safe_basis_64, 1<<31, 0, 0, 0);
-    *p = 0;
-    break;
-  case 'r':
-    ERR("RSA not implemented yet %d",0);
-    zx_hmac_sha256(cf->ctx, ZX_SYMKEY_LEN, cf->hmac_key, p-b64, b64, hash, &len);
-    *p++ = '.';
-    p = base64_fancy_raw(hash, len, p, safe_basis_64, 1<<31, 0, 0, 0);
-    *p = 0;
-    break;
-  }
-  D("JWT(%s)", b64);
-  return b64;
-}
-
-/*() Issue OAUTH2 / OpenID-Connect1 id_token. */
-
-/* Called by:  zxid_oauth2_az_server_sso x3 */
-char* zxid_sso_issue_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct timeval* srcts, zxid_entity* sp_meta, struct zx_str* acsurl, zxid_nid** nameid, char* logop)
-{
-  int rawlen;
-  char* buf;
-  char* jwt;
-  char* jwt_id; /* sha1 hash of the jwt, taken from log_path */
-  struct zx_str issuer;
-  struct zx_str* affil;
-  char* eid;
-  struct zx_str* logpath;
-  struct zx_str ss;
-  struct zx_str nn;
-  struct zx_str id;
-  zxid_nid* tmpnameid;
-  char sp_name_buf[ZXID_MAX_SP_NAME_BUF];
-  D("sp_eid(%s)", sp_meta->eid);
-  if (!nameid)
-    nameid = &tmpnameid;
-
-  //if (ar && ar->IssueInstant && ar->IssueInstant->g.len && ar->IssueInstant->g.s)
-  //  srcts->tv_sec = zx_date_time_to_secs(ar->IssueInstant->g.s);
-  
-  if (!cgi->allow_create)
-    cgi->allow_create = '1';
-  if (!cgi->nid_fmt || !cgi->nid_fmt[0])
-    cgi->nid_fmt = "prstnt";  /* Persistent is the default implied by the specs. */
-
-  /* Check for federation. */
-  
-  issuer.s = cgi->client_id; issuer.len = strlen(cgi->client_id);
-  affil = &issuer;
-  zxid_nice_sha1(cf, sp_name_buf, sizeof(sp_name_buf), affil, affil, 7);
-  D("sp_name_buf(%s)  allow_create=%d", sp_name_buf, cgi->allow_create);
-
-  *nameid = zxid_get_fed_nameid(cf, &issuer, affil, ses->uid, sp_name_buf, cgi->allow_create,
-				(cgi->nid_fmt && !strcmp(cgi->nid_fmt, "trnsnt")),
-				srcts, 0, logop);
-  if (logop) { logop[3]='S';  logop[4]='S';  logop[5]='O';  logop[6]=0;  /* Patch in SSO */ }
-  if (!*nameid) {
-    ERR("get_fed_nameid() client_id(%s) returned NULL", cgi->client_id);
-    return 0;
-  }
-
-  eid = zxid_my_ent_id_cstr(cf);
-  // ,\"\":\"\"
-  buf = zx_alloc_sprintf(cf->ctx, &rawlen,
-		       "{\"iss\":\"%s\""
-		       ",\"user_id\":\"%.*s\""
-		       ",\"aud\":\"%s\""
-		       ",\"exp\":%d"
-		       ",\"nonce\":\"%s\"}",
-		       eid,
-		       ZX_GET_CONTENT_LEN(*nameid), ZX_GET_CONTENT_S(*nameid),
-		       cgi->client_id,
-		       time(0) + cf->timeskew + cf->a7nttl,
-		       cgi->nonce);
-  ZX_FREE(cf->ctx, eid);
-  jwt = zxid_mk_jwt(cf, rawlen, buf);
-  ZX_FREE(cf->ctx, buf);
-
-  /* Log the issued JWT */
-
-  ss.s = jwt; ss.len = strlen(jwt);
-  logpath = zxlog_path(cf, &issuer, &ss, ZXLOG_ISSUE_DIR, ZXLOG_JWT_KIND, 1);
-  if (!logpath) {
-    ERR("Could not generate logpath for aud(%s) JWT(%s)", cgi->client_id, jwt);
-    ZX_FREE(cf->ctx, jwt);
-    return 0;
-  }
-  
-  /* Since JWT does not have explicit ID attribute, we use the sha1 hash of the
-   * contents of JWT as an ID. Since this is what logpath also does, we just
-   * use the last component of the logpath. */
-  for (jwt_id = logpath->s + logpath->len; jwt_id > logpath->s && jwt_id[-1] != '/'; --jwt_id) ;
-
-  if (cf->log_issue_a7n) {
-    if (zxlog_dup_check(cf, logpath, "sso_issue_jwt")) {
-      ERR("Duplicate JWT ID(%s)", jwt_id);
-      if (cf->dup_a7n_fatal) {
-	ERR("FATAL (by configuration): Duplicate JWT ID(%s)", jwt_id);
-	zxlog_blob(cf, 1, logpath, &ss, "sso_issue_JWT dup");
-	zx_str_free(cf->ctx, logpath);
-	ZX_FREE(cf->ctx, jwt);
-	return 0;
-      }
+  p += sizeof("\"link\":[{")-1;
+  q = strchr(p, ']');
+  if (!q) goto bad;
+  *q = 0; /* nul */
+  while (p) {
+    q = strchr(p, '}');
+    if (!q) goto bad;
+    *q = 0; /* nul */
+    rel = zx_json_extract_dup(cf->ctx, p, "\"rel\"");
+    href = zx_json_extract_dup(cf->ctx, p, "\"href\"");
+    if (rel && href) {
+      if (!strcmp(rel, "authorization")) idp_meta->az_url = href;
+      if (!strcmp(rel, "token"))         idp_meta->token_url = href;
+      if (!strcmp(rel, "userinfo"))      idp_meta->userinfo_url = href;
     }
-    zxlog_blob(cf, 1, logpath, &ss, "sso_issue_JWT");
+    p = strstr(q+1, ",{");
   }
-
-  nn.s = cgi->nonce; nn.len = strlen(cgi->nonce);
-  id.s = jwt_id; id.len = strlen(jwt_id);
-
-  if (cf->loguser)
-    zxlogusr(cf, ses->uid, 0, 0, 0, &issuer, &nn, &id,
-	     ZX_GET_CONTENT(*nameid),
-	     (cf->oaz_jwt_sigenc_alg!='n'?"U":"N"), "K", logop, 0, 0);
-  
-  zxlog(cf, 0, 0, 0, &issuer, &nn, &id,
-	ZX_GET_CONTENT(*nameid),
-	(cf->oaz_jwt_sigenc_alg!='n'?"U":"N"), "K", logop, 0, 0);
-
-  zx_str_free(cf->ctx, logpath);
-  return jwt;
 }
 
-/*(i) Generate SSO assertion and ship it to SP by OAUTH2 Az redir binding. User has already
- * logged in by the time this is called. See also zxid_ssos_anreq() and zxid_idp_sso(). */
+/*() Interpret ZXID standard form fields to construct a Mobile Connect 1.0
+ * Discovery call (batch mode) and follow up with Mobile Connect (OIDC)
+ * Authorize call to authenticate user.
+ * Returns URL suitable for redirection. Caller must free. */
 
-/* Called by:  zxid_idp_dispatch */
-struct zx_str* zxid_oauth2_az_server_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
+/* Called by:  zxid_start_sso_url */
+struct zx_str* zxid_mk_mobconn_disco_call(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc)
 {
-  zxid_entity* sp_meta;
-  struct zx_str* acsurl = 0;
-  struct timeval srcts = {0,501000};
-  zxid_nid* nameid;
-  char* idtok;
-  char logop[8];
-  strcpy(logop, "OAZxxxx");
-
-  if (!cgi->client_id || !cgi->redirect_uri || !cgi->nonce) {
-    ERR("Missing mandatory OAUTH2 field client_id=%p redirect_uri=%p nonce=%p", cgi->client_id, cgi->redirect_uri, cgi->nonce);
-    return zx_dup_str(cf->ctx, "* ERR");
+  struct zx_str* ss;
+  struct zx_str azloc;
+  char* client_id;
+  char* client_secret;
+  char* redir_url_enc;
+  char* state_b64 = 0;
+  char* hdr;
+  char* url;
+ 
+  if (!loc || !loc->len || !loc->s || !loc->s[0]) {
+    ERR("Mobile Connect Discovery Redirection location URL missing. %p", loc);
+    return 0;
   }
 
-  if (!cgi->response_type || !strstr(cgi->response_type, "token") || !strstr(cgi->response_type, "id_token")) {
-    ERR("Missing mandatory OAUTH2 field response_type(%s) missing or does not contain `token id_token'", STRNULLCHKD(cgi->response_type));
-    return zx_dup_str(cf->ctx, "* ERR");
-  }
+  D("redir loc(%.*s) %p %p", loc->len, loc->s, loc, loc->s);
+  redir_url_enc = zx_url_encode(cf->ctx, strlen(cf->burl), cf->burl, 0);
 
-  if (!cgi->scope || !strstr(cgi->scope, "openid")) {
-    ERR("Missing mandatory OAUTH2 field scope=%p or the scope does not contain `openid'", STRNULLCHKD(cgi->scope));
-    return zx_dup_str(cf->ctx, "* ERR");
-  }
+#if 0  
+  /* Since we are making a synchronous batch mode call on backchannel,
+   * no state is required. Eventually state will be used in the
+   * followup redirect to authorization service, see zxid_mk_oauth_az_req()
+   */
+  /* The chosen IdP's Entity ID is in cgi->eid and we need to encode this to state
+   * so we can continue the flow once user is sent back from the discovery. */
 
-  sp_meta = zxid_get_ent(cf, cgi->client_id);
-  if (!sp_meta) {
-    ERR("The metadata for client_id(%s) of the Az Req could not be found or fetched", cgi->client_id);
-    return zx_dup_str(cf->ctx, "* ERR");
+  if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP scenario */
+    if (cgi->rs) {
+      D("MobConn ignoring RelayState(%s) supplied in middle IdP of Proxy IdP flow.", cgi->rs);
+    }
+    /* Carry the original authn req in state */
+    state_b64 = zxid_prepare_statef(cf, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
+  } else {
+    state_b64 = zxid_prepare_statef(cf, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
   }
-  D("sp_eid(%s)", sp_meta->eid);
+#endif
 
-  /* Figure out the binding and url */
-
-  acsurl = zxid_sp_loc_raw(cf, cgi, sp_meta, ZXID_ACS_SVC, OAUTH2_REDIR, 0);
-  if (!acsurl) {
-    ERR("sp(%s) metadata does not have SPSSODescriptor/AssertionConsumerService with Binding=\"" OAUTH2_REDIR "\". Pre-registering the SP at IdP is mandatory. redirect_uri(%s) will be ignored. (remote SP metadata problem)", sp_meta->eid, cgi->redirect_uri);
-    return zx_dup_str(cf->ctx, "* ERR");
+  if (idp_meta->ed && idp_meta->ed->appId && idp_meta->ed->appId->g.len && idp_meta->ed->appId->g.s && idp_meta->ed->appId->g.s[0]) {
+    /* Per IdP app_id (aka client_id) instead of SP chosen eid */
+    D("appId(%.*s)", idp_meta->ed->appId->g.len, idp_meta->ed->appId->g.s);
+    client_id = zx_str_to_c(cf->ctx, &idp_meta->ed->appId->g);
+  } else {
+    client_id = zxid_my_ent_id_cstr(cf);
   }
-  if (strlen(cgi->redirect_uri) != acsurl->len || memcmp(cgi->redirect_uri, acsurl->s, acsurl->len)) {
-    ERR("sp(%s) metadata has SPSSODescriptor/AssertionConsumerService with Binding=\"" OAUTH2_REDIR "\" has value(%.*s), which is different from redirect_uri(%s). (remote SP problem)", sp_meta->eid, acsurl->len, acsurl->s, cgi->redirect_uri);
-    return zx_dup_str(cf->ctx, "* ERR");
-  }
-
-  if (!cf->log_issue_a7n) {
-    INFO("LOG_ISSUE_A7N must be turned on in IdP configuration for artifact profile to work. Turning on now automatically. %d", 0);
-    cf->log_issue_a7n = 1;
-  }
-
-  /* User ses->uid is already logged in, now check for federation with sp */
-
-  idtok = zxid_sso_issue_jwt(cf, cgi, ses, &srcts, sp_meta, acsurl, &nameid, logop);
-  if (!idtok) {
-    ERR("Issuing JWT Failed %s", logop);
-    return zx_dup_str(cf->ctx, "* ERR");
-  }
+  client_secret = zxid_get_app_secret(cf, idp_meta->sha1_name, "mobconn disco call");
+  hdr = zx_mk_basic_auth_b64(cf->ctx, client_id, client_secret);
+  D("MOBCONN DISCO HDR(%s)", hdr);
+  ZX_FREE(cf->ctx, client_secret);
+  ZX_FREE(cf->ctx, client_id);
   
-  D("OAUTH2-ART ep(%.*s)", acsurl->len, acsurl->s);
-  zxlog(cf, 0, &srcts, 0, sp_meta->ed?&sp_meta->ed->entityID->g:0, 0, 0, ZX_GET_CONTENT(nameid), "N", "K", logop, ses->uid, "OAUTH2-ART");
-
-  /* Formulate OAUTH2 / OpenID-Connect1 Az Redir Response */
+  url = zx_alloc_sprintf(cf->ctx, 0,
+			 "%.*s%cRedirect_URL=%s%%3fo=O"
+			 "%s%s"           /* &state= */
+			 "%s%.3s"         /* &Selected-MCC= */
+			 "%s%.2s",        /* &Selected-MNC= */
+			 loc->len, loc->s, (memchr(loc->s, '?', loc->len)?'&':'?'),
+			 redir_url_enc,
+			 state_b64?"&state=":"", STRNULLCHK(state_b64),
+			 cgi->mcc_mnc?"&Selected-MCC=":"", STRNULLCHK(cgi->mcc_mnc),
+			 cgi->mcc_mnc?"&Selected-MNC=":"", cgi->mcc_mnc?cgi->mcc_mnc+4:"");
+  if (state_b64) ZX_FREE(cf->ctx, state_b64);
+  ZX_FREE(cf->ctx, redir_url_enc);
+  if (errmac_debug & ERRMAC_INOUT) INFO("%s", url);
   
-  return zx_strf(cf->ctx, "Location: %s%c"
-		 "access_token=%s"
-		 "&token_type=bearer"
-		 "&id_token=%s"
-		 "&expires_in=%d" CRLF
-		 "%s%s%s",   /* Set-Cookie */
-		 cgi->redirect_uri, (strchr(cgi->redirect_uri, '?') ? '&' : '?'),
-		 idtok,
-		 idtok,
-		 cf->a7nttl,
-		 ses->setcookie?"Set-Cookie: ":"", ses->setcookie?ses->setcookie:"", ses->setcookie?CRLF:"");
+  ss = zxid_http_cli(cf, -1, url, 0, 0, 0, hdr, 0);
+  
+  ZX_FREE(cf->ctx, hdr);
+  ZX_FREE(cf->ctx, url);
+  if (!ss)
+    return 0;
+  if (errmac_debug & ERRMAC_INOUT) INFO("%.*s", ss->len, ss->s);
+
+  zxid_mobconn_parse_discovery(cf, idp_meta, ss->s);
+  zx_str_free(cf->ctx, ss);
+
+  if (!idp_meta->az_url) {
+    ERR("Could not determine authorization URL from the Mobile Connect Discovery %d",0);
+    return 0;
+  }
+  azloc.s = idp_meta->az_url;
+  azloc.len = strlen(azloc.s);
+  ss = zxid_mk_oauth_az_req(cf, cgi, idp_meta, &azloc, 0x02);
+  return ss;
 }
 
+extern char* _uma_authn;  /* See zxidoauth.c */
+
+/*() Call OIDC Authentication (Authorization?) service in batch mode
+ * Extracts access_token and id_token from the response.
+ */
+
+/* Called by:  zxumacall_main */
+int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const char* _uma_authn)
+{
+  struct zx_md_SingleSignOnService_s* sso_svc;
+  struct zx_str* ss;
+  struct zx_str* req;
+  struct zx_str* res; 
+  struct zxid_cgi* cgi;
+  struct zxid_cgi scgi;
+  ZERO(&scgi, sizeof(scgi));
+  cgi = &scgi;
+
+  if (!idp_meta->ed->IDPSSODescriptor) {
+    ERR("Entity(%s) does not have IdP SSO Descriptor (OAUTH2) (metadata problem)", cgi->eid);
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor (OAUTH2)");
+    cgi->err = "Bad IdP metadata (OAUTH). Try different IdP.";
+    D_DEDENT("start_sso: ");
+    return 0;
+  }
+  for (sso_svc = idp_meta->ed->IDPSSODescriptor->SingleSignOnService;
+       sso_svc;
+       sso_svc = (struct zx_md_SingleSignOnService_s*)sso_svc->gg.g.n) {
+    if (sso_svc->gg.g.tok != zx_md_SingleSignOnService_ELEM)
+      continue;
+    if (sso_svc->Binding && !memcmp(OAUTH2_REDIR,sso_svc->Binding->g.s,sso_svc->Binding->g.len))
+      break;
+  }
+  if (!sso_svc) {
+    ERR("IdP Entity(%s) does not have any IdP SSO Service with " OAUTH2_REDIR " binding (metadata problem)", cgi->eid);
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No OAUTH2 redir binding");
+    cgi->err = "Bad IdP metadata. Try different IdP.";
+    D_DEDENT("start_sso: ");
+    return 0;
+  }
+  ss = &sso_svc->Location->g;
+  if (_uma_authn)
+    ss = zx_strf(cf->ctx, "%.*s%c_uma_authn=%s", ss->len, ss->s, (memchr(ss->s, '?', ss->len)?'&':'?'), _uma_authn);
+  cgi->pr_ix = ZXID_OIDC1_ID_TOK_TOK; //"id_token token";
+  D("loc(%.*s)", ss->len, ss->s);
+  req = zxid_mk_oauth_az_req(cf, cgi, idp_meta, ss, 0x00);
+  D("req(%.*s)", req->len, req->s);
+  res = zxid_http_cli(cf, req->len, req->s, 0,0, 0, 0, 0x03);  /* do not follow redir */
+  zx_str_free(cf->ctx, req);
+  D("res(%.*s)", res->len, res->s);
+  // *** extract token and AAT from the response
+  ses->access_token = zx_qs_extract_dup(cf->ctx, res->s, "access_token=");
+  ses->id_token = zx_qs_extract_dup(cf->ctx, res->s, "id_token=");
+  ses->token_type = zx_qs_extract_dup(cf->ctx, res->s, "token_type=");
+  //ses->expires = zx_qs_extract_dup(cf->ctx, res->s, "access_token=");
+  return 1;
+}
+
+#if 0
 /*() Extract an assertion from OAUTH Az response, and perform SSO */
 
 /* Called by:  zxid_sp_oauth2_dispatch x3 */
@@ -361,42 +371,6 @@ static int zxid_sp_dig_oauth_sso_a7n(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
   ERR("No Assertion found and not anon_ok in OAUTH Response %d", 0);
   zxlog(cf, 0, 0, 0, 0, 0, 0, ZX_GET_CONTENT(ses->nameid), "N", "C", "ERR", 0, "sid(%s) No assertion", ses->sid?ses->sid:"");
   return 0;
-}
-
-/*() Dispatch, on RP/SP side, OAUTH redir or artifact binding requests.
- *
- * return:: a string (such as Location: header) and let the caller output it.
- *     Sometimes a dummy string is just output to indicate status, e.g.
- *     "O" for SSO OK, "K" for normal OK no further action needed,
- *     "M" show management screen, "I" forward to IdP dispatch, or
- *     "* ERR" for error situations. These special strings
- *     are allocated from static storage and MUST NOT be freed. Other
- *     strings such as "Location: ..." should be freed by caller. */
-
-/* Called by:  zxid_simple_no_ses_cf */
-struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
-{
-  int ret;
-
-  if (cgi->id_token) {  /* OAUTH2 artifact / redir biding, aka OpenID-Connect1 */    
-    ret = zxid_sp_dig_oauth_sso_a7n(cf, cgi, ses);
-    D("ret=%d ses=%p", ret, ses);
-    switch (ret) {
-    case ZXID_OK:      return zx_dup_str(cf->ctx, "K");
-    case ZXID_SSO_OK:  return zx_dup_str(cf->ctx, "O");
-    case ZXID_IDP_REQ: /* (PXY) Middle IdP of IdP Proxy flow */
-      return zx_dup_str(cf->ctx, zxid_simple_ses_active_cf(cf, cgi, ses, 0, 0x1fff));
-    case ZXID_FAIL:
-      D("*** FAIL, should send back to IdP select %d", 0);
-      return zx_dup_str(cf->ctx, "* ERR");
-    }
-    return zx_dup_str(cf->ctx, "M");  /* Management screen, please. */
-  }
-    
-  if (cf->log_level > 0)
-    zxlog(cf, 0, 0, 0, 0, 0, 0, ZX_GET_CONTENT(ses->nameid), "N", "C", "SPOADISP", 0, "sid(%s) unknown req or resp", STRNULLCHK(ses->sid));
-  ERR("Unknown request or response %d", 0);
-  return zx_dup_str(cf->ctx, "* ERR");
 }
 
 /*() Handle, on IdP side, OAUTH2 / OpenID-Connect1 check_id requests.
@@ -427,5 +401,6 @@ char* zxid_idp_oauth2_check_id(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int 
   ERR("Unknown request or response %d", 0);
   return 0;
 }
+#endif
 
-/* EOF  --  zxiduma.c */
+/* EOF  --  zxidoidc.c */

@@ -300,7 +300,7 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
  *
  * See also:: zxid_decode_state() */
 
-static char* zxid_prepare_statef(zxid_conf* cf, const char* fmt, ...)
+char* zxid_prepare_statef(zxid_conf* cf, const char* fmt, ...)
 {
   int olen,len;
   char* buf;
@@ -311,7 +311,7 @@ static char* zxid_prepare_statef(zxid_conf* cf, const char* fmt, ...)
 
   for (olen = 2047 /* just initial guess */; 1; olen=len) {
     buf = ZX_ALLOC(cf->ctx, olen+1);
-    len = vsnprintf(buf, len, fmt, ap);
+    len = vsnprintf(buf, olen, fmt, ap);
     if (len <= olen)
       break;  /* fits */
     /* Did not fit, try again (second iteration will always be successful) */
@@ -324,42 +324,63 @@ static char* zxid_prepare_statef(zxid_conf* cf, const char* fmt, ...)
   if (cf->state_opt) {
     state_b64 = ZX_ALLOC(cf->ctx, 28);
     sha1_safe_base64(state_b64, len, buf);
+    state_b64[27] = 0; /* nul term */
+    DD("HERE1 file(%s) state(%s)", state_b64, buf);
     write_all_path("prepare_state", "%s" ZXID_STATE_DIR "%s", cf->cpath, state_b64, len, buf);
+    DD("HERE2 file(%s) state(%s)", state_b64, buf);
   } else {
     state_b64 = zxid_deflate_safe_b64_raw(cf->ctx, len, buf);
-    D("Middle IdP of Proxy IdP flow state(%s)", buf);
+    DD("prepare deflated state(%s)", buf);
   }
   ZX_FREE(cf->ctx, buf);
   return state_b64;
 }
 
 /*() Interpret ZXID standard form fields to construct an OAuth2 Authorization request,
- * which is a redirection URL. */
+ * which is a redirection URL. This is also used for OpenID Connect 1.0 (OIDC),
+ * Mobile Connect (2016), and Facebook Connect 2.8 (FBC). The client_id field
+ * can be determined in multiple ways:
+ *
+ * 1. idp_meta->client_id (from Mobile Connect Discovery)
+ * 2. idp_meta->ed->appId (enhanced metadata, e.g. FBC)
+ * 3. (SAML2) entityID of the IdP
+ *
+ * Flag 0x01 triggers FBC
+ * Returns URL suitable for redirection. Caller must free.
+ *
+ * curl -v 'http://operator-b.sandbox2.mobileconnect.io/oidc/authorize?response_type=code&client_id=a405e7fa%2Dd1bf%2D4857%2Da3fa%2D094dba847711&scope=openid+profile+email&acr_values=2&redirect_uri=https%3A%2F%2Fidsso%2Ecom%2Fidp%3fo=O&nonce=OAEIe1hMEKeaNtC45K-pDUH05S&state=Od9KINYHyHu7qE9NQxdFCYVYBhU'
+ */
 
 /* Called by:  zxid_oidc_as_call, zxid_start_sso_url */
-struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc)
+struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta, struct zx_str* loc, int flags)
 {
   struct zx_str* ss;
-  struct zx_str* nonce;
+  struct zx_str* nonce = 0;
   struct zx_str* eid;
-  char* eid_url_enc;
+  char* cli_id_url_enc;
   char* redir_url_enc;
   char* state_b64;
-  char* prompt;
-  char* display;
+  const char* acr_values;
+  const char* prompt;
+  const char* display;
+  const char* resp_type;
+  const char* scope;
 
   if (!loc || !loc->len || !loc->s || !loc->s[0]) {
     ERR("Redirection location URL missing. %p", loc);
     return 0;
   }
   
-  redir_url_enc = zx_url_encode(cf->ctx, strlen(cf->burl), cf->burl, 0);
-  if (idp_meta->ed && idp_meta->ed->appId && idp_meta->ed->appId->g.len && idp_meta->ed->appId->g.s && idp_meta->ed->appId->g.s[0]) {
+  redir_url_enc = zx_url_encode(cf->ctx, -2, cf->burl, 0);
+  if (idp_meta->client_id && idp_meta->client_id[0]) {
+    /* E.g. from Mobile Connect Discovery */
+    cli_id_url_enc = zx_url_encode(cf->ctx, -2, idp_meta->client_id, 0);
+  } else if (idp_meta->ed && ZX_ATTR_HAS_VALUE(idp_meta->ed->appId)) {
     /* Per IdP app_id (aka client_id) instead of SP chosen eid */
-    eid_url_enc = zx_url_encode(cf->ctx, idp_meta->ed->appId->g.len, idp_meta->ed->appId->g.s, 0);
+    cli_id_url_enc = zx_url_encode(cf->ctx,idp_meta->ed->appId->g.len,idp_meta->ed->appId->g.s,0);
   } else {
     eid = zxid_my_ent_id(cf);
-    eid_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
+    cli_id_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
     zx_str_free(cf->ctx, eid);
   }
 
@@ -370,45 +391,71 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* i
 
   if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP scenario */
     if (cgi->rs) {
-      ERR("RelayState(%s) supplied in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
+      ERR("Ignoring RelayState(%s) supplied in middle IdP of Proxy IdP flow.", cgi->rs);
     }
     /* Carry the original authn req in state */
-    state_b64 = zxid_prepare_statef(cf, "e=%s&ar=%s", cgi->eid, cgi->ssoreq);
+    state_b64 = zxid_prepare_statef(cf,
+		  "e=%s&client_id=%s&client_secret=%s&token_url=%s&userinfo_url=%s&ar=%s",
+		  cgi->eid, cli_id_url_enc, STRNULLCHK(idp_meta->client_secret),
+                  STRNULLCHK(idp_meta->token_url), STRNULLCHK(idp_meta->userinfo_url),
+                  cgi->ssoreq);
   } else {
-    state_b64 = zxid_prepare_statef(cf, "e=%s&rs=%s", cgi->eid, STRNULLCHK(cgi->rs));
+    state_b64 = zxid_prepare_statef(cf,
+                  "e=%s&client_id=%s&client_secret=%s&token_url=%s&userinfo_url=%s&rs=%s",
+                  cgi->eid, cli_id_url_enc, STRNULLCHK(idp_meta->client_secret),
+                  STRNULLCHK(idp_meta->token_url), STRNULLCHK(idp_meta->userinfo_url),
+                  STRNULLCHK(cgi->rs));
   }
-  nonce = zxid_mk_id(cf, "OA", ZXID_ID_BITS);
+  D("state_b64(%s)", state_b64);
+  if (flags & 0x01) {  /* FBC */
+    nonce = 0;
+    resp_type = "code%20granted_scopes";
+    scope = "public_profile,email";
+    acr_values = 0;
+  } else {
+    nonce = zxid_mk_id(cf, "OA", ZXID_ID_BITS);
+    resp_type = (flags&0x02 || cgi->pr_ix == ZXID_OIDC1_CODE) ? "code" : "id_token+token";
+    //scope = "openid+profile+email+address+public_profile";
+    scope = "openid+profile+email";
+    acr_values = "2";  /* Mobile Connect needs this */
+  }
   prompt = BOOL_STR_TEST(cgi->force_authn) ? "login" : 0;
-  prompt = BOOL_STR_TEST(cgi->consent && cgi->consent[0]) ? (prompt?"login+consent":"consent") : prompt;
+  prompt = BOOL_STR_TEST(cgi->consent && cgi->consent[0])
+    ? (prompt?"login+consent":"consent") : prompt;
   display = BOOL_STR_TEST(cgi->ispassive) ? "none" : 0;
   
   ss = zx_strf(cf->ctx,
 	       "%.*s%cresponse_type=%s"
+	       "&scope=%s"
 	       "&client_id=%s"
-	       "&scope=openid+profile+email+address+public_profile"
 	       "&redirect_uri=%s%%3fo=O"
-	       "&nonce=%.*s"
+	       "%s%.*s"         /* &nonce=   (not part of FBC) */
 	       "%s%s"           /* &state= */
+	       "%s%s"           /* &acr_values=  (used by Mobile Connect)*/
 	       "%s%s"           /* &display= */
 	       "%s%s",          /* &prompt= */
 	       loc->len, loc->s, (memchr(loc->s, '?', loc->len)?'&':'?'),
-	       cgi->pr_ix == ZXID_OIDC1_CODE ? "code" : "id_token+token",
-	       eid_url_enc,
+	       resp_type,
+	       scope,
+	       cli_id_url_enc,
 	       redir_url_enc,
-	       nonce->len, nonce->s,
+	       nonce?"&nonce=":"", nonce?nonce->len:0, nonce?nonce->s:"",
 	       state_b64?"&state=":"", STRNULLCHK(state_b64),
+	       acr_values?"&acr_values=":"", STRNULLCHK(acr_values),
 	       display?"&display=":"", STRNULLCHK(display),
 	       prompt?"&prompt=":"", STRNULLCHK(prompt)
 	       );
+  /* https://www.facebook.com/v2.8/dialog/oauth?response_type=code%20granted_scopes&scope=public_profile,email&client_id=1819571348286291&redirect_uri=https%3A%2F%2Fidsso%2Ecom%2Fidp%3fo=O&state=CYA0S2ZImtNiTtZ6h4SaRvRSOVg */
   D("OAUTH2 AZ REQ(%.*s)", ss->len, ss->s);
   if (errmac_debug & ERRMAC_INOUT) INFO("%.*s", ss->len, ss->s);
-  zx_str_free(cf->ctx, nonce);
+  if (nonce) zx_str_free(cf->ctx, nonce);
   if (state_b64) ZX_FREE(cf->ctx, state_b64);
-  ZX_FREE(cf->ctx, eid_url_enc);
+  ZX_FREE(cf->ctx, cli_id_url_enc);
   ZX_FREE(cf->ctx, redir_url_enc);
   return ss;
 }
 
+#if 0
 /*() Interpret ZXID standard form fields to construct a Facebook Connect 2.8
  * Authorization request, which is a redirection URL. */
 
@@ -486,8 +533,11 @@ struct zx_str* zxid_mk_fbc_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp
   ZX_FREE(cf->ctx, redir_url_enc);
   return ss;
 }
+#endif
 
-/*() Decode JWT */
+/*() Decode JWT
+ * Ignores leading signature preamble and trailing signature block (separated by dots).
+ * returns decoded data in allocated buffer. Caller frees. */
 
 /* Called by:  zxid_sp_sso_finalize_jwt */
 char* zxid_decode_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* jwt)
@@ -495,6 +545,7 @@ char* zxid_decode_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* j
   int len;
   char* buf;
   char* p;
+  char* q;
 
   if (!jwt) {
     ERR("Missing JWT %d", 0);
@@ -505,10 +556,12 @@ char* zxid_decode_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* j
     ERR("Malformed JWT (missing period separating header and claims) jwt(%s)", jwt);
     return 0;
   }
-  len = strlen(p);
+  ++p;
+  q = strchr(p, '.');
+  len = q?q-p:strlen(p);
   buf = ZX_ALLOC(cf->ctx, SIMPLE_BASE64_PESSIMISTIC_DECODE_LEN(len));
   p = unbase64_raw(p, p+len, buf, zx_std_index_64);
-  *p = 0;
+  *p = 0;  /* nul termination */
   return buf;
 }
 
@@ -951,25 +1004,29 @@ struct zx_str* zxid_oauth_dynclireg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_se
   return res;
 }
 
+static char* zxid_mk_oauth_az_header(zxid_conf* cf, zxid_ses* ses)
+{
+  char* azhdr;
+  if (ses->access_token) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->access_token);
+  } else if (iat) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
+  } else if (ses->client_id && ses->client_secret) {
+    azhdr = zx_mk_basic_auth_b64(cf->ctx, ses->client_id, ses->client_secret);
+  } else
+    azhdr = 0;
+  return azhdr;
+}
+
 /* Called by:  zxumacall_main */
 void zxid_oauth_rsrcreg_client(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const char* as_uri, const char* rsrc_name, const char* rsrc_icon_uri, const char* rsrc_scope_url, const char* rsrc_type)
 {
   struct zx_str* res;
   char* restful_url;
   char* azhdr;
-  char* b64;
   char* req = zxid_mk_oauth2_rsrc_reg_req(cf, rsrc_name, rsrc_icon_uri, rsrc_scope_url, rsrc_type);
   char* url = zxid_oauth_get_well_known_item(cf, as_uri, "\"resource_set_registration_endpoint\"");
-  if (ses->access_token) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->access_token);
-  } else if (iat) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
-  } else if (ses->client_id && ses->client_secret) {
-    b64 = zx_mk_basic_auth_b64(cf->ctx, ses->client_id, ses->client_secret);
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Basic %s", b64);
-    ZX_FREE(cf->ctx, b64);
-  } else
-    azhdr = 0;
+  azhdr = zxid_mk_oauth_az_header(cf, ses);
   D("req(%s) azhdr(%s)", req, STRNULLCHKD(azhdr));
   
   restful_url = zx_alloc_sprintf(cf->ctx, 0, "%s/resource_set/%s", url, rsrc_name);
@@ -989,19 +1046,9 @@ char* zxid_oauth_call_rpt_endpoint(zxid_conf* cf, zxid_ses* ses, const char* hos
 {
   struct zx_str* res;
   char* azhdr;
-  char* b64;
   char* rpt_endpoint = zxid_oauth_get_well_known_item(cf, as_uri, "\"rpt_endpoint\"");
 
-  if (ses->access_token) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->access_token);
-  } else if (iat) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
-  } else if (ses->client_id && ses->client_secret) {
-    b64 = zx_mk_basic_auth_b64(cf->ctx, ses->client_id, ses->client_secret);
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Basic %s", b64);
-    ZX_FREE(cf->ctx, b64);
-  } else
-    azhdr = 0;
+  azhdr = zxid_mk_oauth_az_header(cf, ses);
 
   //if (!ses->client_id || !ses->client_secret)
   //  zxid_oauth_dynclireg_client(cf, cgi, ses, as_uri);
@@ -1032,19 +1079,9 @@ char* zxid_oauth_call_az_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host
   char* req;
   struct zx_str* res;
   char* azhdr;
-  char* b64;
   char* az_endpoint = zxid_oauth_get_well_known_item(cf, as_uri, "\"authorization_request_endpoint\"");
 
-  if (ses->access_token) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", ses->access_token);
-  } else if (iat) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", iat);
-  } else if (ses->client_id && ses->client_secret) {
-    b64 = zx_mk_basic_auth_b64(cf->ctx, ses->client_id, ses->client_secret);
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Basic %s", b64);
-    ZX_FREE(cf->ctx, b64);
-  } else
-    azhdr = 0;
+  azhdr = zxid_mk_oauth_az_header(cf, ses);
 
   //if (!ses->client_id || !ses->client_secret)
   //  zxid_oauth_dynclireg_client(cf, cgi, ses, as_uri);
@@ -1068,83 +1105,32 @@ char* zxid_oauth_call_az_endpoint(zxid_conf* cf, zxid_ses* ses, const char* host
   return "OK";
 }
 
-/* Called by:  zxumacall_main */
-int zxid_oidc_as_call(zxid_conf* cf, zxid_ses* ses, zxid_entity* idp_meta, const char* _uma_authn)
-{
-  struct zx_md_SingleSignOnService_s* sso_svc;
-  struct zx_str* ss;
-  struct zx_str* req;
-  struct zx_str* res; 
-  struct zxid_cgi* cgi;
-  struct zxid_cgi scgi;
-  ZERO(&scgi, sizeof(scgi));
-  cgi = &scgi;
-
-  if (!idp_meta->ed->IDPSSODescriptor) {
-    ERR("Entity(%s) does not have IdP SSO Descriptor (OAUTH2) (metadata problem)", cgi->eid);
-    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor (OAUTH2)");
-    cgi->err = "Bad IdP metadata (OAUTH). Try different IdP.";
-    D_DEDENT("start_sso: ");
-    return 0;
-  }
-  for (sso_svc = idp_meta->ed->IDPSSODescriptor->SingleSignOnService;
-       sso_svc;
-       sso_svc = (struct zx_md_SingleSignOnService_s*)sso_svc->gg.g.n) {
-    if (sso_svc->gg.g.tok != zx_md_SingleSignOnService_ELEM)
-      continue;
-    if (sso_svc->Binding && !memcmp(OAUTH2_REDIR,sso_svc->Binding->g.s,sso_svc->Binding->g.len))
-      break;
-  }
-  if (!sso_svc) {
-    ERR("IdP Entity(%s) does not have any IdP SSO Service with " OAUTH2_REDIR " binding (metadata problem)", cgi->eid);
-    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No OAUTH2 redir binding");
-    cgi->err = "Bad IdP metadata. Try different IdP.";
-    D_DEDENT("start_sso: ");
-    return 0;
-  }
-  ss = &sso_svc->Location->g;
-  if (_uma_authn)
-    ss = zx_strf(cf->ctx, "%.*s%c_uma_authn=%s", ss->len, ss->s, (memchr(ss->s, '?', ss->len)?'&':'?'), _uma_authn);
-  cgi->pr_ix = ZXID_OIDC1_ID_TOK_TOK; //"id_token token";
-  D("loc(%.*s)", ss->len, ss->s);
-  req = zxid_mk_oauth_az_req(cf, cgi, idp_meta, ss);
-  D("req(%.*s)", req->len, req->s);
-  res = zxid_http_cli(cf, req->len, req->s, 0,0, 0, 0, 0x03);  /* do not follow redir */
-  zx_str_free(cf->ctx, req);
-  D("res(%.*s)", res->len, res->s);
-  // *** extract token and AAT from the response
-  ses->access_token = zx_qs_extract_dup(cf->ctx, res->s, "access_token=");
-  ses->id_token = zx_qs_extract_dup(cf->ctx, res->s, "id_token=");
-  ses->token_type = zx_qs_extract_dup(cf->ctx, res->s, "token_type=");
-  //ses->expires = zx_qs_extract_dup(cf->ctx, res->s, "access_token=");
-  return 1;
-}
-
 /*() Get app secret from a special file.
  * The reason why we do not use metadata appSecret attribute is that
  * the usage pattern of metadata files is rather promiscuous and there
  * would be high risk of leaking the secret. By having it in its
  * own file allows it to be protected by filesystem permissions.
  * It is also located in the pem subdirectory where we keep other
- * sensitive key material.
+ * sensitive key material. Caller must free seturned buffer.
  */
 
 /* Called by:  zxid_oauth_call_token_endpoint */
-static char* zxid_get_app_secret(zxid_conf* cf, const char* sha1_name, const char* logkey)
+char* zxid_get_app_secret(zxid_conf* cf, const char* idp_sha1_name, const char* logkey)
 {
   fdtype fd;
   int n,siz,got;
   char* buf;
-  fd = open_fd_from_path(O_RDONLY, 0, logkey, 1, "%s" ZXID_PEM_DIR "%s.appsec", cf->cpath, sha1_name);
+  fd = open_fd_from_path(O_RDONLY, 0, logkey, 1,
+			 "%s" ZXID_PEM_DIR "%s.appsec", cf->cpath, idp_sha1_name);
   if (fd == BADFD) {
     perror("open app secret to read");
-    D("No app secret file found for sha1_name(%s)", sha1_name);
+    D("No app secret file found for idp_sha1_name(%s)", idp_sha1_name);
     return 0;
   }
   siz = get_file_size(fd);
   buf = ZX_ALLOC(cf->ctx, siz+1);
   n = read_all_fd(fd, buf, siz, &got);
-  DD("==========sha1_name(%s)", sha1_name);
+  DD("==========idp_sha1_name(%s)", idp_sha1_name);
   if (n == -1)
     goto readerr;
   close_file(fd, (const char*)__FUNCTION__);
@@ -1152,7 +1138,7 @@ static char* zxid_get_app_secret(zxid_conf* cf, const char* sha1_name, const cha
 
 readerr:
   perror("read app secret");
-  D("%s: Failed to read app secret for sha1_name(%s)", logkey, sha1_name);
+  D("%s: Failed to read app secret for idp_sha1_name(%s)", logkey, idp_sha1_name);
   close_file(fd, (const char*)__FUNCTION__);
   return 0;
 }
@@ -1168,23 +1154,16 @@ readerr:
 static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
 {
   zxid_entity* idp_meta;
-  //char* endpoint = "http://idp.tas3.pt:8081/zxididp?o=T";  // *** proper metadata lookup
+  struct zx_str surl;
   struct zx_str* url;
-  struct zx_str* appId;
   struct zx_str* res;
-  char* appSecret;
-  char* appSecret_url_enc;
   char* redir_url_enc;
-  char* eid_url_enc;
-  char* azhdr;
+  char* cli_id_url_enc;
+  char* cli_sec_url_enc = 0;
+  char* cli_sec;
+  char* azhdr = 0;
+  char* grant_type = 0;
   char* buf;
-  int len,olen;
-#if 0  
-  if (iat) {
-    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", client_secret);
-  } else
-#endif
-    azhdr = 0;
 
   D_INDENT("call_tok_ept: ");
 
@@ -1204,75 +1183,129 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
   }
   ses->issuer = &idp_meta->ed->entityID->g;
   ses->idpeid = zx_str_to_c(cf->ctx, ses->issuer);
-#if 1
-  if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->IDPSSODescriptor->tokenURL)) {
+
+  if (cgi->client_id || cgi->client_id[0]) {
+    DD("HERE3 cgi->client_id(%s)",cgi->client_id);
+    /* From previous steps of discovery passed via state */
+    cli_id_url_enc = zx_url_encode(cf->ctx, -2, cgi->client_id, 0);
+  } else if (idp_meta->ed && ZX_ATTR_HAS_VALUE(idp_meta->ed->appId)) {
+    /* From metadata (the SP's appId is stored in idp_meta on SP system */
+    cli_id_url_enc = zx_url_encode(cf->ctx, idp_meta->ed->appId->g.len, idp_meta->ed->appId->g.s,0);
+  } else if (cgi->eid || cgi->eid[0]) {
+    cli_id_url_enc = zx_url_encode(cf->ctx, -2, cgi->eid, 0);
+  } else {
+    ERR("IdP metadata not prepared for resolving code to access_token. appId or client_id missing. Corrupt state field? %p", cgi->eid);
+    cgi->err = "IdP metadata not prepared for resolving code to access_token. appId or client_id missing.";
+    D_DEDENT("call_tok_ept: ");
+    return 0;
+  }
+
+#if 0  
+  if (iat) {
+    azhdr = zx_alloc_sprintf(cf->ctx, 0, "Authorization: Bearer %s", client_secret);
+  }
+#endif
+
+  if (cgi->client_secret) {
+    /* In Mobile Connect Discovery case the client_secret was discovered and
+     * passed via state. In this flow, Authorization header is used and
+     * client_secret is suppressed from the query string. */
+    azhdr = zx_mk_basic_auth_b64(cf->ctx, cgi->client_id, cgi->client_secret);
+    DD("HERE6 %p azhdr(%s)", cli_id_url_enc, azhdr);
+    if (cli_id_url_enc) {
+      ZX_FREE(cf->ctx, cli_id_url_enc);
+      cli_id_url_enc = 0;
+    }
+    cli_sec_url_enc = 0;
+    grant_type = "authorization_code";
+  } else {
+    DD("HERE7 %d",0);
+    cli_sec = zxid_get_app_secret(cf, idp_meta->sha1_name, "call_tok_ept");
+    if (!cli_sec) {
+      if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->appSecret)) {
+	ERR("IdP is missing app secret file (and appSecret field). eid(%s) %p", cgi->eid, idp_meta->ed->appSecret);
+	cgi->err = "IdP not prepared for resolving code to access_token. Lacks app secret.";
+	D_DEDENT("call_tok_ept: ");
+	return 0;
+      }
+      DD("HERE8 %d",0);
+      cli_sec = zx_dup_len_cstr(cf->ctx, idp_meta->ed->appSecret->g.len, idp_meta->ed->appSecret->g.s);
+    }
+    /* FBC wants client_secret in QueryString, not Authorization HTTP header */
+    azhdr = 0;
+    DD("HERE9 %d",0);
+    cli_sec_url_enc = zx_url_encode(cf->ctx, -2, cli_sec, 0);
+    ZX_FREE(cf->ctx, cli_sec);
+    grant_type = 0;
+  }
+
+  if (cgi->token_url) {
+    DD("HERE10 token_url(%s)",cgi->token_url);
+    /* Mob Conn case. The token_url was discovered and passed via state so it is available here. */
+    surl.s = cgi->token_url;
+    surl.len = strlen(surl.s);
+    url = &surl;
+  } else if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->IDPSSODescriptor->tokenURL)) {
+    /* FBC uses metadata to fugure out the token url */
+    url = &idp_meta->ed->IDPSSODescriptor->tokenURL->g;
+  } else {
     ERR("IdP metadata is missing tokenURL field. eid(%s) %p", cgi->eid, idp_meta->ed->IDPSSODescriptor->tokenURL);
     cgi->err = "IdP metadata not prepared for resolving code to access_token. Lacks tokenURL.";
     D_DEDENT("call_tok_ept: ");
     return 0;
   }
-  if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->appId)) {
-    ERR("IdP metadata is missing appId field. eid(%s) %p", cgi->eid, idp_meta->ed->appId);
-    cgi->err = "IdP metadata not prepared for resolving code to access_token. Lacks appId.";
-    D_DEDENT("call_tok_ept: ");
-    return 0;
-  }
-
-  url = &idp_meta->ed->IDPSSODescriptor->tokenURL->g;
-  appId = &idp_meta->ed->appId->g;
-  appSecret = zxid_get_app_secret(cf, idp_meta->sha1_name, "call_tok_ept");
-  if (!appSecret) {
-    if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->appSecret)) {
-      ERR("IdP is missing app secret file (and appSecret field). eid(%s) %p", cgi->eid, idp_meta->ed->appSecret);
-      cgi->err = "IdP not prepared for resolving code to access_token. Lacks app secret.";
-      D_DEDENT("call_tok_ept: ");
-      return 0;
-    }
-    appSecret = zx_dup_len_cstr(cf->ctx, idp_meta->ed->appSecret->g.len, idp_meta->ed->appSecret->g.s);
-  }
-  appSecret_url_enc = zx_url_encode(cf->ctx, -2, appSecret, 0);
-  ZX_FREE(cf->ctx, appSecret);
   redir_url_enc = zx_url_encode(cf->ctx, -2, cf->burl, 0);
-  /* Per IdP app_id (aka client_id) instead of SP chosen eid */
-  eid_url_enc = zx_url_encode(cf->ctx, appId->len, appId->s, 0);
-  //{ eid = zxid_my_ent_id(cf);
-  //  eid_url_enc = zx_url_encode(cf->ctx, eid->len, eid->s, 0);
-  //  zx_str_free(cf->ctx, eid);  }
-  
-  for (olen = 2047 /* just initial guess */; 1; olen=len) {
-    buf = ZX_ALLOC(cf->ctx, olen+1);
-    len = snprintf(buf, olen,
-		   "%.*s%c"
-		   "client_id=%s"
-		   "&redirect_uri=%s%%3fo=O"
-		   "&client_secret=%s"
-		   "&code=%s",
-		   url->len, url->s, (memchr(url->s, '?', url->len)?'&':'?'),
-		   eid_url_enc,
-		   redir_url_enc,
-		   appSecret_url_enc,
-		   cgi->code);
-    if (len <= olen)
-      break;  /* fits */
-    /* Did not fit, try again (second iteration will always be successful) */
-    ZX_FREE(cf->ctx, buf);
-  }
-  buf[len] = 0;  /* MS snprintf() bug */
-  
-  ZX_FREE(cf->ctx, eid_url_enc);
+
+#if 1
+  /* Must use POST */
+  buf = zx_alloc_sprintf(cf->ctx, 0,
+			 "code=%s&redirect_uri=%s%%3fo=O"
+			 "%s%s"    /* &client_id=       FBC */
+			 "%s%s"    /* &client_secret=   FBC */
+			 "%s%s",   /* &grant_type=      MobConn */
+			 cgi->code, redir_url_enc,
+			 cli_id_url_enc?"&client_id=":"", STRNULLCHK(cli_id_url_enc),
+			 cli_sec_url_enc?"&client_secret=":"", STRNULLCHK(cli_sec_url_enc),
+			 grant_type?"&grant_type=":"", STRNULLCHK(grant_type));
+
   ZX_FREE(cf->ctx, redir_url_enc);
-  ZX_FREE(cf->ctx, appSecret_url_enc);
-  res = zxid_http_cli(cf, -1, buf, 0, 0, 0, azhdr, 0);
-  ZX_FREE(cf->ctx, buf);
+  if (cli_sec_url_enc) ZX_FREE(cf->ctx, cli_sec_url_enc);
+  if (cli_id_url_enc)  ZX_FREE(cf->ctx, cli_id_url_enc);
+  res = zxid_http_cli(cf, url->len, url->s, -1, buf, 0, azhdr, 0);
 #else
-  snprintf(buf, sizeof(buf),
-	   "grant_type=authorization_code&code=%s&redirect_uri=%s",
-	   cgi->code, cgi->redirect_uri);
-  res = zxid_http_cli(cf, -1, endpoint, -1, buf, 0, azhdr, 0);
+  /* GET is not officially supported for Mobile Connect */
+  buf = zx_alloc_sprintf(cf->ctx, 0,
+			 "%.*s%credirect_uri=%s%%3fo=O"
+			 "&code=%s"
+			 "%s%s"    /* &client_id=       FBC */
+			 "%s%s"    /* &client_secret=   FBC */
+			 "%s%s",   /* &grant_type=      MobConn */
+			 url->len, url->s, (memchr(url->s, '?', url->len)?'&':'?'),
+			 redir_url_enc,
+			 cgi->code,
+			 cli_id_url_enc?"&client_id=":"", STRNULLCHK(cli_id_url_enc),
+			 cli_sec_url_enc?"&client_secret=":"", STRNULLCHK(cli_sec_url_enc),
+			 grant_type?"&grant_type=":"", STRNULLCHK(grant_type));
+
+  ZX_FREE(cf->ctx, redir_url_enc);
+  if (cli_sec_url_enc) ZX_FREE(cf->ctx, cli_sec_url_enc);
+  if (cli_id_url_enc)  ZX_FREE(cf->ctx, cli_id_url_enc);
+  res = zxid_http_cli(cf, -1, buf, 0, 0, 0, azhdr, 0);
 #endif
-  D("%.*s", res->len, res->s);
+  ZX_FREE(cf->ctx, buf);
+  if (azhdr)  ZX_FREE(cf->ctx, azhdr);
+  D("res=%p len=%d (%.*s)", res, res->len, res->len, res->s);
   
-  /* Extract the fields as if it had been implicit mode SSO */
+  /* Extract the fields as if it had been implicit mode SSO
+   *
+   * {"access_token":"8d959b40-e001-11e6-baa0-ef6a745b61ee","token_type":"Bearer","expires_in":3600,"id_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJub25jZSI6Ik9BdmlHUGZkWXFHY0lCWUREc1QyVzFlMWY5Iiwic3ViIjoiOWMxOGI1ZDZhZDhhZjU5NmU2NzExNDUzZmU4NzhiNTciLCJhbXIiOlsiU0lNX1BJTiJdLCJhdXRoX3RpbWUiOjE0ODUwMjA3OTYsImFjciI6IjIiLCJhenAiOiJhNDA1ZTdmYS1kMWJmLTQ4NTctYTNmYS0wOTRkYmE4NDc3MTEiLCJpYXQiOjE0ODUwMjA3OTUsImV4cCI6MTQ4NTAyNDM5NSwiYXVkIjpbImE0MDVlN2ZhLWQxYmYtNDg1Ny1hM2ZhLTA5NGRiYTg0NzcxMSJdLCJpc3MiOiJodHRwOi8vb3BlcmF0b3ItYi5zYW5kYm94Mi5tb2JpbGVjb25uZWN0LmlvL29pZGMvYWNjZXNzdG9rZW4ifQ.VqbgsyBXor6CZwJOUDdHpiZg35oYgYf4CejnilDBLoc"}
+   *
+   * {"access_token":"8d959b40-e001-11e6-baa0-ef6a745b61ee",
+      "token_type":"Bearer",
+      "expires_in":3600,
+      "id_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJub25jZSI6Ik9BdmlHUGZkWXFHY0lCWUREc1QyVzFlMWY5Iiwic3ViIjoiOWMxOGI1ZDZhZDhhZjU5NmU2NzExNDUzZmU4NzhiNTciLCJhbXIiOlsiU0lNX1BJTiJdLCJhdXRoX3RpbWUiOjE0ODUwMjA3OTYsImFjciI6IjIiLCJhenAiOiJhNDA1ZTdmYS1kMWJmLTQ4NTctYTNmYS0wOTRkYmE4NDc3MTEiLCJpYXQiOjE0ODUwMjA3OTUsImV4cCI6MTQ4NTAyNDM5NSwiYXVkIjpbImE0MDVlN2ZhLWQxYmYtNDg1Ny1hM2ZhLTA5NGRiYTg0NzcxMSJdLCJpc3MiOiJodHRwOi8vb3BlcmF0b3ItYi5zYW5kYm94Mi5tb2JpbGVjb25uZWN0LmlvL29pZGMvYWNjZXNzdG9rZW4ifQ.VqbgsyBXor6CZwJOUDdHpiZg35oYgYf4CejnilDBLoc"}
+
+   */
   ses->access_token = zx_json_extract_dup(cf->ctx, res->s, "\"access_token\"");
   ses->refresh_token = zx_json_extract_dup(cf->ctx, res->s, "\"refresh_token\"");
   ses->token_type = zx_json_extract_dup(cf->ctx, res->s, "\"token_type\"");
@@ -1282,6 +1315,25 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
     cgi->access_token = ses->access_token;
   if (ses->id_token)
     cgi->id_token = ses->id_token;
+
+  /* Typical id_token
+   *
+   * {"nonce":"OAviGPfdYqGcIBYDDsT2W1e1f9","sub":"9c18b5d6ad8af596e6711453fe878b57","amr":["SIM_PIN"],"auth_time":1485020796,"acr":"2","azp":"a405e7fa-d1bf-4857-a3fa-094dba847711","iat":1485020795,"exp":1485024395,"aud":["a405e7fa-d1bf-4857-a3fa-094dba847711"],"iss":"http://operator-b.sandbox2.mobileconnect.io/oidc/accesstoken"}
+   *
+   * {"nonce":"OAviGPfdYqGcIBYDDsT2W1e1f9",
+      "sub":"9c18b5d6ad8af596e6711453fe878b57",
+      "amr":["SIM_PIN"],
+      "auth_time":1485020796,
+      "acr":"2",
+      "azp":"a405e7fa-d1bf-4857-a3fa-094dba847711",
+      "iat":1485020795,
+      "exp":1485024395,
+      "aud":["a405e7fa-d1bf-4857-a3fa-094dba847711"],
+      "iss":"http://operator-b.sandbox2.mobileconnect.io/oidc/accesstoken"}
+   *
+   * sub is the subject pseudonym
+   */
+
   // *** check validity
   zx_str_free(cf->ctx, res);
   D_DEDENT("call_tok_ept: ");
@@ -1416,11 +1468,42 @@ int zxid_sp_sso_finalize_jwt(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, const 
     ERR("JWT decode error jwt(%s)", STRNULLCHKD(jwt));
     goto erro;
   }
+
+  /* Typical Mobile Connect (OIDC1) id_token
+   *
+   * {"nonce":"OAviGPfdYqGcIBYDDsT2W1e1f9","sub":"9c18b5d6ad8af596e6711453fe878b57","amr":["SIM_PIN"],"auth_time":1485020796,"acr":"2","azp":"a405e7fa-d1bf-4857-a3fa-094dba847711","iat":1485020795,"exp":1485024395,"aud":["a405e7fa-d1bf-4857-a3fa-094dba847711"],"iss":"http://operator-b.sandbox2.mobileconnect.io/oidc/accesstoken"}
+   *
+   * {"nonce":"OAviGPfdYqGcIBYDDsT2W1e1f9",
+      "sub":"9c18b5d6ad8af596e6711453fe878b57",
+      "amr":["SIM_PIN"],
+      "auth_time":1485020796,
+      "acr":"2",
+      "azp":"a405e7fa-d1bf-4857-a3fa-094dba847711",
+      "iat":1485020795,
+      "exp":1485024395,
+      "aud":["a405e7fa-d1bf-4857-a3fa-094dba847711"],
+      "iss":"http://operator-b.sandbox2.mobileconnect.io/oidc/accesstoken"}
+   *
+   * where "sub" is the subject pseudonym
+   *
+   * Typical FBC token content
+   * {"data":{
+        "app_id":"1819571348286291",
+        "application":"IDSSO Proxy Identity Provider",
+        "expires_at":1485686557,
+        "is_valid":true,
+        "issued_at":1480502557,
+        "scopes":["public_profile"],
+        "user_id":"336179946751868"}}
+   *
+   * where "user_id" is the subject pseudonym
+   */
   
-  //ses->nid = zx_json_extract_dup(cf->ctx, claims, "\"sub\"");
-  ses->nid = zx_json_extract_dup(cf->ctx, claims, "\"user_id\"");
+  ses->nid = zx_json_extract_dup(cf->ctx, claims, "\"sub\"");
+  if (!ses->nid)
+    ses->nid = zx_json_extract_dup(cf->ctx, claims, "\"user_id\"");
   if (!ses->nid) {
-    ERR("JWT decode: no user_id found in jwt(%s)", STRNULLCHKD(jwt));
+    ERR("JWT decode: no pseudonym (sub or user_id) found in jwt(%s)", STRNULLCHKD(jwt));
     goto erro;
   }
   ses->nidfmt = 1;  /* Assume federation */

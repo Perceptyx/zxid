@@ -756,7 +756,7 @@ ZX_OBJ=c/zx-ns.$(OE) c/zx-attrs.$(OE) c/zx-elems.$(OE) zxlibdec.$(OE) zxlibenc.$
 
 WSF_OBJ=zxidmkwsf.$(OE) zxidwsf.$(OE) zxidwsc.$(OE) zxidwsp.$(OE) zxiddi.$(OE) zxidim.$(OE) zxidps.$(OE)
 
-OAUTH_OBJ=zxidoauth.$(OE)
+OAUTH_OBJ=zxidoauth.$(OE) zxidoidc.$(OE)
 
 SMIME_LIB_OBJ=certauth.$(OE) keygen.$(OE) pkcs12.$(OE) smime-enc.$(OE) smime-qry.$(OE) smime-vfy.$(OE) smimemime.$(OE) smimeutil.$(OE)
 

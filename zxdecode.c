@@ -1,6 +1,6 @@
 /* zxdecode.c  -  SAML Decoding tool
  * Copyright (c) 2012 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2008-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2008-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -316,6 +316,8 @@ static int wsse_sec_validate(struct zx_e_Envelope_s* env)
     return 9;
   }
   
+  if (!cf)
+    cf = zxid_new_conf_to_cf(0);
   ZERO(refs, sizeof(refs));
   n_refs = zxid_hunt_sig_parts(cf, n_refs, refs, sec->Signature->SignedInfo->Reference, env->Header, env->Body);
   /*zx_see_elem_ns(cf->ctx, &refs.pop_seen, &resp->gg); *** */
@@ -350,6 +352,8 @@ static int sig_validate(int len, char* p)
   
   ZERO(&cgi, sizeof(cgi));
   ZERO(&ses, sizeof(ses));
+  if (!cf)
+    cf = zxid_new_conf_to_cf(0);
 
   r = zx_dec_zx_root(cf->ctx, len, p, "decode");
   if (!r) {
@@ -546,6 +550,8 @@ static int encode(char* msg, char* q)
       D("encode_base64 skipped at user request %d, len=%d",b64_flag,len);
       break;
     }
+    if (!cf)
+      cf = zxid_new_conf_to_cf(0);
 
     len = SIMPLE_BASE64_LEN(q-msg);
     DD("zbuf(%.*s) zlen=%d len=%d", zlen, zbuf, zlen, len);

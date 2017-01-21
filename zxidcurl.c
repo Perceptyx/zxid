@@ -20,6 +20,7 @@
  * 8.6.2015,   Fixed bug relating to unset action header --Sampo
  * 5.12.2016,  Make use of CURLOPT_ERRORBUFFER feature --Sampo
  * 20170109    added VALID_OPT=0x02 to disable peer verification --Sampo
+ * 20170121    fixed default content type of POSTs --Sampo
  *
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  *           http://curl.haxx.se/libcurl/
@@ -115,7 +116,9 @@ size_t zxid_curl_read_data(void *buffer, size_t size, size_t nmemb, void *userp)
  * content_type6:: Content-Type header for POST data. NULL means application/x-www-form-encoded
  * headers7:: A way to pass in additional header(s), typically SOAPaction or Authorization
  * flags8:: Bitmask of flags to control behaviour: 0x01 == return will have both headers and body
- * return:: HTTP body of the response or HTTP headers and body
+ * return:: HTTP body of the response or HTTP headers and body. The string shall
+ *     be nul terminated (but is binary so it can contain nuls in middle, too).
+ *     Caller frees.
  *
  * N.B. To use proxy, set environment variable all_proxy=proxyhost:port, see libcurl documentation.
  */
@@ -207,6 +210,8 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
     curl_easy_setopt(cf->curl, CURLOPT_READDATA, &wc);
     curl_easy_setopt(cf->curl, CURLOPT_READFUNCTION, zxid_curl_read_data);
   
+    if (!content_type)
+      content_type = "application/x-www-form-encoded";
     ZERO(&content_type_curl, sizeof(content_type_curl));
     content_type_curl.data = (char*)content_type;
     if (headers) {
@@ -225,10 +230,11 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
     }
   }
   
-  INFO("----------- call(%s) ----------- %p", urli, data);
-  DD("HTTP_CLI post(%.*s) len=%d\n", len, STRNULLCHK(data), len);
+  INFO("----------- call(%s) ----------- data=%p len=%d hdr=%p", urli, data, len, headers);
+  D("HTTP_CLI post(%.*s) len=%d\n", len, STRNULLCHK(data), len);
   D_XML_BLOB(cf, "HTTP_CLI POST", len, STRNULLCHK(data));
   res = curl_easy_perform(cf->curl);  /* <========= Actual call, blocks. */
+  DD("H E R E %d", res);
   switch (res) {
   case 0: break;
   case CURLE_SSL_CONNECT_ERROR:
@@ -257,7 +263,7 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
   UNLOCK(cf->curl_mx, "curl-cli");
   ZX_FREE(cf->ctx, urli);
   rc.lim = rc.p;
-  rc.p[0] = 0;
+  rc.p[0] = 0;   /* nul terminate the string */
 
   DD("HTTP_CLI got(%s)", rc.buf);
   DD_XML_BLOB(cf, "HTTP_CLI GOT", rc.lim - rc.buf, rc.buf);

@@ -1,6 +1,6 @@
 /* zxidcgi.c  -  Handwritten functions for parsing SP specific CGI options
  * Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -18,6 +18,7 @@
  * 14.3.2013   added language/skin dependent templates --Sampo
  * 28.3.2016,  fixed alp.x and alp.y decoding problems --Sampo
  * 4.12.2016,  added tolerance for ...&name&... meaning name does not have value --Sampo
+ * 20170119    added Mobile Connect required fields --Sampo
  * See also: http://hoohoo.ncsa.uiuc.edu/cgi/interface.html (CGI specification)
  */
 
@@ -71,6 +72,9 @@ int zxid_parse_cgi(zxid_conf* cf, zxid_cgi* cgi, char* qs)
       n = "NULL_NAME_ERROR";
     DD("n(%s)=v(%s) qs(%s)=%p len=%d", n,v, STRNULLCHKNULL(qs), qs, qs?strlen(qs):-1);
     switch (n[0]) {
+    case 'm':
+      if (!strcmp(n, "mcc_mnc")) { cgi->mcc_mnc = v; break; }
+      goto unknown;
     case 'n':
       if (!strcmp(n, "nonce")) { cgi->nonce = v; break; }
       goto unknown;
@@ -95,17 +99,21 @@ int zxid_parse_cgi(zxid_conf* cf, zxid_cgi* cgi, char* qs)
       if (!strcmp(n, "scope"))  { cgi->scope = v; break; }   /* OAUTH2 */
       if (!strcmp(n, "state"))  { cgi->state = v; break; }   /* OAUTH2 */
       if (!strcmp(n, "schema")) { cgi->schema = v; break; }  /* OAUTH2 */
+      if (!strcmp(n, "subscriber_id")) { cgi->sub_id = v; break; }  /* Mobile Connect / OIDC1 */
       goto unknown;
     case 't':
       if (!strcmp(n, "token_type")) { cgi->token_type = v; break; }  /* OAUTH2 */
+      if (!strcmp(n, "token_url"))  { cgi->token_url = v; break; }   /* OAUTH2 / Mob Conn */
       if (!strcmp(n, "templ"))   { DD("Detect templ(%s) cgi=%p",v,cgi); cgi->templ = v; break; }
       goto unknown;
     case 'u':
       if (!strcmp(n, "user_id")) { cgi->user_id = v; break; }   /* OAUTH2 */
+      if (!strcmp(n, "userinfo_url")) { cgi->userinfo_url = v; break; }   /* OAUTH2 / Mob Conn */
       goto unknown;
     case 'c':
       if (!n[1]) { cgi->cdc = v; break; }
-      if (!strcmp(n, "client_id")) { cgi->client_id = v; break; }    /* OAUTH2 */
+      if (!strcmp(n, "client_id")) { cgi->client_id = v; break; }    /* OAUTH2, OIDC Disco, Mob */
+      if (!strcmp(n, "client_secret")) { cgi->client_secret = v; break; }    /* OIDC Disco, Mob */
       if (!strcmp(n, "code"))      { cgi->code = v;      break; }    /* OAUTH2 */
       goto unknown;
       /* The following two entity IDs, combined with various login buttons

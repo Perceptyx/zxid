@@ -62,6 +62,7 @@ int zxid_pick_sso_profile(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* idp_meta)
   case ZXID_OIDC1_CODE:       return ZXID_OIDC1_CODE;
   case ZXID_OIDC1_ID_TOK_TOK: return ZXID_OIDC1_ID_TOK_TOK;
   case ZXID_FBC_CODE:         return ZXID_FBC_CODE;
+  case ZXID_MOBCONN_CODE:     return ZXID_MOBCONN_CODE;
   }
   /* More sophisticated policy may eventually go here. */
   return ZXID_SAML2_ART;
@@ -168,7 +169,7 @@ void zxid_sso_set_relay_state_to_return_to_this_url(zxid_conf* cf, zxid_cgi* cgi
  * Returns NULL if none match. */
 
 /* Called by:  zxid_start_sso_url x3 */
-static struct zx_md_SingleSignOnService_s* zxid_search_idp_sso_desc(zxid_entity* idp_meta, const char* binding)
+static struct zx_md_SingleSignOnService_s* zxid_search_idp_sso_desc(zxid_conf* cf, zxid_entity* idp_meta, const char* binding)
 {
   struct zx_md_SingleSignOnService_s* sso_svc;
   for (sso_svc = idp_meta->ed->IDPSSODescriptor->SingleSignOnService;
@@ -179,8 +180,30 @@ static struct zx_md_SingleSignOnService_s* zxid_search_idp_sso_desc(zxid_entity*
     if (sso_svc->Binding && !memcmp(binding, sso_svc->Binding->g.s, sso_svc->Binding->g.len))
       break;
   }
+  if (!sso_svc) {
+    ERR("IdP Entity(%s) does not have any IdP SSO Service with %s binding (metadata problem or IdP lacks the capability)", idp_meta->eid, binding);
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", idp_meta->eid, "No redir binding");
+    return 0;
+  }
   return sso_svc;
 }
+
+#if 0
+/*() Wrapper for zxid_start_sso_url(), used when Location header needs to be passed outside.
+ * return:: Location header as zx_str. Caller should eventually free this memory. */
+
+/* Called by:  main x2, zxid_simple_no_ses_cf */
+struct zx_str* zxid_start_sso_location(zxid_conf* cf, zxid_cgi* cgi)
+{
+  struct zx_str* ss;
+  struct zx_str* url = zxid_start_sso_url(cf, cgi);
+  if (!url)
+    return 0;
+  ss = zx_strf(cf->ctx, "Location: %.*s" CRLF2, url->len, url->s);
+  zx_str_free(cf->ctx, url);
+  return ss;
+}
+#endif
 
 /*(i) Generate an authentication request and make a URL out of it.
  *
@@ -190,13 +213,14 @@ static struct zx_md_SingleSignOnService_s* zxid_search_idp_sso_desc(zxid_entity*
  *     The cgi->eid specifies the IdP entity ID.
  * return:: Redirect URL as zx_str. Caller should eventually free this memory.
  */
-/* Called by:  zxid_start_sso_location */
-struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
+/* Called by:  main x2, zxid_simple_no_ses_cf */
+struct zx_str* zxid_start_sso_location(zxid_conf* cf, zxid_cgi* cgi)
 {
   struct zx_md_SingleSignOnService_s* sso_svc;
   struct zx_sp_AuthnRequest_s* ar;
   struct zx_attr_s* dest;
   struct zx_str* ars;
+  struct zx_str* ss;
   int sso_profile_ix;
   zxid_entity* idp_meta;
   D_INDENT("start_sso: ");
@@ -215,83 +239,75 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
     D_DEDENT("start_sso: ");
     return 0;
   }
+  if (!idp_meta->ed->IDPSSODescriptor) {
+    ERR("Entity(%s) does not have IdP SSO Descriptor (metadata problem)", cgi->eid);
+    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor");
+    cgi->err = "Bad IdP metadata. Try different IdP.";
+    D_DEDENT("start_sso: ");
+    return 0;
+  }
   switch (sso_profile_ix = zxid_pick_sso_profile(cf, cgi, idp_meta)) {
   case ZXID_SAML2_ART:
   case ZXID_SAML2_POST:
   case ZXID_SAML2_POST_SIMPLE_SIGN:
     /* All of the above use redir binding for sending AnReq */
-    if (!idp_meta->ed->IDPSSODescriptor) {
-      ERR("Entity(%s) does not have IdP SSO Descriptor (metadata problem)", cgi->eid);
-      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor");
-      cgi->err = "Bad IdP metadata. Try different IdP.";
-      D_DEDENT("start_sso: ");
-      return 0;
-    }
-    sso_svc = zxid_search_idp_sso_desc(idp_meta, SAML2_REDIR);
-    if (!sso_svc) {
-      ERR("IdP Entity(%s) does not have any IdP SSO Service with " SAML2_REDIR " binding (metadata problem)", cgi->eid);
-      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No redir binding");
-      cgi->err = "Bad IdP metadata. Try different IdP.";
-      D_DEDENT("start_sso: ");
-      return 0;
-    }
+    sso_svc = zxid_search_idp_sso_desc(cf, idp_meta, SAML2_REDIR);
+    if (!sso_svc)
+      goto badmeta;
     DD("HERE3a len=%d (%.*s)", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s);
     ar = zxid_mk_authn_req(cf, cgi);
     dest = zx_dup_len_attr(cf->ctx, 0, zx_Destination_ATTR, sso_svc->Location->g.len, sso_svc->Location->g.s);
     ZX_ORD_INS_ATTR(ar, Destination, dest);
     ars = zx_easy_enc_elem_opt(cf, &ar->gg);
     D("AuthnReq(%.*s) %p", ars->len, ars->s, dest);
+
+    if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP scenario */
+      if (cgi->rs) {
+	ERR("Attempt to supply RelayState(%s) in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
+      }
+      cgi->rs = cgi->ssoreq; /* Carry the original authn req in RelayState */
+      D("Middle IdP of Proxy IdP flow RelayState(%s)", STRNULLCHK(cgi->rs));
+    }
+    
+    if (cf->log_level>0)
+      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "ANREDIR", cgi->eid, 0);
+    ars = zxid_saml2_redir_url(cf, &sso_svc->Location->g, ars, cgi->rs);
     break;
 
   case ZXID_OIDC1_CODE:
   case ZXID_OIDC1_ID_TOK_TOK:
-    if (!idp_meta->ed->IDPSSODescriptor) {
-      ERR("Entity(%s) does not have IdP SSO Descriptor (OAUTH2) (metadata problem)", cgi->eid);
-      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor (OAUTH2)");
-      cgi->err = "Bad IdP metadata (OAUTH). Try different IdP.";
-      D_DEDENT("start_sso: ");
-      return 0;
-    }
-    sso_svc = zxid_search_idp_sso_desc(idp_meta, OAUTH2_REDIR);
-    if (!sso_svc) {
-      ERR("IdP Entity(%s) does not have any IdP SSO Service with " OAUTH2_REDIR " binding (metadata problem)", cgi->eid);
-      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No OAUTH2 redir binding");
-      cgi->err = "Bad IdP metadata. Try different IdP.";
-      D_DEDENT("start_sso: ");
-      return 0;
-    }
-    DD("HERE3b len=%d (%.*s)", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s);
+    sso_svc = zxid_search_idp_sso_desc(cf, idp_meta, OAUTH2_REDIR);
+    if (!sso_svc)
+      goto badmeta;
+    DD("HERE3b len=%d (%.*s) %p %p", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s, &sso_svc->Location->g, sso_svc->Location->g.s);
     if (cf->log_level>0)
       zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "OANREDIR", cgi->eid, 0);
-    ars = zxid_mk_oauth_az_req(cf, cgi, idp_meta, &sso_svc->Location->g);
-
-    D_DEDENT("start_sso: ");
-    return ars;
+    ars = zxid_mk_oauth_az_req(cf, cgi, idp_meta, &sso_svc->Location->g, 0x00);
+    break;
 
   case ZXID_FBC_CODE:  /* Facebook Connect 2.8, based on OAUTH2 but different */
-    if (!idp_meta->ed->IDPSSODescriptor) {
-      ERR("Entity(%s) does not have IdP SSO Descriptor (FBC) (metadata problem)", cgi->eid);
-      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No IDPSSODescriptor (FBC)");
-      cgi->err = "Bad IdP metadata (FBC). Try different IdP.";
-      D_DEDENT("start_sso: ");
-      return 0;
-    }
-    sso_svc = zxid_search_idp_sso_desc(idp_meta, FBC28_REDIR);
-    if (!sso_svc) {
-      ERR("IdP Entity(%s) does not have any IdP SSO Service with " FBC28_REDIR " binding (metadata problem)", cgi->eid);
-      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "ERR", cgi->eid, "No FBC redir binding");
-      cgi->err = "Bad IdP metadata. Try different IdP.";
-      D_DEDENT("start_sso: ");
-      return 0;
-    }
-    D("HERE3 len=%d (%.*s) %p %p", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s, &sso_svc->Location->g, sso_svc->Location->g.s);
+    sso_svc = zxid_search_idp_sso_desc(cf, idp_meta, FBC28_REDIR);
+    if (!sso_svc)
+      goto badmeta;
     if (cf->log_level>0)
       zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "FBCREDIR", cgi->eid, 0);
-    D("HERE4 len=%d (%.*s) %p %p", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s, &sso_svc->Location->g, sso_svc->Location->g.s);
-    ars = zxid_mk_fbc_az_req(cf, cgi, idp_meta, &sso_svc->Location->g);
+    ars = zxid_mk_oauth_az_req(cf, cgi, idp_meta, &sso_svc->Location->g, 0x01);
+    break;
 
-    D_DEDENT("start_sso: ");
-    return ars;
+  case ZXID_MOBCONN_CODE:  /* Mobile Connect 1.0, profiled from OIDC1 */
+    sso_svc = zxid_search_idp_sso_desc(cf, idp_meta, MOBCONN1_REDIR);
+    if (!sso_svc)
+      goto badmeta;
+    if (cf->log_level>0)
+      zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "MOBCONNDREDIR", cgi->eid, 0);
+    if (cgi->mcc_mnc && *cgi->mcc_mnc) {
+      D("HERE--4 len=%d (%.*s) %p %p", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s, &sso_svc->Location->g, sso_svc->Location->g.s);
+      ars = zxid_mk_mobconn_disco_call(cf, cgi, idp_meta, &sso_svc->Location->g);
+    } else {
+      D("HERE--5 len=%d (%.*s) %p %p", sso_svc?sso_svc->Location->g.len:0, sso_svc->Location->g.len, sso_svc->Location->g.s, &sso_svc->Location->g, sso_svc->Location->g.s);
+      ars = zxid_mk_mobconn_disco_req(cf, cgi, idp_meta, &sso_svc->Location->g);
+    }
+    break;
 
   default:
     NEVER("Inappropriate SSO profile: %d", sso_profile_ix);
@@ -299,35 +315,16 @@ struct zx_str* zxid_start_sso_url(zxid_conf* cf, zxid_cgi* cgi)
     D_DEDENT("start_sso: ");
     return 0;
   }
-  
-  if (cf->idp_ena) {  /* (PXY) Middle IdP of Proxy IdP scenario */
-    if (cgi->rs) {
-      ERR("Attempt to supply RelayState(%s) in middle IdP of Proxy IdP flow. Ignored.", cgi->rs);
-    }
-    cgi->rs = cgi->ssoreq; /* Carry the original authn req in RelayState */
-    D("Middle IdP of Proxy IdP flow RelayState(%s)", STRNULLCHK(cgi->rs));
-  }
-  
-  if (cf->log_level>0)
-    zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "W", "ANREDIR", cgi->eid, 0);
-  ars = zxid_saml2_redir_url(cf, &sso_svc->Location->g, ars, cgi->rs);
+
+  ss = zx_strf(cf->ctx, "Location: %.*s" CRLF2, ars->len, ars->s);
+  zx_str_free(cf->ctx, ars);
   D_DEDENT("start_sso: ");
-  return ars;
-}
-
-/*() Wrapper for zxid_start_sso_url(), used when Location header needs to be passed outside.
- * return:: Location header as zx_str. Caller should eventually free this memory. */
-
-/* Called by:  main x2, zxid_simple_no_ses_cf */
-struct zx_str* zxid_start_sso_location(zxid_conf* cf, zxid_cgi* cgi)
-{
-  struct zx_str* ss;
-  struct zx_str* url = zxid_start_sso_url(cf, cgi);
-  if (!url)
-    return 0;
-  ss = zx_strf(cf->ctx, "Location: %.*s" CRLF2, url->len, url->s);
-  zx_str_free(cf->ctx, url);
   return ss;
+ 
+ badmeta:
+  cgi->err = "Bad IdP metadata. Try different IdP.";
+  D_DEDENT("start_sso: ");
+  return 0;
 }
 
 /* ============== Process Response and SSO Assertion ============== */
