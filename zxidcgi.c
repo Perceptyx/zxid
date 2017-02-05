@@ -174,7 +174,7 @@ set_eid:
        * N.B. If eid is omitted from button name, it may be provided using
        * d or e fields (see above). This effectively allows i to be just
        * a protocol selection popup. */
-      cgi->pr_ix = v[0]-'0';
+      cgi->pr_ix = HEX(v[0]);
       if (v[1])
 	cgi->eid = v+1;
       break;

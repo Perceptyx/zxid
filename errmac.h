@@ -709,6 +709,16 @@ extern char* assert_msg;
 #define FLOCKEX(fd) lockf((fd), F_LOCK, 1)
 #define FUNLOCK(fd) lockf((fd), F_ULOCK, 1)
 #else
+#if !defined(USE_STDIO) && !defined(MINGW)
+/* *** Static initialization of struct flock is suspect since man fcntl() documentation
+ * does not guarantee ordering of the fields, or that they would be the first fields.
+ * On Linux-2.4 and 2.6 as well as Solaris-8 the ordering is as follows, but this needs
+ * to be checked on other platforms.
+ *                       l_type,  l_whence, l_start, l_len */
+extern struct flock errmac_rdlk; /* = { F_RDLCK, SEEK_SET, 0, 1 };*/
+extern struct flock errmac_wrlk; /* = { F_WRLCK, SEEK_SET, 0, 1 };*/
+extern struct flock errmac_unlk; /* = { F_UNLCK, SEEK_SET, 0, 1 };*/
+#endif
 #define FLOCKEX(fd) fcntl((fd), F_SETLKW, &errmac_rdlk)
 #define FUNLOCK(fd) fcntl((fd), F_SETLKW, &errmac_unlk)
 #endif

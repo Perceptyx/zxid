@@ -363,7 +363,7 @@ zxid_entity* zxid_get_ent_cache(zxid_conf* cf, struct zx_str* eid)
   sha1_safe_base64(sha1_name, eid->len, eid->s);
   sha1_name[27] = 0;
 
-  snprintf(logkey, sizeof(logkey)-1, "get_ent_cache EntityID(%.*s)", eid->len, eid->s);
+  snprintf(logkey, sizeof(logkey)-1, "get_ent_cache eid(%.*s)", eid->len, eid->s);
   logkey[sizeof(logkey)-1] = 0;
   return zxid_get_ent_file(cf, sha1_name, logkey);
 }
@@ -383,11 +383,14 @@ zxid_entity* zxid_get_ent_ss(zxid_conf* cf, struct zx_str* eid)
   zxid_entity* ee;
   zxid_entity* match = 0;
   
+  D_INDENT("get_ent: ");
   D("eid(%.*s) path(%.*s) cf->magic=%x, md_cache_first(%d), cot(%p)", eid->len, eid->s, cf->cpath_len, cf->cpath, cf->magic, cf->md_cache_first, cf->cot);
   if (cf->md_cache_first) {
     ent = zxid_get_ent_cache(cf, eid);
-    if (ent)
+    if (ent) {
+      D_DEDENT("get_ent: ");
       return ent;
+    }
   }
   
   if (cf->md_fetch) {
@@ -422,18 +425,23 @@ zxid_entity* zxid_get_ent_ss(zxid_conf* cf, struct zx_str* eid)
 	for (; ent != old_cot; ent = ent->n)
 	  zxid_write_ent_to_cache(cf, ent);
       }
-      if (match)
+      if (match) {
+	D_DEDENT("get_ent: ");
 	return match;
+      }
     }
   }
   
   if (cf->md_cache_last) {
     ent = zxid_get_ent_cache(cf, eid);
-    if (ent)
+    if (ent) {
+      D_DEDENT("get_ent: ");
       return ent;
+    }
   }
   D("eid(%.*s) NOT FOUND", eid->len, eid->s);
   zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "B", "NOMD", 0, "eid(%.*s)", eid->len, eid->s);
+  D_DEDENT("get_ent: ");
   return 0;
 }
 

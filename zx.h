@@ -202,6 +202,7 @@ int   zx_str_ends_in(struct zx_str* ss, int len, const char* suffix);
 #define ZX_ATTR_HAS_VALUE(a) ((a) && (a)->g.len && (a)->g.s && (a)->g.s[0])
 
 char* zx_memmem(const char* haystack, int haystack_len, const char* needle, int needle_len);
+char* zx_rmemmem(const char* haystack, const char* lim, const char* needle, int needle_len);
 void* zx_alloc(struct zx_ctx* c, int size);
 void* zx_zalloc(struct zx_ctx* c, int size);
 void* zx_free(struct zx_ctx* c, void* p);

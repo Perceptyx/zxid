@@ -1,6 +1,6 @@
 /* zxiduser.c  -  Handwritten functions for SP user local account management
  * Copyright (c) 2012 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2010,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2010,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2007-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -16,6 +16,7 @@
  * 1.9.2012,   distilled the authentication backend to an independent module zxpw.c --Sampo
  * 7.12.2016,  updated zxid_put_user() for FBC based proxy IdP operation --Sampo
  * 8.12.2016,  merged user/ to uid/ --Sampo
+ * 20170202    factored setcookie to its own function --Sampo
  */
 
 #include "platform.h"  /* for dirent.h */
@@ -265,11 +266,7 @@ int zxid_put_user_ses(zxid_conf* cf, zxid_ses* ses)
   /* Non SAML session */
   idpnid.len = ses->nid?strlen(ses->nid):0;
   idpnid.s = ses->nid;
-  return zxid_put_user(cf,
-		       0,
-		       ses->issuer,
-		       0,
-		       &idpnid, 0);
+  return zxid_put_user(cf, 0, ses->issuer, 0, &idpnid, 0);
 }
 
 int zxid_put_user_attr(zxid_conf* cf, zxid_ses* ses, const char* cn, const char* email, struct zx_str* fbrest)
@@ -402,14 +399,7 @@ int zxid_pw_authn(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
   ses->sid = cgi->sid = ses->sesix;
   ses->uid = cgi->uid;
   zxid_put_ses(cf, ses);
-  if (cf->ses_cookie_name && *cf->ses_cookie_name) {
-    ses->setcookie = zx_alloc_sprintf(cf->ctx, 0, "%s=%s; path=/%s%s",
-				      cf->ses_cookie_name, ses->sid,
-				      cgi->mob?"; Max-Age=15481800":"",
-				      ONE_OF_2(cf->burl[4], 's', 'S')?"; secure; HttpOnly":"; HttpOnly");
-    ses->cookie = zx_alloc_sprintf(cf->ctx, 0, "$Version=1; %s=%s",
-				   cf->ses_cookie_name, ses->sid);
-  }
+  zxid_set_ses_cookie(cf, cgi, ses);
   INFO("LOCAL LOGIN SUCCESSFUL. sid(%s) uid(%s)", cgi->sid, cgi->uid);
   zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "K", "INEWSES", ses->sid, "uid(%s)", ses->uid);
   if (cf->loguser)

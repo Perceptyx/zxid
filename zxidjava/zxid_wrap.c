@@ -22061,6 +22061,20 @@ SWIGEXPORT void JNICALL Java_zxidjava_zxidjniJNI_zxid_1get_1sid_1from_1cookie(JN
 }
 
 
+SWIGEXPORT void JNICALL Java_zxidjava_zxidjniJNI_zxid_1set_1ses_1cookie(JNIEnv *jenv, jclass jcls, jlong jarg1, jlong jarg2, jlong jarg3) {
+  zxid_conf *arg1 = (zxid_conf *) 0 ;
+  zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+  zxid_ses *arg3 = (zxid_ses *) 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg1 = *(zxid_conf **)&jarg1; 
+  arg2 = *(zxid_cgi **)&jarg2; 
+  arg3 = *(zxid_ses **)&jarg3; 
+  zxid_set_ses_cookie(arg1,arg2,arg3);
+}
+
+
 SWIGEXPORT jlong JNICALL Java_zxidjava_zxidjniJNI_zxid_1alloc_1ses(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   jlong jresult = 0 ;
   zxid_conf *arg1 = (zxid_conf *) 0 ;
@@ -29403,7 +29417,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1COMPILE_1DATE_1get(JNI
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("1485008884");
+  result = (char *)("1486026076");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }
@@ -29415,7 +29429,7 @@ SWIGEXPORT jstring JNICALL Java_zxidjava_zxidjniJNI_ZXID_1REV_1get(JNIEnv *jenv,
   
   (void)jenv;
   (void)jcls;
-  result = (char *)("$Id: 1.42-14-g3e3cc21 20170109-153107 sampo@ $");
+  result = (char *)("$Id: 1.42-15-g895e2b1 20170121-190937 sampo@ $");
   if (result) jresult = (*jenv)->NewStringUTF(jenv, ( char *)result);
   return jresult;
 }

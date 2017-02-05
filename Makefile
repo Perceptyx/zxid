@@ -740,7 +740,7 @@ all_minus_perl: default precheck_apache apachezxid phpzxid javazxid app_demo.cla
 
 zxbus:  zxbusd zxbustailf zxbuslist
 
-zxcache:  zxcached
+zxcache:  zxcached zxcachecli
 
 aller: all zxbus zxcache app_demo.class
 

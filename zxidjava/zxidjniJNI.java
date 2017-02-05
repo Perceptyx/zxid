@@ -1314,6 +1314,7 @@ public class zxidjniJNI {
   public final static native int zxid_parse_cgi(long jarg1, long jarg2, String jarg3);
   public final static native long zxid_new_cgi(long jarg1, String jarg2);
   public final static native void zxid_get_sid_from_cookie(long jarg1, long jarg2, String jarg3);
+  public final static native void zxid_set_ses_cookie(long jarg1, long jarg2, long jarg3);
   public final static native long zxid_alloc_ses(long jarg1);
   public final static native long zxid_fetch_ses(long jarg1, String jarg2);
   public final static native int zxid_get_ses(long jarg1, long jarg2, String jarg3);

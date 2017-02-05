@@ -1160,6 +1160,7 @@ ZEND_NAMED_FUNCTION(_wrap_zxid_show_conf);
 ZEND_NAMED_FUNCTION(_wrap_zxid_parse_cgi);
 ZEND_NAMED_FUNCTION(_wrap_zxid_new_cgi);
 ZEND_NAMED_FUNCTION(_wrap_zxid_get_sid_from_cookie);
+ZEND_NAMED_FUNCTION(_wrap_zxid_set_ses_cookie);
 ZEND_NAMED_FUNCTION(_wrap_zxid_alloc_ses);
 ZEND_NAMED_FUNCTION(_wrap_zxid_fetch_ses);
 ZEND_NAMED_FUNCTION(_wrap_zxid_get_ses);

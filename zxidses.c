@@ -42,6 +42,25 @@
 
 #define ZXID_MAX_SES (4096)      /* Just the session nid and path to assertion */
 
+/*() Makes session cookie
+ * Formats session cookie for later use. For the cookie actually to be
+ * set, it needs to be send as HTTP header of response. The ses->setcookie
+ * field is picked up by other code such as zxid_simple_redir_page()
+ * or hrr_set_cookies() called by chkuid() and pool2apache(). */
+
+void zxid_set_ses_cookie(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses)
+{
+  if (cf->ses_cookie_name && *cf->ses_cookie_name) {
+    ses->setcookie = zx_alloc_sprintf(cf->ctx, 0, "%s=%s; path=/%s%s",
+				      cf->ses_cookie_name, ses->sid,
+				      cgi&&cgi->mob?"; Max-Age=15481800":"",
+				      ONE_OF_2(cf->burl[4], 's', 'S')?"; secure; HttpOnly":"; HttpOnly");
+    ses->cookie = zx_alloc_sprintf(cf->ctx, 0, "$Version=1; %s=%s",
+				   cf->ses_cookie_name, ses->sid);
+    D("setcookie(%s)=(%s) ses=%p", cf->ses_cookie_name, ses->setcookie, ses);
+  }
+}
+
 /*() When session is loaded, we only get the reference to assertion. This
  * is to avoid parsing overhead when the assertion really is not needed.
  * But when the assertion is needed, you have to call this function to load

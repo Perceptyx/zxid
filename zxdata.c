@@ -1,5 +1,5 @@
 /* zxdata.c  -  Key Value data structure manipulations
- * Copyright (c) 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -11,7 +11,7 @@
  * 13.12.2016, review, comments --Sampo
  *
  * The locking strategy for the global hash keys is a bit unorthodox: the basic
- * idea is to have a global lock protecting writes and we use the relatively
+ * approach is to have a global lock protecting writes and we use the relatively
  * often taken shuffler->todo_mut for this purpose. The idea is that
  * the writes are absolutely safe while reads will be up to date "soon
  * enough" (as soon as the thread runs through main loop of shuffler)
@@ -55,12 +55,12 @@ struct zx_val* zx_new_val(struct zx_ctx* c, int kind)
  *
  * c:: context object for memory allocation
  * val:: value to be freed
- * deep:: Flag indicating whether to chase rependent data structures and free them, too
+ * deep:: Flag indicating whether to chase dependent data structures and free them, too
  *     - 0 = shallow free
  *     - 1 = medium free: free one layer of string, array, and hash, but do not chase
  *     - 2 or more = deep free: chase the entire data structure and free all, but do not
  *       exceed recursion depth specified by deep. Suggested value 100 for normal use.
- * return:: Always returns 0, which can be used to nullify pointer at caller size.
+ * return:: Always returns 0, which can be used to nullify pointer at caller.
  */
 
 /* Called by:  zx_free_bucket, zx_free_val */
@@ -85,7 +85,7 @@ static void zx_free_val_dep(struct zx_ctx* c, struct zx_val* val, int deep)
   case ZXVAL_KEYVAL: /* 7 */
     if (deep>1) {
       for (i = 0; i < val->len+val->spares; ++i)
-	zx_free_val(c, val->ue.a+i, deep-1);
+	zx_free_val(c, val->ue.a[i], deep-1);
     }
     ZX_FREE(c, val->ue.a);
     break;

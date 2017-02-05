@@ -215,6 +215,7 @@ package Net::SAML;
 *parse_cgi = *Net::SAMLc::zxid_parse_cgi;
 *new_cgi = *Net::SAMLc::zxid_new_cgi;
 *get_sid_from_cookie = *Net::SAMLc::zxid_get_sid_from_cookie;
+*set_ses_cookie = *Net::SAMLc::zxid_set_ses_cookie;
 *alloc_ses = *Net::SAMLc::zxid_alloc_ses;
 *fetch_ses = *Net::SAMLc::zxid_fetch_ses;
 *get_ses = *Net::SAMLc::zxid_get_ses;

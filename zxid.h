@@ -946,6 +946,7 @@ ZXID_DECL void zxid_get_sid_from_cookie(zxid_conf* cf, zxid_cgi* cgi, const char
 
 /* zxidses */
 
+ZXID_DECL void zxid_set_ses_cookie(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses);
 ZXID_DECL zxid_ses* zxid_alloc_ses(zxid_conf* cf);
 ZXID_DECL zxid_ses* zxid_fetch_ses(zxid_conf* cf, const char* sid);
 ZXID_DECL int zxid_get_ses(zxid_conf* cf, zxid_ses* ses, const char* sid);

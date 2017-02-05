@@ -18,9 +18,10 @@
 #include "platform.h"
 #include "errmac.h"
 
+#include <pthread.h>
 #include <string.h>
 #include <malloc.h>
-#include <pthread.h>
+#include <errno.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -36,6 +37,8 @@ extern char* zxcache_path;
 
 /*                         1234567890123456789 */
 #define MAGIC_PATTERN_19 "\ndeadbeef-SERVE3-h\n"
+
+#define WRITE_FAIL_MSG "Check that all directories exist, permissions allow writing, and disk is not full or that ulimit(1) is not too low."
 
 /*() Write to an append only file the value corresponding to global hash key
  *
@@ -137,10 +140,10 @@ int zx_global_read_last(zxid_conf* cf, int ghkeylen, const char* ghkey, const un
 
   // *** should we consider per user subdirectories?
   name_from_path(path, sizeof(path), "%s%.*s.zxd", zxcache_path, ghkeylen, ghkey);
-  fd = open(path, O_RD, 0666);
+  fd = open(path, O_RDONLY, 0666);
   if (fd == BADFD) goto badopen;
   if (FLOCKEX(fd)  == -1) {
-    ERR("%s: Locking exclusively file `%s' failed: %d %s; euid=%d egid=%d. Check that the file system supports locking. %s", which, c_path, errno, STRERROR(errno), geteuid(), getegid(), WRITE_FAIL_MSG);
+    ERR("Locking exclusively file `%s' failed: %d %s; euid=%d egid=%d. Check that the file system supports locking. %s", path, errno, STRERROR(errno), geteuid(), getegid(), WRITE_FAIL_MSG);
     close_file(fd, "read_last");
     return 0;
   }
@@ -154,7 +157,7 @@ int zx_global_read_last(zxid_conf* cf, int ghkeylen, const char* ghkey, const un
   }
 
   for (p = map+len-1; 1;) {
-    p = rmemmem(p, MAGIC_PATTERN_19, sizeof(MAGIC_PATTERN_19)-1);
+    p = (unsigned char*)zx_rmemmem((char*)map, (char*)p, MAGIC_PATTERN_19, sizeof(MAGIC_PATTERN_19)-1);
     if (!p) {
       ERR("No suitable update found %p", p);
       break;
@@ -169,7 +172,7 @@ int zx_global_read_last(zxid_conf* cf, int ghkeylen, const char* ghkey, const un
   }  
   FUNLOCK(fd);
   if (close_file(fd, "read_last") < 0) {
-    ERR("closing file(%s) failed: %d %s; euid=%d egid=%d. %s Could be NFS problem.", path, errno, STRERROR(errno), geteuid(), getegid());
+    ERR("closing file(%s) failed: %d %s; euid=%d egid=%d. Could be NFS problem.", path, errno, STRERROR(errno), geteuid(), getegid());
     return 0;
   }
   return 1;

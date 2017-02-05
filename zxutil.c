@@ -1486,7 +1486,17 @@ const char* zx_json_extract_raw(const char* hay, const char* key, int* len)
   if (*p != '"')
     return 0;
   s = ++p;
-  p = strchr(p, '"');  /* *** Escaped double quotes not correctly considered. */
+  while (p = strchr(p, '"')) {
+    if (p[-1] != '\\')
+      break;
+    ++p;  /* Escaped double quote. */
+  }
+  if (!p) {
+    ERR("JSON missing close quote s(%s)", s);
+    if (len)
+      *len = p-s;
+    return s;
+  }
   if (len)
     *len = p-s;
   return s;

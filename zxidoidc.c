@@ -135,6 +135,22 @@ struct zx_str* zxid_mk_mobconn_disco_req(zxid_conf* cf, zxid_cgi* cgi, zxid_enti
   return ss;
 }
 
+/*() As of 20170202 Mobile Connect's discovery service
+ * uses broken JavaScript escaping syntax. Fix the
+ * brandamage to be compatible as it is too difficult
+ * to get them to see the light. */
+
+static void zxid_fix_inplace_mobile_connect_broken_escapes(char* href)
+{
+  char* p;
+  char* q;
+  for (p = q = href; *p; ++p) {
+    if (*p != '\\')
+      *q++ = *p;
+  }
+  *q = 0;
+}
+
 /*() Extract endpoints from Mobile Connect Discovery
  * (without really parsing the JSON). Populates info to idp_meta
  * Sample input:
@@ -174,13 +190,13 @@ static void zxid_mobconn_parse_discovery(zxid_conf* cf, zxid_entity* idp_meta, c
 
   idp_meta->client_id = zx_json_extract_dup(cf->ctx, buf, "\"client_id\"");
   idp_meta->client_secret = zx_json_extract_dup(cf->ctx, buf, "\"client_secret\"");
-  p = strstr(buf, "\"link\":[{");
+  p = strstr(buf, "\"link\":");
   if (!p) {
  bad:
     ERR("Malformed discovery response json(%s) p(%s)", buf, STRNULLCHK(p));
     return;
   }
-  p += sizeof("\"link\":[{")-1;
+  p += sizeof("\"link\":")-1;
   q = strchr(p, ']');
   if (!q) goto bad;
   *q = 0; /* nul */
@@ -191,11 +207,15 @@ static void zxid_mobconn_parse_discovery(zxid_conf* cf, zxid_entity* idp_meta, c
     rel = zx_json_extract_dup(cf->ctx, p, "\"rel\"");
     href = zx_json_extract_dup(cf->ctx, p, "\"href\"");
     if (rel && href) {
+      zxid_fix_inplace_mobile_connect_broken_escapes(href);
       if (!strcmp(rel, "authorization")) idp_meta->az_url = href;
       if (!strcmp(rel, "token"))         idp_meta->token_url = href;
       if (!strcmp(rel, "userinfo"))      idp_meta->userinfo_url = href;
     }
-    p = strstr(q+1, ",{");
+    p = strchr(q+1, ',');
+    if (!p)
+      break;
+    p = strchr(q+1, '{');
   }
 }
 

@@ -14,6 +14,7 @@ use Cache::Memcached::libmemcached;
 $usage = <<USAGE;
 Usage: mcdcli.pl server:port op key value
 E.g:   mcdcli.pl 127.0.0.1:4442 set foo bar
+E.g2:  mcdcli.pl 127.0.0.1:4442 get foo
 USAGE
     ;
 

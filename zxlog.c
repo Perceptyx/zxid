@@ -1,6 +1,6 @@
 /* zxlog.c  -  Liberty oriented logging facility with log signing and encryption
  * Copyright (c) 2012-2013 Synergetics (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -17,6 +17,7 @@
  * 9.9.2012,   added persist support --Sampo
  * 30.11.2013, fixed seconds handling re gmtime_r() - found by valgrind --Sampo
  * 18.12.2015, applied patch from soconnor, perceptyx --Sampo
+ * 20170202    added indent and dedent --Sampo
  *
  * See also: Logging chapter in README.zxid
  */
@@ -104,6 +105,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
   char sigbuf[28+4];   /* Space for "SP " and sha1 */
   char keybuf[16];
   char ivec[16];
+  D_INDENT("log_wr: ");
   if (n == -2)
     n = strlen(logbuf);
   if (encflags & 0x70) {          /* Encrypt check */
@@ -123,7 +125,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
       UNLOCK(cf->mx, "logsign wrln");      
       if (!log_sign_pkey)
 	break;
-      len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc log line", cf->blobsig_digest_algo);
+      len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc_log_line", cf->blobsig_digest_algo);
       break;
     case 0x06:      /* Dx DSA-SHA1 signature */
       ERR("DSA-SHA1 sig not implemented in encrypted mode. Use RSA-SHA1 or none. %x", encflags);
@@ -158,7 +160,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
       if (RSA_public_encrypt(16, (unsigned char*)keybuf, (unsigned char*)sig, rsa_pkey, RSA_PKCS1_OAEP_PADDING) < 0) {
 	ERR("RSA enc fail %x", encflags);
 	zx_report_openssl_err("zxlog rsa enc");
-	return;
+	goto out;
       }
       p = ZX_ALLOC(cf->ctx, 2 + len + zlen);
       p[0] = (len >> 8) & 0xff;
@@ -202,7 +204,7 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
     blen = p-b64 + 1;
     *p = '\n';
     write2_or_append_lock_c_path(c_path, 0, 0, blen, b64, "zxlog enc", SEEK_END, O_APPEND);
-    return;
+    goto out;
   }
 
   /* Plain text, possibly signed. */
@@ -242,6 +244,8 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
   write2_or_append_lock_c_path(c_path, len, p, n, logbuf, "zxlog sig", SEEK_END, O_APPEND);
   if (sig)
     ZX_FREE(cf->ctx, sig);
+ out:
+  D_DEDENT("log_wr: ");
 }
 
 /*() Helper function for formatting all kinds of logs.
@@ -316,7 +320,7 @@ static int zxlog_fmt(zxid_conf* cf,   /* 1 */
   logbuf[len-1] = 0; /* must terminate manually as on win32 nul is not guaranteed */
   if (n <= 0 || n >= len-3) {
     if (n < 0) platform_broken_snprintf(n, __FUNCTION__, len-3, "log line");
-    D("Log buffer too short: %d chars needed", n);
+    D("log_fmt: buffer too short: %d chars needed", n);
     if (n <= 0)
       n = 0;
     else
@@ -328,7 +332,7 @@ static int zxlog_fmt(zxid_conf* cf,   /* 1 */
       logbuf[len-1] = 0;  /* must terminate manually as on win32 nul term is not guaranteed */
       if (n <= 0 || n >= len-(p-logbuf)-2) {
 	if (n < 0) platform_broken_snprintf(n, __FUNCTION__, len-n-2, fmt);
-	D("Log buffer truncated during format print: %d chars needed", n);
+	D("log_fmt: buffer truncated during format print: %d chars needed", n);
 	if (n <= 0)
 	  n = p-logbuf;
 	else
@@ -497,7 +501,7 @@ int zxlogusr(zxid_conf* cf,   /* 1 */
 
   /* Output stage */
   
-  D("UID(%s) LOG(%.*s)", uid, n-1, logbuf);
+  D("logusr: UID(%s) LOG(%.*s)", uid, n-1, logbuf);
   name_from_path(c_path, sizeof(c_path), "%s" ZXID_UID_DIR "%s/.log", cf->cpath, uid);
   zxlog_write_line(cf, c_path, cf->log_act, n, logbuf);
   return 0;
@@ -553,6 +557,7 @@ struct zx_str* zxlog_path(zxid_conf* cf,
   int len;
   char* s;
   char* p;
+  D_INDENT("log_path: ");
   len = cf->cpath_len + sizeof("log/")-1 + dir_len
     + 27 /*sha1 entid*/ + kind_len + 27 /*sha1 objid*/;
   s = ZX_ALLOC(cf->ctx, len+1);
@@ -560,8 +565,7 @@ struct zx_str* zxlog_path(zxid_conf* cf,
 
   if (!entid) {
     ERR("No EntityID supplied %p dir(%s) kind(%s)", objid, STRNULLCHK(dir), STRNULLCHK(kind));
-    ZX_FREE(cf->ctx, s);
-    return 0;
+    goto nodir;
   }
 
   memcpy(s, cf->cpath, cf->cpath_len);
@@ -589,9 +593,11 @@ struct zx_str* zxlog_path(zxid_conf* cf,
   sha1_safe_base64(p, objid->len, objid->s);
   p[27] = 0;
   p+=27;
+  D_DEDENT("log_path: ");
   return zx_ref_len_str(cf->ctx, len, s);
  nodir:
   ZX_FREE(cf->ctx, s);
+  D_DEDENT("log_path: ");
   return 0;
 }
 
@@ -625,8 +631,8 @@ int zxlog_dup_check(zxid_conf* cf, struct zx_str* path, const char* logkey)
   return 0;
 }
 
-/*() Write a blob of content to log file according to logflag (see zxidconf.h). If
- * the file already exists, i.e. there is a duplicate, the data is simply appended.
+/*() Write a blob of content to log file according to logflag (see zxidconf.h).
+ * If the file already exists, i.e. there is a duplicate, the data is simply appended.
  * When logging objects such as assertions, the duplicate check should be done
  * as preprocessing step, see example below.
  *
@@ -662,6 +668,7 @@ int zxlog_blob(zxid_conf* cf, int logflag, struct zx_str* path, struct zx_str* b
     ERR("Unimplemented blob logging format: %x", logflag);
     return 0;
   }
+  D_INDENT("log_blob: ");
   
   /* We need a c path, but get zx_str. However, the zx_str will come from zxlog_path()
    * so we should be having the nul termination as needed. Just checking. */
@@ -671,6 +678,7 @@ int zxlog_blob(zxid_conf* cf, int logflag, struct zx_str* path, struct zx_str* b
   if (!write2_or_append_lock_c_path(path->s, blob->len, blob->s, 0, 0, "zxlog blob", SEEK_END,O_APPEND)) {
     zxlog(cf, 0, 0, 0, 0, 0, 0, 0, "N", "S", "EFILE", 0, "Could not write blob. Permissions?");
   }
+  D_DEDENT("log_blob: ");
   return 1;
 }
 
@@ -678,17 +686,6 @@ int zxlog_blob(zxid_conf* cf, int logflag, struct zx_str* path, struct zx_str* b
 FILE* zx_xml_debug_log = 0;
 int zx_xml_debug_log_err = 0;
 int zxlog_seq = 0;
-
-#if !defined(USE_STDIO) && !defined(MINGW)
-/* *** Static initialization of struct flock is suspect since man fcntl() documentation
- * does not guarantee ordering of the fields, or that they would be the first fields.
- * On Linux-2.4 and 2.6 as well as Solaris-8 the ordering is as follows, but this needs
- * to be checked on other platforms.
- *                       l_type,  l_whence, l_start, l_len */
-extern struct flock errmac_rdlk; /* = { F_RDLCK, SEEK_SET, 0, 1 };*/
-extern struct flock errmac_wrlk; /* = { F_WRLCK, SEEK_SET, 0, 1 };*/
-extern struct flock errmac_unlk; /* = { F_UNLCK, SEEK_SET, 0, 1 };*/
-#endif
 
 /* Called by:  errmac_debug_xml_blob */
 static FILE* zx_open_xml_log_file(zxid_conf* cf)
@@ -712,10 +709,11 @@ static FILE* zx_open_xml_log_file(zxid_conf* cf)
   return f;
 }
 
-/*() Log a blob of XML data to auxiliary log file. This avoids
- * mega clutter in the main debug logs. You are supposed
+/*() Log a blob of XML data to auxiliary log file.
+ * This avoids mega clutter in the main debug logs. You are supposed
  * to view this file with:
- * tailf /var/zxid/log/xml.dbg | ./xml-pretty.pl
+ *
+ *   tailf /var/zxid/log/xml.dbg | ./xml-pretty.pl
  *
  * cf:: Config (and memory allocation) object
  * file:: Source code file, see __FILE__ in D_XML_BLOB() macro, in errmac.h
@@ -733,8 +731,9 @@ void errmac_debug_xml_blob(zxid_conf* cf, const char* file, int line, const char
   const char* bdy;
   const char* p;
   const char* q;
+  D_INDENT("xml_blob: ");
   if (!(errmac_debug & ERRMAC_XMLDBG) || len == -1 || !xml)
-    return;
+    goto out;
   if (len == -2)
     len = strlen(xml);
 
@@ -787,10 +786,10 @@ print_it:
 
   if (!zx_xml_debug_log) {
     if (zx_xml_debug_log_err)
-      return;
+      goto out;
     zx_xml_debug_log = zx_open_xml_log_file(cf);
     if (!zx_xml_debug_log)
-      return;
+      goto out;
   }
   
   if (FLOCKEX(fileno(zx_xml_debug_log)) == -1) {
@@ -812,6 +811,8 @@ print_it:
 #endif
   fflush(zx_xml_debug_log);
   FUNLOCK(fileno(zx_xml_debug_log));
+ out:
+  D_DEDENT("xml_blob: ");
 }
 
 /*() Generate a timestamped receipt for data.
@@ -841,6 +842,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
   struct tm ot;
   struct timeval ourts;
   
+  D_INDENT("mint_rcpt: ");
   if (!mid)
     mid_len = 0;
   if (mid_len == -1)
@@ -941,6 +943,7 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
   if (zbuf)
     ZX_FREE(cf->ctx, zbuf);
   ZX_FREE(cf->ctx, buf);
+  D_DEDENT("mint_rcpt: ");
   return sigbuf;
 }
 
@@ -970,6 +973,7 @@ int zxbus_verify_receipt(zxid_conf* cf, const char* eid, int sigbuf_len, char* s
   char sha1[20];
   zxid_entity* meta;
 
+  D_INDENT("vfy_rcpt: ");
   if (sigbuf_len == -1)
     sigbuf_len = strlen(sigbuf);
   else if (sigbuf_len == -2)
@@ -1067,6 +1071,7 @@ int zxbus_verify_receipt(zxid_conf* cf, const char* eid, int sigbuf_len, char* s
     ERR("Unsupported receipt signature algo(%c) sig(%.*s)", sigbuf[0], sigbuf_len, sigbuf);
   }
   ZX_FREE(cf->ctx, buf);
+  D_DEDENT("vfy_rcpt: ");
   return ver;
 }
 
@@ -1087,29 +1092,30 @@ int zxbus_persist_msg(zxid_conf* cf, int c_path_len, char* c_path, int dest_len,
   int len;
    const char* p;
   char t_path[ZXID_MAX_BUF];  /* temp path before atomic rename */
-  
+
+  D_INDENT("persist: ");
   if (dest_len < 1)
-    return 0;
+    goto errout;
   while (*dest == '/') {      /* skip initial /s, if any. I.e. no absolute path permitted */
     ++dest;
     --dest_len;
   }
   if (dest_len < 1)
-    return 0;
+    goto errout;
   if (ONE_OF_3(*dest, '\n', 0, '\r')) {
     ERR("Empty dest (or one consisting etirely of slashes) %x", *dest);
-    return 0;
+    goto errout;
   }
   
   /* Sanity check destination for any cracking attempts. */
   for (p = dest; p < dest+dest_len; ++p) {
     if (p[0] == '.' && p[1] == '.') {
       ERR("SEND destination is a .. hack(%.*s)", dest_len, dest);
-      return 0;
+      goto errout;
     }
     if (ONE_OF_2(*p, '~', '\\') || *p > 122 || *p < 33) {
       ERR("SEND destination bad char 0x%x hack(%.*s)", *p, dest_len, dest);
-      return 0;
+      goto errout;
     }
   }
   
@@ -1118,7 +1124,7 @@ int zxbus_persist_msg(zxid_conf* cf, int c_path_len, char* c_path, int dest_len,
   len = name_from_path(c_path, c_path_len, "%s" ZXBUS_CH_DIR "%.*s/", cf->cpath, dest_len, dest);
   if (sizeof(c_path)-len < 28+1 /* +1 accounts for t_path having one more char (tmp vs. ch) */) {
     ERR("The c_path for persisting exceeds limit. len=%d", len);
-    return 0;
+    goto errout;
   }
   DD("c_path(%s) len=%d PATH(%s) dest(%.*s)", c_path, len, cf->cpath, dest_len, dest);
   sha1_safe_base64(c_path+len, data_len, data);
@@ -1137,14 +1143,18 @@ int zxbus_persist_msg(zxid_conf* cf, int c_path_len, char* c_path, int dest_len,
    * the rename(2) will not work.*/
   //  | O_DIRECT  -- seems to give alignment problems, i.e. 22 EINVAL Invalid Argument
   if (!write2_or_append_lock_c_path(t_path, 0, 0, data_len, data, "zxbus persist", SEEK_SET, O_TRUNC | O_SYNC)) {
-    return 0;
+    goto errout;
   }
   
   if (rename(t_path, c_path)) {
     ERR("Renaming file(%s) to(%s) for atomicity failed: %d %s. Check permissions and that directories exist. Directories must be on the same filesystem. euid=%d egid=%d", t_path, c_path, errno, STRERROR(errno), geteuid(), getegid());
-    return 0;
+    goto errout;
   }
+  D_DEDENT("persist: ");
   return len;
+ errout:
+  D_DEDENT("persist: ");
+  return 0;
 }
 
 /* EOF  --  zxlog.c */

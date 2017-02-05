@@ -98,7 +98,7 @@ static void chldinit(apr_pool_t* p, server_rec* s)
 /*(-) Set cookies apache style. Internal. */
 
 /* Called by:  chkuid x2, pool2apache */
-static void set_cookies(zxid_conf* cf, request_rec* r, const char* setcookie, const char* setptmcookie)
+static void hrr_set_cookies(zxid_conf* cf, request_rec* r, const char* setcookie, const char* setptmcookie)
 {
   if (setcookie && setcookie[0] && setcookie[0] != '-') {
     /* http://dev.ariel-networks.com/apr/apr-tutorial/html/apr-tutorial-19.html */
@@ -190,7 +190,7 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
 
   /* See zxidsimp.c: zxid_show_protected_content_setcookie() */
 
-  set_cookies(cf, r, setcookie, setptmcookie);  
+  hrr_set_cookies(cf, r, setcookie, setptmcookie);  
   if (cookie && cookie[0] != '-') {
     D("Cookie(%s) 2", cookie);
     apr_table_addn(HRR_headers_in(r), "Cookie", cookie);  /* so internal redirect sees it */
@@ -548,12 +548,12 @@ process_zxid_simple_outcome:
   case 'L':
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("REDIR(%s)", res);
     apr_table_setn(HRR_headers_out(r), "Location", res+10);
-    set_cookies(cf, r, ses.setcookie, ses.setptmcookie);  
+    hrr_set_cookies(cf, r, ses.setcookie, ses.setptmcookie);  
     D_DEDENT("chkuid: ");
     return HTTP_SEE_OTHER;
   case 'C':
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("CONTENT(%s)", res);
-    set_cookies(cf, r, ses.setcookie, ses.setptmcookie);  
+    hrr_set_cookies(cf, r, ses.setcookie, ses.setptmcookie);  
     ret = send_res(cf, r, res);
     D_DEDENT("chkuid: ");
     return ret;

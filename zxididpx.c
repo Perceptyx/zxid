@@ -1,5 +1,5 @@
 /* zxididpx.c  -  Handwritten functions for IdP dispatch
- * Copyright (c) 2008-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2008-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.

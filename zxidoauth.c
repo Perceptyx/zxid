@@ -1,5 +1,5 @@
 /* zxidoauth.c  -  Handwritten nitty-gritty functions for constructing OAUTH URLs
- * Copyright (c) 2011-2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2011-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -1206,12 +1206,12 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
   }
 #endif
 
-  if (cgi->client_secret) {
+  if (cgi->client_secret && cgi->client_secret[0]) {
     /* In Mobile Connect Discovery case the client_secret was discovered and
      * passed via state. In this flow, Authorization header is used and
      * client_secret is suppressed from the query string. */
     azhdr = zx_mk_basic_auth_b64(cf->ctx, cgi->client_id, cgi->client_secret);
-    DD("HERE6 %p azhdr(%s)", cli_id_url_enc, azhdr);
+    D("HERE6 %p azhdr(%s)", cli_id_url_enc, azhdr);
     if (cli_id_url_enc) {
       ZX_FREE(cf->ctx, cli_id_url_enc);
       cli_id_url_enc = 0;
@@ -1219,8 +1219,8 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
     cli_sec_url_enc = 0;
     grant_type = "authorization_code";
   } else {
-    DD("HERE7 %d",0);
     cli_sec = zxid_get_app_secret(cf, idp_meta->sha1_name, "call_tok_ept");
+    D("HERE7 cli_sec(%s)",STRNULLCHKD(cli_sec));
     if (!cli_sec) {
       if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->appSecret)) {
 	ERR("IdP is missing app secret file (and appSecret field). eid(%s) %p", cgi->eid, idp_meta->ed->appSecret);
@@ -1228,26 +1228,27 @@ static int zxid_oauth_call_token_endpoint(zxid_conf* cf, zxid_cgi* cgi, zxid_ses
 	D_DEDENT("call_tok_ept: ");
 	return 0;
       }
-      DD("HERE8 %d",0);
       cli_sec = zx_dup_len_cstr(cf->ctx, idp_meta->ed->appSecret->g.len, idp_meta->ed->appSecret->g.s);
+      D("HERE8 cli_sec(%s)",STRNULLCHKD(cli_sec));
     }
     /* FBC wants client_secret in QueryString, not Authorization HTTP header */
     azhdr = 0;
-    DD("HERE9 %d",0);
+    D("HERE9 cli_sec(%s)",STRNULLCHKD(cli_sec));
     cli_sec_url_enc = zx_url_encode(cf->ctx, -2, cli_sec, 0);
     ZX_FREE(cf->ctx, cli_sec);
     grant_type = 0;
   }
 
-  if (cgi->token_url) {
-    DD("HERE10 token_url(%s)",cgi->token_url);
+  if (cgi->token_url && cgi->token_url[0]) {
+    D("HERE10 token_url(%s)",cgi->token_url);
     /* Mob Conn case. The token_url was discovered and passed via state so it is available here. */
     surl.s = cgi->token_url;
     surl.len = strlen(surl.s);
     url = &surl;
-  } else if (!ZX_ATTR_HAS_VALUE(idp_meta->ed->IDPSSODescriptor->tokenURL)) {
-    /* FBC uses metadata to fugure out the token url */
+  } else if (ZX_ATTR_HAS_VALUE(idp_meta->ed->IDPSSODescriptor->tokenURL)) {
+    /* FBC uses metadata to figure out the token url */
     url = &idp_meta->ed->IDPSSODescriptor->tokenURL->g;
+    D("HERE11 FBC metadata url(%.*s)", url->len, url->s);
   } else {
     ERR("IdP metadata is missing tokenURL field. eid(%s) %p", cgi->eid, idp_meta->ed->IDPSSODescriptor->tokenURL);
     cgi->err = "IdP metadata not prepared for resolving code to access_token. Lacks tokenURL.";
@@ -1715,6 +1716,7 @@ struct zx_str* zxid_sp_oauth2_dispatch(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* s
     DD("Creating session... %d", 0);
     ses->ssores = 0;
     zxid_put_ses(cf, ses);
+    zxid_set_ses_cookie(cf, cgi, ses);
     //*** zxid_snarf_eprs_from_ses(cf, ses);  /* Harvest attributes and bootstrap(s) */
     cgi->msg = "SSO completed and session created.";
     cgi->op = '-';  /* Make sure management screen does not try to redispatch. */

@@ -44126,6 +44126,53 @@ XS(_wrap_zxid_get_sid_from_cookie) {
 }
 
 
+XS(_wrap_zxid_set_ses_cookie) {
+  {
+    zxid_conf *arg1 = (zxid_conf *) 0 ;
+    zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+    zxid_ses *arg3 = (zxid_ses *) 0 ;
+    void *argp1 = 0 ;
+    int res1 = 0 ;
+    void *argp2 = 0 ;
+    int res2 = 0 ;
+    void *argp3 = 0 ;
+    int res3 = 0 ;
+    int argvi = 0;
+    dXSARGS;
+    
+    if ((items < 3) || (items > 3)) {
+      SWIG_croak("Usage: zxid_set_ses_cookie(cf,cgi,ses);");
+    }
+    res1 = SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_zxid_conf, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "zxid_set_ses_cookie" "', argument " "1"" of type '" "zxid_conf *""'"); 
+    }
+    arg1 = (zxid_conf *)(argp1);
+    res2 = SWIG_ConvertPtr(ST(1), &argp2,SWIGTYPE_p_zxid_cgi, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "zxid_set_ses_cookie" "', argument " "2"" of type '" "zxid_cgi *""'"); 
+    }
+    arg2 = (zxid_cgi *)(argp2);
+    res3 = SWIG_ConvertPtr(ST(2), &argp3,SWIGTYPE_p_zxid_ses, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "zxid_set_ses_cookie" "', argument " "3"" of type '" "zxid_ses *""'"); 
+    }
+    arg3 = (zxid_ses *)(argp3);
+    zxid_set_ses_cookie(arg1,arg2,arg3);
+    ST(argvi) = sv_newmortal();
+    
+    
+    
+    XSRETURN(argvi);
+  fail:
+    
+    
+    
+    SWIG_croak_null();
+  }
+}
+
+
 XS(_wrap_zxid_alloc_ses) {
   {
     zxid_conf *arg1 = (zxid_conf *) 0 ;
@@ -53647,6 +53694,7 @@ static swig_command_info swig_commands[] = {
 {"Net::SAMLc::zxid_parse_cgi", _wrap_zxid_parse_cgi},
 {"Net::SAMLc::zxid_new_cgi", _wrap_zxid_new_cgi},
 {"Net::SAMLc::zxid_get_sid_from_cookie", _wrap_zxid_get_sid_from_cookie},
+{"Net::SAMLc::zxid_set_ses_cookie", _wrap_zxid_set_ses_cookie},
 {"Net::SAMLc::zxid_alloc_ses", _wrap_zxid_alloc_ses},
 {"Net::SAMLc::zxid_fetch_ses", _wrap_zxid_fetch_ses},
 {"Net::SAMLc::zxid_get_ses", _wrap_zxid_get_ses},

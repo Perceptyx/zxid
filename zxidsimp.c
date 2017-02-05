@@ -1306,15 +1306,7 @@ static char* zxid_show_protected_content_setcookie(zxid_conf* cf, zxid_cgi* cgi,
   char* rs;
   char* rs_qs;
 
-  if (cf->ses_cookie_name && *cf->ses_cookie_name) {
-    ses->setcookie = zx_alloc_sprintf(cf->ctx, 0, "%s=%s; path=/%s%s",
-				      cf->ses_cookie_name, ses->sid,
-				      cgi->mob?"; Max-Age=15481800":"",
-				      ONE_OF_2(cf->burl[4], 's', 'S')?"; secure; HttpOnly":"; HttpOnly");
-    ses->cookie = zx_alloc_sprintf(cf->ctx, 0, "$Version=1; %s=%s",
-				   cf->ses_cookie_name, ses->sid);
-    D("setcookie(%s)=(%s) ses=%p", cf->ses_cookie_name, ses->setcookie, ses);
-  }
+  zxid_set_ses_cookie(cf, cgi, ses);
   if (cf->ptm_cookie_name && *cf->ptm_cookie_name) {
     D("ptm_cookie_name(%s) ses->a7n=%p", cf->ptm_cookie_name, ses->a7n);
     issuer = ses->a7n?ZX_GET_CONTENT(ses->a7n->Issuer):0;

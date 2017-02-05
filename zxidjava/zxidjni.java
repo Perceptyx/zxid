@@ -4702,6 +4702,10 @@ public class zxidjni implements zxidjniConstants {
     zxidjniJNI.zxid_get_sid_from_cookie(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), cookie);
   }
 
+  public static void set_ses_cookie(zxid_conf cf, zxid_cgi cgi, zxid_ses ses) {
+    zxidjniJNI.zxid_set_ses_cookie(zxid_conf.getCPtr(cf), zxid_cgi.getCPtr(cgi), zxid_ses.getCPtr(ses));
+  }
+
   public static zxid_ses alloc_ses(zxid_conf cf) {
     long cPtr = zxidjniJNI.zxid_alloc_ses(zxid_conf.getCPtr(cf));
     return (cPtr == 0) ? null : new zxid_ses(cPtr, false);

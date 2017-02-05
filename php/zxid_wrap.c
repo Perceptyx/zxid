@@ -39992,6 +39992,40 @@ fail:
 }
 
 
+ZEND_NAMED_FUNCTION(_wrap_zxid_set_ses_cookie) {
+  zxid_conf *arg1 = (zxid_conf *) 0 ;
+  zxid_cgi *arg2 = (zxid_cgi *) 0 ;
+  zxid_ses *arg3 = (zxid_ses *) 0 ;
+  zval **args[3];
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 3 || zend_get_parameters_array_ex(3, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  {
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_zxid_conf, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of zxid_set_ses_cookie. Expected SWIGTYPE_p_zxid_conf");
+    }
+  }
+  {
+    if(SWIG_ConvertPtr(*args[1], (void **) &arg2, SWIGTYPE_p_zxid_cgi, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 2 of zxid_set_ses_cookie. Expected SWIGTYPE_p_zxid_cgi");
+    }
+  }
+  {
+    if(SWIG_ConvertPtr(*args[2], (void **) &arg3, SWIGTYPE_p_zxid_ses, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 3 of zxid_set_ses_cookie. Expected SWIGTYPE_p_zxid_ses");
+    }
+  }
+  zxid_set_ses_cookie(arg1,arg2,arg3);
+  
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
 ZEND_NAMED_FUNCTION(_wrap_zxid_alloc_ses) {
   zxid_conf *arg1 = (zxid_conf *) 0 ;
   zval **args[1];
@@ -48086,6 +48120,7 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zxid_parse_cgi,_wrap_zxid_parse_cgi,NULL)
  SWIG_ZEND_NAMED_FE(zxid_new_cgi,_wrap_zxid_new_cgi,NULL)
  SWIG_ZEND_NAMED_FE(zxid_get_sid_from_cookie,_wrap_zxid_get_sid_from_cookie,NULL)
+ SWIG_ZEND_NAMED_FE(zxid_set_ses_cookie,_wrap_zxid_set_ses_cookie,NULL)
  SWIG_ZEND_NAMED_FE(zxid_alloc_ses,_wrap_zxid_alloc_ses,NULL)
  SWIG_ZEND_NAMED_FE(zxid_fetch_ses,_wrap_zxid_fetch_ses,NULL)
  SWIG_ZEND_NAMED_FE(zxid_get_ses,_wrap_zxid_get_ses,NULL)

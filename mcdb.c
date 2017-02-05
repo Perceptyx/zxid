@@ -1,5 +1,5 @@
 /* mcdb.c  -  memcached binary protocol (1.3) for HIIOS engine
- * Copyright (c) 2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -398,7 +398,7 @@ static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   }
   /* lookup the value from hash */
   if (bkt = zx_global_get_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key)) {
-    D("get(%.*s) bkt=%p val(%.*s) cpkey=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, bkt, (int)bkt->b.val.len, bkt->b.val.ue.s, cpkey);
+    D("GET(%.*s) bkt=%p val(%.*s) cpkey=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, bkt, (int)bkt->b.val.len, bkt->b.val.ue.s, cpkey);
     mcdb_ok(hit, io, req, 4, "\0\0\0\0", cpkey, 0,
 	    bkt->b.val.len, bkt->b.val.ue.s, mcdb_zero_cas);
   } else {
@@ -421,6 +421,7 @@ static void mcdb_got_set(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   }
   p = req->ad.mcdb.extras;
   expires = p[4] << 24 | p[5] << 16 | p[6] << 8 | p[7];
+  D("SET key(%.*s) val(%.*s) expires=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, req->ad.mcdb.vallen, req->ad.mcdb.val, expires);
 
   /* store the value in global hash */
   memset(&val, 0, sizeof(val));
@@ -445,6 +446,7 @@ static void mcdb_got_set(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
 /* Called by:  mcdb_decode */
 static void mcdb_got_zxmsgpack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req)
 {
+  // *** TBD
   mcdb_ok(hit, io, req, 0, 0, 0, 0, 0, 0, mcdb_zero_cas);
 }
 
@@ -460,12 +462,14 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   char* lim;
   unsigned char* p = (unsigned char*)req->m;
   
-  D("decode req(%p)->need=%d have=%d", req, req->need, (int)(req->ap - req->m));
+  D_INDENT("mcdb_dec: ");
+  D("req(%p)->need=%d have=%d", req, req->need, (int)(req->ap - req->m));
   HI_SANITY(hit->shf, hit);
   
   if ((unsigned char*)req->ap - p < MCDB_MIN_PDU_SIZE) {   /* too little, need more */
     req->need = MCDB_MIN_PDU_SIZE;
     D("need=%d have=%d", req->need, (int)(req->ap - req->m));
+    D_DEDENT("mcdb_dec: ");
     return  HI_NEED_MORE;
   }
   
@@ -473,6 +477,7 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
 
   req->ad.mcdb.magic  = p[0];
   if (req->ad.mcdb.magic != MCDB_REQ_MAGIC) {
+    D_DEDENT("mcdb_dec: ");
     return mcdb_frame_err(hit, io, req, "Request Magic 0x80 expected.");
   }
   req->ad.mcdb.op     = p[1];
@@ -488,6 +493,7 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   if (lim > req->ap) {
     req->need = lim - req->ap;
     D("need=%d have=%d", req->need, (int)(req->ap - req->m));
+    D_DEDENT("mcdb_dec: ");
     return HI_NEED_MORE;
   }
 
@@ -520,8 +526,8 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   case MCDB_REPLACEQ: // 0x13
   case MCDB_SETQ:  mcdb_got_set(hit,io,req,1); break; //  0x11
   case MCDB_ZXMSGPACK: mcdb_got_zxmsgpack(hit,io,req); break; // 0x21
-  case MCDB_QUIT:  return mcdb_err(hit, io, req, MCDB_STATUS_OK, "bye"); // 0x07
-  case MCDB_QUITQ: return HI_CONN_CLOSE; // 0x17
+  case MCDB_QUIT:  D_DEDENT("mcdb_dec: "); return mcdb_err(hit, io, req, MCDB_STATUS_OK, "bye"); // 0x07
+  case MCDB_QUITQ: D_DEDENT("mcdb_dec: "); return HI_CONN_CLOSE; // 0x17
   case MCDB_NOP:   mcdb_err(hit, io, req, MCDB_STATUS_OK, ""); break; //  0x0A
   case MCDB_VERS:  mcdb_err(hit, io, req, MCDB_STATUS_OK, ZXID_REL); break; // 0x0B
   case MCDB_DEL: //  0x04
@@ -541,9 +547,11 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
     D("Unknown op 0x%02x ignored.", req->ad.mcdb.op);
     mcdb_cmd_ni(hit,io,req,req->ad.mcdb.op);
   }
+  D_DEDENT("mcdb_dec: ");
   return 0;
 
 ooberr:
+  D_DEDENT("mcdb_dec: ");
   return mcdb_frame_err(hit, io, req, "Length field out of bounds.");
 }
 

@@ -1,5 +1,5 @@
 /* zxlib.c  -  Utility functions for generated (and other) code
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -16,6 +16,7 @@
  * 7.10.2008, added documentation --Sampo
  * 26.5.2010, added XML parse error reporting --Sampo
  * 27.10.2010, re-engineered namespace handling --Sampo
+ * 20170205,  added zx_rmemmem() --Sampo
  */
 
 #include "platform.h"  /* needed on Win32 for snprintf(), va_copy() et al. */
@@ -42,6 +43,18 @@ char* zx_memmem(const char* haystack, int haystack_len, const char* needle, int 
   for (; haystack < lim; ++haystack)
     if (!memcmp(haystack, needle, needle_len))
       return (char*)haystack; /* discards const qualifier, but is right if haystack was modifiable, as often is the case. */
+  // *** there has to be a more efficient way of doing memmem than this naive scan
+  return 0;
+}
+
+/*() Like memmem(3), but search from the end of the haystack towards the beginning. */
+
+char* zx_rmemmem(const char* haystack, const char* lim, const char* needle, int needle_len)
+{
+  for (lim -= needle_len; haystack < lim; --lim)
+    if (!memcmp(lim, needle, needle_len))
+      return (char*)lim; /* discards const qualifier, but is right if haystack was modifiable, as often is the case. */
+  // *** there has to be a more efficient way of doing rmemmem than this naive scan
   return 0;
 }
 
