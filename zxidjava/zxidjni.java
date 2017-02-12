@@ -554,6 +554,10 @@ public class zxidjni implements zxidjniConstants {
     return zxidjniJNI.zx_memmem(haystack, haystack_len, needle, needle_len);
   }
 
+  public static String zx_rmemmem(String haystack, String lim, String needle, int needle_len) {
+    return zxidjniJNI.zx_rmemmem(haystack, lim, needle, needle_len);
+  }
+
   public static SWIGTYPE_p_void zx_alloc(SWIGTYPE_p_zx_ctx c, int size) {
     long cPtr = zxidjniJNI.zx_alloc(SWIGTYPE_p_zx_ctx.getCPtr(c), size);
     return (cPtr == 0) ? null : new SWIGTYPE_p_void(cPtr, false);

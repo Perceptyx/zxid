@@ -352,7 +352,7 @@ void zx_demomed_Object_REV_ObjectData(struct zx_demomed_Object_s* x);
 
 #endif
 /* -------------------------- demomed_ObjectData -------------------------- */
-/* refby( zx_demomed_Object_s zx_demomed_GetObjectResponse_s ) */
+/* refby( zx_demomed_GetObjectResponse_s zx_demomed_Object_s ) */
 #ifndef zx_demomed_ObjectData_EXT
 #define zx_demomed_ObjectData_EXT
 #endif

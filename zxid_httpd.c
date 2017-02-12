@@ -1,5 +1,6 @@
 /* zxid_httpd - small zxid enabled HTTP server derived from mini_httpd-1.19
  * Copyright (c) 2013-2015 Synergetics NV (sampo@synergetics.be)
+ * Copyright (c) 2017 Sampo Kellomaki (sampo@zxid.org)
  * All Rights Reserverd.
  * New bugs are mine, do not bother Jef with them. --Sampo */
 /* mini_httpd - small HTTP server

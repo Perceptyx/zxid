@@ -63,7 +63,7 @@ Usage: zxcached [options]\n\
        zxcached -p mcdbs:127.0.0.1:4442 -r mcdbs:10.1.2.3:4442 -r mcdbs:10.1.4.3:4442\n\
   -c CONF          Optional configuration string (default -c CPATH=" ZXCACHE_PATH ")\n\
                    Most of the configuration is read from " ZXCACHE_PATH ZXID_CONF_FILE "\n\
-  -cp PATH         Path for hash and user databases. Default: " ZXCACHE_PATH "\n\
+  -cp PATH         Path for hash and user databases. You must specify this for persistence.\n\
   -p  PROT:IF:PORT Protocol, network interface and TCP port for listening\n\
                    connections. If you omit interface, all interfaces are bound.\n\
                      mcdbs:0.0.0.0:4442 - Listen for memcached binary protocol over TLS\n\
@@ -102,7 +102,7 @@ Usage: zxcached [options]\n\
 N.B. Although zxcached is a 'daemon', it does not daemonize itself. You can always say zxcached&\n";
 
 extern char errmac_instance[64];
-char* zxcache_path = ZXCACHE_PATH;
+													       char* zxcache_path = 0;
 #ifdef ENA_STOMP
 char* zxbus_path = "/var/zxid/";
 #endif
@@ -654,7 +654,7 @@ int zxcached_main(int argc, char** argv, char** env)
   zx_cf = zxid_new_conf_to_cf("CPATH=" ZXCACHE_PATH);
   /*openlog("zxcached", LOG_PID, LOG_LOCAL0);     *** Do we want syslog logging? */
   opt(&argc, &argv, &env);
-  zxcache_path = zx_cf->cpath;
+  /*if (!zxcache_path) zxcache_path = zx_cf->cpath; not specifying zxcache_path diables writing */
 
   if (!listen_ports) {
     ERR("No listening ports specified. You must supply at least one -p option.\n%s", help);

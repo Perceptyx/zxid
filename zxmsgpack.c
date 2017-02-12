@@ -23,7 +23,7 @@
 #include "zxid.h"
 #include "zxdata.h"
 
-/*() Compute length of msgpack serialization of a value and optionally render the serializatio
+/*() Compute length of msgpack serialization of a value and optionally render the serialization
  * val:: Value (can be root of a complex data structure)
  * maxlen:: Maxium amount that will be rendered to the buffer (i.e. the size of the buffer)
  * buf:: Buffer where msgpack output is rendered. If 0, only length computation is performed.
@@ -261,13 +261,13 @@ int zx_val2msgpack(struct zx_val* val, int maxlen, unsigned char* buf, int maxre
 
 /*() Deserialize msgpack
  *
- * val:: Value (can be root of a complex data structure)
+ * c:: zx context object used for memory allocation
  * buf:: Pointer to pointer to buffer where msgpack data resides. The *buf is
  *     incremented as data is consumed so the caller can know how much data
  *     was consumed. Caller can also try deserializing the remaing data by calling
  *     this function again.
  * lim:: Pointer to one past the end of the buffer.
- * flags:: Flags determining how the serialization is to be done. Following exist
+ * flags:: Flags determining how the deserialization is to be done. Following exist
  *     - 0x01 specifies that data, such as strings, can be referenced from buf without
  *       allocation and copying (there will still be other allocation, e.g. for
  *       the zx_val objects themselves).

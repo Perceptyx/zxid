@@ -391,18 +391,26 @@ static void mcdb_got_ack(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
 /* Called by:  mcdb_decode x2 */
 static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int cpkey)
 {
-  struct zx_gbucket* bkt;
+  struct zx_gbucket* gb;
+  struct zx_val* val;
   if (req->ad.mcdb.extraslen || req->ad.mcdb.vallen) {
     mcdb_err(hit, io, req, MCDB_STATUS_INVALID_ARGS, "must not have extras or value");
     return;
   }
   /* lookup the value from hash */
-  if (bkt = zx_global_get_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key)) {
-    D("GET(%.*s) bkt=%p val(%.*s) cpkey=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, bkt, (int)bkt->b.val.len, bkt->b.val.ue.s, cpkey);
+  if (gb = zx_global_get_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key)) {
+    D("GET(%.*s) gb=%p val(%.*s) cpkey=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, gb, (int)gb->b.val.len, gb->b.val.ue.s, cpkey);
     mcdb_ok(hit, io, req, 4, "\0\0\0\0", cpkey, 0,
-	    bkt->b.val.len, bkt->b.val.ue.s, mcdb_zero_cas);
+	    gb->b.val.len, gb->b.val.ue.s, mcdb_zero_cas);
   } else {
-    mcdb_err(hit, io, req, MCDB_STATUS_KEY_NOT_FOUND, "miss");
+    if (val = zx_global_read_last(zx_cf, req->ad.mcdb.keylen, req->ad.mcdb.key, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" /* *** */)) {
+      gb = zx_global_set_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key, val);
+      D("GET(%.*s) gb=%p val(%.*s) cpkey=%d from disk", req->ad.mcdb.keylen, req->ad.mcdb.key, gb, (int)gb->b.val.len, gb->b.val.ue.s, cpkey);
+      mcdb_ok(hit, io, req, 4, "\0\0\0\0", cpkey, 0,
+	      gb->b.val.len, gb->b.val.ue.s, mcdb_zero_cas);
+    } else {
+      mcdb_err(hit, io, req, MCDB_STATUS_KEY_NOT_FOUND, "miss");
+    }
   }
 }
 
@@ -528,7 +536,7 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   case MCDB_ZXMSGPACK: mcdb_got_zxmsgpack(hit,io,req); break; // 0x21
   case MCDB_QUIT:  D_DEDENT("mcdb_dec: "); return mcdb_err(hit, io, req, MCDB_STATUS_OK, "bye"); // 0x07
   case MCDB_QUITQ: D_DEDENT("mcdb_dec: "); return HI_CONN_CLOSE; // 0x17
-  case MCDB_NOP:   mcdb_err(hit, io, req, MCDB_STATUS_OK, ""); break; //  0x0A
+  case MCDB_NOP:   mcdb_err(hit, io, req, MCDB_STATUS_OK, "nop"); break; //  0x0A
   case MCDB_VERS:  mcdb_err(hit, io, req, MCDB_STATUS_OK, ZXID_REL); break; // 0x0B
   case MCDB_DEL: //  0x04
   case MCDB_INC: //  0x05

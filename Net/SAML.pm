@@ -75,6 +75,7 @@ package Net::SAML;
 *zx_str_cmp = *Net::SAMLc::zx_str_cmp;
 *zx_str_ends_in = *Net::SAMLc::zx_str_ends_in;
 *zx_memmem = *Net::SAMLc::zx_memmem;
+*zx_rmemmem = *Net::SAMLc::zx_rmemmem;
 *zx_alloc = *Net::SAMLc::zx_alloc;
 *zx_zalloc = *Net::SAMLc::zx_zalloc;
 *zx_free = *Net::SAMLc::zx_free;

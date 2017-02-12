@@ -5524,6 +5524,69 @@ fail:
 }
 
 
+ZEND_NAMED_FUNCTION(_wrap_zx_rmemmem) {
+  char *arg1 = (char *) 0 ;
+  char *arg2 = (char *) 0 ;
+  char *arg3 = (char *) 0 ;
+  int arg4 ;
+  zval **args[4];
+  char *result = 0 ;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 4 || zend_get_parameters_array_ex(4, args) != SUCCESS) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[0])->type==IS_NULL) {
+    arg1 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[0]);
+    arg1 = (char *) Z_STRVAL_PP(args[0]);
+  }
+  /*@SWIG@*/;
+  
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[1])->type==IS_NULL) {
+    arg2 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[1]);
+    arg2 = (char *) Z_STRVAL_PP(args[1]);
+  }
+  /*@SWIG@*/;
+  
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,62,CONVERT_STRING_IN@*/
+  if ((*args[2])->type==IS_NULL) {
+    arg3 = (char *) 0;
+  } else {
+    convert_to_string_ex(args[2]);
+    arg3 = (char *) Z_STRVAL_PP(args[2]);
+  }
+  /*@SWIG@*/;
+  
+  
+  /*@SWIG:/usr/share/swig2.0/php/utils.i,7,CONVERT_INT_IN@*/
+  convert_to_long_ex(args[3]);
+  arg4 = (int) Z_LVAL_PP(args[3]);
+  /*@SWIG@*/;
+  
+  result = (char *)zx_rmemmem((char const *)arg1,(char const *)arg2,(char const *)arg3,arg4);
+  {
+    if(!result) {
+      ZVAL_NULL(return_value);
+    } else {
+      ZVAL_STRING(return_value, (char *)result, 1);
+    }
+  }
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
 ZEND_NAMED_FUNCTION(_wrap_zx_alloc) {
   struct zx_ctx *arg1 = (struct zx_ctx *) 0 ;
   int arg2 ;
@@ -47116,6 +47179,7 @@ static zend_function_entry zxid_functions[] = {
  SWIG_ZEND_NAMED_FE(zx_str_cmp,_wrap_zx_str_cmp,NULL)
  SWIG_ZEND_NAMED_FE(zx_str_ends_in,_wrap_zx_str_ends_in,NULL)
  SWIG_ZEND_NAMED_FE(zx_memmem,_wrap_zx_memmem,NULL)
+ SWIG_ZEND_NAMED_FE(zx_rmemmem,_wrap_zx_rmemmem,NULL)
  SWIG_ZEND_NAMED_FE(zx_alloc,_wrap_zx_alloc,NULL)
  SWIG_ZEND_NAMED_FE(zx_zalloc,_wrap_zx_zalloc,NULL)
  SWIG_ZEND_NAMED_FE(zx_free,_wrap_zx_free,NULL)

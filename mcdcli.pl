@@ -62,3 +62,9 @@ __END__
 gdb ./zxcached -dd 0x03 -nfd 8 -npdu 4 -p mcdb:127.0.0.1:4442
 
 20160423 ca. 20k gets/sec on single key single connection single thread
+
+~/ovcached -p mcdb:127.0.0.1:4441 -c CPATH=/d/frontend/ov/pds.tisei.com/ -cp /d/pdsdb/ -ak 10
+
+mcdcli.pl 127.0.0.1:4441 set foo bar
+
+./ovcached -p mcdb:127.0.0.1:4441 -c CPATH=/home/sampo/tisei/frontend/ov/pds.tisei.com/ -cp /tmp/pdsdb/ -ak 10

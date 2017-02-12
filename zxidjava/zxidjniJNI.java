@@ -141,6 +141,7 @@ public class zxidjniJNI {
   public final static native int zx_str_cmp(String jarg1, String jarg2);
   public final static native int zx_str_ends_in(String jarg1, int jarg2, String jarg3);
   public final static native String zx_memmem(String jarg1, int jarg2, String jarg3, int jarg4);
+  public final static native String zx_rmemmem(String jarg1, String jarg2, String jarg3, int jarg4);
   public final static native long zx_alloc(long jarg1, int jarg2);
   public final static native long zx_zalloc(long jarg1, int jarg2);
   public final static native long zx_free(long jarg1, long jarg2);

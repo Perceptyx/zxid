@@ -124,6 +124,7 @@ struct zx_val* zx_msgpack2val2(struct zx_ctx* c, unsigned char** buf, unsigned c
 struct zx_val* zx_msgpack2val(struct zx_ctx* c, int len, unsigned char* buf, int flags);
 
 int zx_global_write(zxid_conf* cf, int ghkeylen, const char* ghkey, const unsigned char* symkey, struct zx_val* val);
+struct zx_val* zx_global_read_last(zxid_conf* cf, int ghkeylen, const char* ghkey, const unsigned char* symkey);
 
 const char* zx_val_to_str(struct zx_ctx* c, struct zx_val* val);
 

@@ -166,7 +166,7 @@ const char* zx_val_to_str(struct zx_ctx* c, struct zx_val* val)
 /* Called by:  zx_get_by_len_key, zx_global_set_by_len_key, zx_set_by_len_key */
 static struct zx_bucket** zx_bucket_slot_by_len_key(int hlen, struct zx_bucket** h, int len, const char* key)
 {
-  int raw_hash;
+  unsigned int raw_hash;
   BHASH(key, len, raw_hash);
   return h + raw_hash % hlen;
 }

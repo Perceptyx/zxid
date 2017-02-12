@@ -525,7 +525,7 @@ int write2_or_append_lock_c_path(const char* c_path,
 #else
   fd = open(c_path, O_RDWR | O_CREAT | flag, 0666);
   if (fd == BADFD) goto badopen;
-  if (FLOCKEX(fd)  == -1) {
+  if (FLOCKEX(fd) == -1) {
     ERR("%s: Locking exclusively file `%s' failed: %d %s; euid=%d egid=%d. Check that the file system supports locking. %s", which, c_path, errno, STRERROR(errno), geteuid(), getegid(), WRITE_FAIL_MSG);
     close_file(fd, which);
     return 0;
@@ -1046,7 +1046,7 @@ char* zxid_deflate_safe_b64(struct zx_ctx* c, struct zx_str* ss)
 /*() Decompress zlib-deflate (RFC1951) compressed data. The decompressed data will
  * be in a newly allocated buffer which is returned. The length
  * of the decompressed data is returned via out_len. The buffer
- * will always be at least byte one longer than indicated by out_len - this
+ * will always be at least one byte longer than indicated by out_len - this
  * should allow safe nul termination (but the decompressed data itself
  * may contain any number of nuls). Caveat: RFC1951 is not same a gzip. */
 
