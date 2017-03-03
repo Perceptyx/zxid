@@ -47,7 +47,7 @@
  * to_write_produce --> pdu1 <---------------------- to_write_consume
  *                      wn:0 
  *
- * Empty queue is expressed by both pointer being null.
+ * Empty queue is expressed by both pointers being null.
  *
  * to_write_produce:0                                to_write_consume:0
  *
@@ -57,7 +57,7 @@
  * polled I/O activity: if a thread responds to poll for read, it needs
  * to maintain control of the io object until it has read and decoded
  * the PDU to a point where it moves from io->cur_pdu to io->reqs. After
- * this another thread may be enabled to read another PDU from the
+ * this, another thread may be enabled to read another PDU from the
  * socket.
  * 
  * Alternatively, if the decode state of a PDU is stored in a thread

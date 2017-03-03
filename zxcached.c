@@ -64,7 +64,7 @@ Usage: zxcached [options]\n\
   -c CONF          Optional configuration string (default -c CPATH=" ZXCACHE_PATH ")\n\
                    Most of the configuration is read from " ZXCACHE_PATH ZXID_CONF_FILE "\n\
   -cp PATH         Path for hash and user databases. You must specify this for persistence.\n\
-  -p  PROT:IF:PORT Protocol, network interface and TCP port for listening\n\
+  -p  PROT:IF:PORT Protocol, network interface ip address and TCP port for listening\n\
                    connections. If you omit interface, all interfaces are bound.\n\
                      mcdbs:0.0.0.0:4442 - Listen for memcached binary protocol over TLS\n\
                                          (default if no -p supplied)\n\
@@ -564,7 +564,7 @@ static struct hi_io* serial_init(struct hi_thr* hit, struct hi_host_spec* hs)
     exit(3);
   if (verbose)
     log_port_info(fd, tty, "after");
-  nonblock(fd);
+  so_nonblock(fd);
   LOCK(io->qel.mut, "serial_init");
   hi_add_fd(hit, io, fd, HI_TCP_C);
   UNLOCK(io->qel.mut, "serial_init");
@@ -654,7 +654,7 @@ int zxcached_main(int argc, char** argv, char** env)
   zx_cf = zxid_new_conf_to_cf("CPATH=" ZXCACHE_PATH);
   /*openlog("zxcached", LOG_PID, LOG_LOCAL0);     *** Do we want syslog logging? */
   opt(&argc, &argv, &env);
-  /*if (!zxcache_path) zxcache_path = zx_cf->cpath; not specifying zxcache_path diables writing */
+  /*if (!zxcache_path) zxcache_path = zx_cf->cpath; not specifying zxcache_path disables writing */
 
   if (!listen_ports) {
     ERR("No listening ports specified. You must supply at least one -p option.\n%s", help);
@@ -739,6 +739,8 @@ int zxcached_main(int argc, char** argv, char** env)
     struct hi_host_spec* hs_next;
 
     /* Prepare listeners first so we can then later connect to ourself. */
+    /* *** Listening ports should really be opened before watchdog so
+     * *** that they are inherited by children, enabling zero-downtime upgrades. */
     CMDLINE("listen");
 
     for (hs = listen_ports; hs; hs = hs->next) {

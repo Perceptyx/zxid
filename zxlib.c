@@ -44,6 +44,7 @@ char* zx_memmem(const char* haystack, int haystack_len, const char* needle, int 
     if (!memcmp(haystack, needle, needle_len))
       return (char*)haystack; /* discards const qualifier, but is right if haystack was modifiable, as often is the case. */
   // *** there has to be a more efficient way of doing memmem than this naive scan
+  // https://en.wikipedia.org/wiki/Boyer–Moore_string_search_algorithm
   return 0;
 }
 
@@ -51,7 +52,7 @@ char* zx_memmem(const char* haystack, int haystack_len, const char* needle, int 
 
 char* zx_rmemmem(const char* haystack, const char* lim, const char* needle, int needle_len)
 {
-  for (lim -= needle_len; haystack < lim; --lim)
+  for (lim -= needle_len; haystack <= lim; --lim)
     if (!memcmp(lim, needle, needle_len))
       return (char*)lim; /* discards const qualifier, but is right if haystack was modifiable, as often is the case. */
   // *** there has to be a more efficient way of doing rmemmem than this naive scan

@@ -32,8 +32,6 @@
 #include "c/zx-ns.h"
 #include "c/zx-data.h"
 
-#define BOOL_STR_TEST(x) ((x) && (x) != '0')
-
 /*() Create SOAP header Action (which is distinct from HTTP headers SOAPaction).
  * This is driven by the configuration option WSC_ACTION_HDR */
 

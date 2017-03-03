@@ -1,5 +1,5 @@
 /* hinet.c  -  Hiquu I/O Engine I/O shuffler TCP/IP network connect and accept
- * Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2006,2012,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
@@ -11,6 +11,7 @@
  * 16.8.2012, modified license grant to allow use with ZXID.org --Sampo
  * 6.9.2012,  added support for TLS and SSL --Sampo
  * 17.9.2012, factored net code to its own file --Sampo
+ * 20170228,  added TCP_NODELAY --Sampo
  *
  * See http://pl.atyp.us/content/tech/servers.html for inspiration on threading strategy.
  *
@@ -34,6 +35,8 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <errno.h>
 #include <string.h>
 
@@ -111,7 +114,7 @@ int hi_vfy_peer_ssl_cred(struct hi_thr* hit, struct hi_io* io, const char* eid)
  * Our I/O strategy (edge triggered epoll or /dev/poll) depends on nonblocking fds. */
 
 /* Called by: */
-void nonblock(int fd)
+static void so_nonblock(int fd)
 {
 #ifdef MINGW
   u_long arg = 1;
@@ -143,15 +146,38 @@ void nonblock(int fd)
 #endif
 }
 
+/*() Make sure data is sent out ASAP (disable nagle algorithm)
+ * See `man 7 tcp' for TCP_CORK, TCP_NODELAY, etc.
+ * N.B. Nagle algorithm (!TCP_NODELAY) should never delay the first
+ * communication. It prevents new partial packet from being sent
+ * if remote has not acked the previous one. In the case of first
+ * packet of connection, ther ack was part of connection handshake.
+ * In subsequent packets there is no delay as long as remote
+ * has sent ack. Thus there is rearely justification for turning on
+ * TCP_NODELAY.
+ * TCP_CORK is a different matter: it actually prevents partial
+ * packet from being sent out even if remote has acked previous packet. */
+
+/* Called by: */
+static void tcp_nodelay(int fd)
+{
+  int tmp = 1;
+#if 0
+  if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&tmp, sizeof(tmp)) == -1) {
+    ERR("setsockopt(TCP_NODELAY, %d) on fd=%d: %d %s", tmp, fd, errno, STRERROR(errno));
+    exit(2);
+  }
+#endif
+}
+
 /* Tweaking kernel buffers to be smaller can be a win if a massive number
  * of connections are simultaneously open. On many systems default buffer
  * size is 64KB in each direction, leading to 128KB memory consumption. Tweaking
  * to only, say, 8KB can bring substantial savings (but may hurt TCP performance). */
 
 /* Called by: */
-void setkernelbufsizes(int fd, int tx, int rx)
+static void setkernelbufsizes(int fd, int tx, int rx)
 {
-  /* See `man 7 tcp' for TCP_CORK, TCP_NODELAY, etc. */
   if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char*)&tx, sizeof(tx)) == -1) {
     ERR("setsockopt(SO_SNDBUF, %d) on fd=%d: %d %s", tx, fd, errno, STRERROR(errno));
     exit(2);
@@ -181,7 +207,8 @@ struct hi_io* hi_open_listener(struct hiios* shf, struct hi_host_spec* hs, int p
     close(fd);
     return 0;
   }
-  nonblock(fd);
+  so_nonblock(fd);
+  tcp_nodelay(fd);
   if (nkbuf)
     setkernelbufsizes(fd, nkbuf, nkbuf);
 
@@ -358,14 +385,7 @@ struct hi_io* hi_add_fd(struct hi_thr* hit, struct hi_io* io, int fd, int kind)
     ev.data.ptr = io;
     if (epoll_ctl(hit->shf->ep, EPOLL_CTL_ADD, fd, &ev)) {
       ERR("Unable to epoll_ctl(%d): %d %s", fd, errno, STRERROR(errno));
-#ifdef USE_OPENSSL
-      if (io->ssl) {
-	SSL_free(io->ssl);
-	io->ssl = 0;
-      }
-#endif
-      close(fd);
-      return 0;
+      goto err;
     }
   }
 #endif
@@ -376,32 +396,17 @@ struct hi_io* hi_add_fd(struct hi_thr* hit, struct hi_io* io, int fd, int kind)
     pfd.events = POLLIN | POLLOUT | POLLERR | POLLHUP;
     if (write(hit->shf->ep, &pfd, sizeof(pfd)) == -1) {
       ERR("Unable to write to /dev/poll fd(%d): %d %s", fd, errno, STRERROR(errno));
-#ifdef USE_OPENSSL
-      if (io->ssl) {
-	SSL_free(io->ssl);
-	io->ssl = 0;
-      }
-#endif
-      close(fd);
-      return 0;
+      goto err;
     }
   }
 #endif
-
 #if defined(MACOSX) || defined(FREEBSD)
   {
     struct kevent kev;
     EV_SET(kev, fd, EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, &zero_timeout);
     if (kevent(hit->shf->ep, &kev, 1, 0,0,0) == -1) {
       ERR("kevent: fd(%d): %d %s", fd, errno, STRERROR(errno));
-#ifdef USE_OPENSSL
-      if (io->ssl) {
-	SSL_free(io->ssl);
-	io->ssl = 0;
-      }
-#endif
-      close(fd);
-      return 0;
+      goto err;
     }
   }
 #endif
@@ -423,6 +428,16 @@ struct hi_io* hi_add_fd(struct hi_thr* hit, struct hi_io* io, int fd, int kind)
   io->qel.kind = kind;
   io->fd = fd;          /* This change marks the slot as used in the big table. */
   return io;
+
+ err:
+#ifdef USE_OPENSSL
+  if (io->ssl) {
+    SSL_free(io->ssl);
+    io->ssl = 0;
+  }
+#endif
+  close(fd);
+  return 0;
 }
 
 /*() Remove files descriptor from poll. */
@@ -478,8 +493,12 @@ struct hi_io* hi_open_tcp(struct hi_thr* hit, struct hi_host_spec* hs, int proto
   }
   io = hit->shf->ios + fd;
   io->qel.proto = proto;
-
-  nonblock(fd);
+  ASSERT(io->cur_pdu == 0);
+  if (!(io->cur_pdu = hi_pdu_alloc(hit, io, "cur_pdu-open_tcp")))
+    goto errout;
+  
+  so_nonblock(fd);
+  tcp_nodelay(fd);
   if (nkbuf)
     setkernelbufsizes(fd, nkbuf, nkbuf);
   
@@ -490,9 +509,9 @@ struct hi_io* hi_open_tcp(struct hi_thr* hit, struct hi_host_spec* hs, int proto
   }
   
   D("connect(%x) hs(%s)", fd, hs->specstr);
-  /*SSL_CTX_add_extra_chain_cert(hit->shf->ssl_ctx, ca_cert);*/
 
 #ifdef USE_OPENSSL
+  /*SSL_CTX_add_extra_chain_cert(hit->shf->ssl_ctx, ca_cert);*/
   if (hi_prototab[proto].is_tls) {
     --io->qel.proto;  /* Nonssl protocol is always one smaller than SSL variant. */
     io->ssl = SSL_new(hit->shf->ssl_ctx);
@@ -616,7 +635,7 @@ void hi_accept_book(struct hi_thr* hit, struct hi_io* io, int fd)
     hi_todo_produce(hit, &io->qel, "accept", 0);  /* schedule a new try */
     return;
   }
-    
+  
   nio = hi_add_fd(hit, io, fd, HI_TCP_S);
   UNLOCK(io->qel.mut, "hi_accept");
   if (!nio || nio != io) {
@@ -703,7 +722,8 @@ void hi_accept(struct hi_thr* hit, struct hi_io* listener)
     close(fd);
     return;
   }
-  nonblock(fd);
+  so_nonblock(fd);
+  tcp_nodelay(fd);
   if (nkbuf)
     setkernelbufsizes(fd, nkbuf, nkbuf);
 

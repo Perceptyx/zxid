@@ -26,7 +26,6 @@
 #include "c/zx-data.h"
 
 #define XS_STRING "http://www.w3.org/2001/XMLSchema#string"
-#define BOOL_STR_TEST(x) ((x) && (x) != '0')
 
 /*() Try to map security mechanisms across different frame works. Low level
  * function. This also makes some elementary checks as to whether the

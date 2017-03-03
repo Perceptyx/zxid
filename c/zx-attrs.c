@@ -46,7 +46,7 @@ error "gperf generated tables don't work with this execution character set. Plea
 /* maximum key range = 1009, duplicates = 0 */
 
 #ifdef __GNUC__
-__inline
+//__inline
 #else
 #ifdef __cplusplus
 inline
@@ -996,7 +996,7 @@ struct zx_at_tok zx_at_tab[] =
   };
 
 #ifdef __GNUC__
-__inline
+//__inline
 #endif
 struct zx_at_tok *
 zx_attr2tok (str, len)

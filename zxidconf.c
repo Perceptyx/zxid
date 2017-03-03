@@ -1483,25 +1483,28 @@ zxid_conf* zxid_new_conf(const char* zxid_path)
  * is found. This is used by VPATH. */
 
 /* Called by:  zxid_parse_conf_raw, zxid_parse_vpath */
-static void zxid_parse_conf_path_raw(zxid_conf* cf, const char* v, int check_file_exists)
+static void zxid_parse_conf_path_raw(zxid_conf* cf, const char* pth, int check_file_exists)
 {
   int len;
   char *buf;
-
+  if (!pth) {
+    ERR("Missing CPATH %p", pth);
+  }
+  
   /* N.B: The buffer read here leaks on purpose as conf parsing takes references inside it. */
-  buf = read_all_alloc(cf->ctx, "-parse_conf_raw", 1, &len, "%s" ZXID_CONF_FILE, v);
+  buf = read_all_alloc(cf->ctx, "-parse_conf_raw", 1, &len, "%s" ZXID_CONF_FILE, pth);
   if (!buf || !len)
-    buf = read_all_alloc(cf->ctx, "-parse_conf_raw", 1, &len, "%szxid.conf", v);
+    buf = read_all_alloc(cf->ctx, "-parse_conf_raw", 1, &len, "%szxid.conf", pth);
   if (buf && len) {
-    cf->cpath = (char*)v;
-    cf->cpath_len = strlen(v);
+    cf->cpath = (char*)pth;
+    cf->cpath_len = strlen(pth);
     ++cf->cpath_supplied;   /* Record level of recursion so we can avoid infinite recursion. */
     if (len)
       zxid_parse_conf_raw(cf, len, buf);  /* Recurse */
     --cf->cpath_supplied;
   } else if (!check_file_exists) {
-    cf->cpath = (char*)v;   /* Set PATH anyway. */
-    cf->cpath_len = strlen(v);
+    cf->cpath = (char*)pth;   /* Set PATH anyway. */
+    cf->cpath_len = strlen(pth);
   }
 }
 

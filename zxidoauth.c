@@ -420,8 +420,7 @@ struct zx_str* zxid_mk_oauth_az_req(zxid_conf* cf, zxid_cgi* cgi, zxid_entity* i
     acr_values = "2";  /* Mobile Connect needs this */
   }
   prompt = BOOL_STR_TEST(cgi->force_authn) ? "login" : 0;
-  prompt = BOOL_STR_TEST(cgi->consent && cgi->consent[0])
-    ? (prompt?"login+consent":"consent") : prompt;
+  prompt = (cgi->consent && cgi->consent[0]) ? (prompt?"login+consent":"consent") : prompt;
   display = BOOL_STR_TEST(cgi->ispassive) ? "none" : 0;
   
   ss = zx_strf(cf->ctx,

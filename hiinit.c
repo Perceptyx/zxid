@@ -114,7 +114,7 @@ struct hiios* hi_new_shuffler(struct hi_thr* hit, int nfd, int npdu, int nch, in
   shf->free_pdus = shf->pdu_buf_blob;  /* Make PDUs available as free. */
   pthread_mutex_init(&shf->pdu_mut.ptmut, MUTEXATTR);
 
-  /* Allocate ios array as a blob and prepare them for I/O (by allocating cur_pdu) */
+  /* Allocate ios array as a blob and prepare them for I/O */
   
   ZMALLOCN(shf->ios, sizeof(struct hi_io) * nfd);
   shf->max_ios = nfd;

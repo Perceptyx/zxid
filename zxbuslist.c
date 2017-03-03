@@ -7,6 +7,10 @@
  * $Id$
  *
  * 27.8.2012, created --Sampo
+ *
+ * See also:: zxbusprod.c -- actual API for sending to bus, called by zxbustailf(1) among others
+ *   zxbustailf -- commandline to sendint to the bus
+ *   zxbusd    -- message broker daemon of the bus
  */
 
 #include "platform.h"  /* for dirent.h and unistd.h */
@@ -53,7 +57,7 @@ Usage: zxbuslist [options] > bus-traffic\n\
   -a -a            Turn on ascii coloring for stdout.\n\
   -h               This help message\n\
   --               End of options\n\
-\n";
+See also: zxbustailf(1), zxbusd(1)\n";
 
 extern int zxbus_ascii_color;
 int dryrun  = 0;

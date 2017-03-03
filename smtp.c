@@ -1,4 +1,4 @@
-/* smtp.c  -  Simple Mail Transfer Protocol, RFC822
+/* smtp.c  -  Simple Mail Transfer Protocol, RFC822, using hiios engine
  * Copyright (c) 2006,2012 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.

@@ -320,7 +320,7 @@ void hi_shuffle(struct hi_thr* hit, struct hiios* shf)
   shf->threads = hit;
   UNLOCK(shf->todo_mut, "add-thread");
   INFO("Start shuffling hit(%p) shf(%p)", hit, shf);
-  hi_color += 4; hi_sanity_shf(255, shf);
+  //hi_color += 4; hi_sanity_shf(255, shf);
   while (1) {
     HI_SANITY(hit->shf, hit);
     qe = hi_todo_consume(hit);  /* Wakes up the heard to receive work. */

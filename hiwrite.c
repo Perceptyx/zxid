@@ -48,38 +48,9 @@
 #define heart_bt  dest
 #define zx_rcpt_sig dest
 
-/* Called by:  hi_send0 */
-static void stomp_set_msg_id_and_destination(struct hi_io* io, struct hi_pdu* resp)
-{
-#ifdef ENA_STOMP
-  /* *** this is really STOMP 1.1 specific. Ideally msg_id
-   * and dest would already be set by the STOMP layer before
-   * calling this - or there should be dispatch to protocol
-   * specific method to recover them. */
-  resp->ad.stomp.msg_id = strstr(resp->m, "\nmessage-id:");
-  if (resp->ad.stomp.msg_id) {
-    resp->ad.stomp.msg_id += sizeof("\nmessage-id:")-1;
-    resp->n = io->pending;  /* add to io->pending, protected by io->qel.mut */
-    io->pending = resp;
-    resp->ad.stomp.dest = strstr(resp->m, "\ndestination:");
-    if (resp->ad.stomp.dest)
-      resp->ad.stomp.dest += sizeof("\ndestination:")-1;
-    resp->ad.stomp.body = strstr(resp->m, "\n\n");
-    if (resp->ad.stomp.body) {
-      resp->ad.stomp.body += sizeof("\n\n")-1;
-      resp->ad.stomp.len = resp->ap - resp->ad.stomp.body - 1 /* nul at end of frame */;
-    } else
-      resp->ad.stomp.len = 0;
-    D("pending resp_%p msgid(%.*s)", resp, (int)(strchr(resp->ad.stomp.msg_id,'\n')-resp->ad.stomp.msg_id), resp->ad.stomp.msg_id);
-  } else {
-    ERR("request from server to client lacks message-id header and thus can not expect an ACK. Not scheduling as pending. %p", resp);
-  }
-#endif
-}
-
 /*() Schedule a response to be sent.
  * If req is supplied, the response is taken to be response to that.
- * Otherwise resp is treated as a stand alone PDU, unsolicited response if you like.
+ * Otherwise resp is treated as a standalone PDU - an unsolicited response if you like.
  * The actual data is assumed to be populated in resp->iov[]. The data need not
  * be memory from pdu->m - it can be any memory as long as it is not freed until
  * the write has completed. The memory in resp->iov[] will not be freed by this routine
@@ -107,7 +78,9 @@ void hi_send0(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
   LOCK(io->qel.mut, "send0");
   if (!resp->req) {
     /* resp is really a request sent by server to the client */
-    stomp_set_msg_id_and_destination(io, resp);
+    switch (io->qel.proto) {
+    case HIPROTO_STOMP: stomp_set_msg_id_and_destination(io, resp); break;
+    }
   }
   
   if (ONE_OF_2(io->n_thr, HI_IO_N_THR_END_GAME, HI_IO_N_THR_END_POLL)) {
@@ -127,7 +100,7 @@ void hi_send0(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* parent, struc
   ++io->n_to_write;
   ++io->n_pdu_out;
   ++io->n_thr;           /* Account for anticipated call to hi_write() or hi_todo_produce() */
-  if (!io->writing) {
+  if (!io->writing) {    /* Immediate "short circuit" write is possible. */
     io->writing = write_now = 1;
     D("stash cur_io(%x)->n_close=%d, io(%x) n_close=%d", hit->cur_io?hit->cur_io->fd:-1, hit->cur_n_close, io->fd, io->n_close);
     read_io = hit->cur_io;
@@ -464,7 +437,7 @@ static void hi_clear_iov(struct hi_thr* hit, struct hi_io* io, int n)
       --io->n_iov;
       ASSERTOPP(io->iov_cur, >=, 0);
     } else {
-      /* partial write: need to adjust iov_cur->iov_base */
+      D("partial write: need to adjust iov_cur->iov_base=%p + n=%d", io->iov_cur->iov_base, n);
       io->iov_cur->iov_base = ((char*)(io->iov_cur->iov_base)) + n;
       io->iov_cur->iov_len -= n;
       return;  /* we are not in end so nothing to free */

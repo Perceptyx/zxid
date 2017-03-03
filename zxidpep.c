@@ -859,7 +859,7 @@ int zxid_call_trustpdp(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, struct zxid_
     if (resp->Status && resp->Status->StatusCode && resp->Status->StatusCode->StatusCode) {
       /* Second and further layer status codes may contain Trust Rankings */
       for (sc = resp->Status->StatusCode->StatusCode; sc; sc = sc->StatusCode) {
-	if (!sc->Value || !sc->Value->g.len < sizeof(TAS3_TRUST_RANKING_CTL1)-1 ||!sc->Value->g.s
+	if (!sc->Value || !(sc->Value->g.len < sizeof(TAS3_TRUST_RANKING_CTL1)-1) ||!sc->Value->g.s
 	    || memcmp(sc->Value->g.s, TAS3_TRUST_RANKING_CTL1,sizeof(TAS3_TRUST_RANKING_CTL1)-1))
 	  continue;
 	val = memchr(sc->Value->g.s + sizeof(TAS3_TRUST_RANKING_CTL1)-1, '=', sc->Value->g.len - (sizeof(TAS3_TRUST_RANKING_CTL1)-1));

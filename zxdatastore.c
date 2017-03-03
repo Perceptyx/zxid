@@ -166,7 +166,8 @@ struct zx_val* zx_global_read_last(zxid_conf* cf, int ghkeylen, const char* ghke
     close_file(fd, "read_last");
     return 0;
   }
-
+  D("Looking backwards in %s size=%d map=%p", path, len, map);
+  
   for (p = map+len-1; 1;) {
     p = (unsigned char*)zx_rmemmem((char*)map, (char*)p, MAGIC_PATTERN_19, sizeof(MAGIC_PATTERN_19)-1);
     if (!p) {

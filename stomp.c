@@ -3,7 +3,7 @@
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing. See file COPYING.
- * Special grant: http.c may be used with zxid open source project under
+ * Special grant: stomp.c may be used with zxid open source project under
  * same licensing terms as zxid itself.
  * $Id$
  *
@@ -198,6 +198,37 @@ static void stomp_got_send(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* 
     ERR("Persist Problem. Disk full? %d", 0);
     //hi_sendf(hit, io, 0, req, "ERROR\nmessage:persist failure\nreceipt-id:%.*s\n\nUnable to persist message. Can not guarantee reliable delivery, therefore rejecting.%c", len, rcpt, 0);
   }
+}
+
+/*() Arrange pending correlation using msg_ids */
+
+/* Called by:  hi_send0 */
+void stomp_set_msg_id_and_destination(struct hi_io* io, struct hi_pdu* resp)
+{
+#ifdef ENA_STOMP
+  /* *** this is really STOMP 1.1 specific. Ideally msg_id
+   * and dest would already be set by the STOMP layer before
+   * calling this - or there should be dispatch to protocol
+   * specific method to recover them. */
+  resp->ad.stomp.msg_id = strstr(resp->m, "\nmessage-id:");
+  if (resp->ad.stomp.msg_id) {
+    resp->ad.stomp.msg_id += sizeof("\nmessage-id:")-1;
+    resp->n = io->pending;  /* add to io->pending, protected by io->qel.mut */
+    io->pending = resp;
+    resp->ad.stomp.dest = strstr(resp->m, "\ndestination:");
+    if (resp->ad.stomp.dest)
+      resp->ad.stomp.dest += sizeof("\ndestination:")-1;
+    resp->ad.stomp.body = strstr(resp->m, "\n\n");
+    if (resp->ad.stomp.body) {
+      resp->ad.stomp.body += sizeof("\n\n")-1;
+      resp->ad.stomp.len = resp->ap - resp->ad.stomp.body - 1 /* nul at end of frame */;
+    } else
+      resp->ad.stomp.len = 0;
+    D("pending resp_%p msgid(%.*s)", resp, (int)(strchr(resp->ad.stomp.msg_id,'\n')-resp->ad.stomp.msg_id), resp->ad.stomp.msg_id);
+  } else {
+    ERR("request from server to client lacks message-id header and thus can not expect an ACK. Not scheduling as pending. %p", resp);
+  }
+#endif
 }
 
 /*() Find a request that matches response. Looks in

@@ -219,6 +219,7 @@ int stomp_decode(struct hi_thr* hit, struct hi_io* io);
 void stomp_msg_deliver(struct hi_thr* hit, struct hi_pdu* db_pdu);
 int stomp_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, const char* ecode, const char* emsg);
 void stomp_send_receipt(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req);
+void stomp_set_msg_id_and_destination(struct hi_io* io, struct hi_pdu* resp);
 
 /* memcached binary protocol support (1.3, 24byte header) */
 

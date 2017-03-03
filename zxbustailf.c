@@ -7,6 +7,10 @@
  * $Id: zxcot.c,v 1.5 2009-11-29 12:23:06 sampo Exp $
  *
  * 27.8.2009, created --Sampo
+ *
+ * See also:: zxbusprod.c -- actual API for sending to bus, called by zxbustailf(1) among others
+ *   zxbuslist -- commandline to listen to the bus
+ *   zxbusd    -- message broker daemon of the bus
  */
 
 #include "platform.h"  /* for dirent.h and unistd.h */
@@ -58,7 +62,7 @@ Usage: zxbustailf [options] < stream-to-log   # Will stop at EOF\n\
   --               End of options\n\
 \n\
 echo '<query>Foo</query>' | zxbustailf -a https://idp.tas3.eu/zxididp?o=B user:pw -t urn:x-demo-svc\n\
-\n";
+See also: zxbuslist(1), zxbusd(8)\n";
 
 int dryrun  = 0;
 extern int zxbus_verbose;    /* zxbusprod.c */

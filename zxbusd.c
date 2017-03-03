@@ -22,6 +22,10 @@
  *      > openssl x509 -subject_hash -noout </var/zxid/buscli/pem/enc-nopw-cert.pem
  *      162553b8
  *      > ln -s /var/zxid/bus/uid/G2JpTSX_dbdJ7frhYNpKWGiMdTs /var/zxid/bus/uid/162553b8
+ *
+ * See also:: zxbustailf -- commandline to send contents of tailed log to the bus
+ *   zxbuslist -- commandline to listen to the bus
+ *   zxbusd    -- message broker daemon of the bus
  */
 
 #include <pthread.h>
@@ -101,7 +105,8 @@ Usage: zxbusd [options] PROTO:REMOTEHOST:PORT\n\
   -license         Show licensing details\n\
   -h               This help message\n\
   --               End of options\n\
-N.B. Although zxbusd is a 'daemon', it does not daemonize itself. You can always say zxbusd&\n";
+N.B. Although zxbusd is a 'daemon', it does not daemonize itself. You can always say zxbusd&\n\
+See also: zxbuslist(1), zxbustailf(1)\n";
 
 char* instance = "zxbusd";  /* how this server is identified in logs */
 char* zxbus_path = ZXBUS_PATH;
@@ -539,7 +544,7 @@ static struct hi_io* serial_init(struct hi_thr* hit, struct hi_host_spec* hs)
     exit(3);
   if (verbose)
     log_port_info(fd, tty, "after");
-  nonblock(fd);
+  so_nonblock(fd);
   LOCK(io->qel.mut, "serial_init");
   hi_add_fd(hit, io, fd, HI_TCP_C);
   UNLOCK(io->qel.mut, "serial_init");

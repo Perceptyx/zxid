@@ -1,6 +1,6 @@
 # zxid/Makefile  -  How to build ZXID (try: make help)
 # Copyright (c) 2012-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
-# Copyright (c) 2010-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+# Copyright (c) 2010-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
 # Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
 # Author: Sampo Kellomaki (sampo@iki.fi)
 # This is confidential unpublished proprietary source code of the author.
@@ -845,6 +845,8 @@ endif
 ZXBUSD_OBJ=zxbusd.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) zxmsgpack.$(OE) testping.$(OE) http.$(OE)
 
 ZXCACHED_OBJ=zxcached.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) zxmsgpack.$(OE) testping.$(OE) http.$(OE)
+
+ZXCACHECLI_OBJ=zxcachecli.$(OE) hiios.$(OE) hiinit.$(OE) hitodo.$(OE) hinet.$(OE) hiread.$(OE) hiwrite.$(OE) hiiosdump.$(OE) testping.$(OE) stomp.$(OE) zxbusdist.$(OE) zxbussubs.$(OE) zxbusent.$(OE) mcdb.$(OE) zxdata.$(OE) zxdatastore.$(OE) zxmsgpack.$(OE) testping.$(OE) http.$(OE)
 
 #
 # Schemata and potential xml document roots.
@@ -1723,6 +1725,12 @@ zxcached: $(ZXCACHED_OBJ) $(LIBZXID_A)
 	$(CC) $(OUTOPT)$@ $^ $(LIBS)
 
 zxcached-static-x64: $(ZXCACHED_OBJ) $(LIBZXID_A)
+	diet gcc $(OUTOPT)$@ $^ -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
+
+zxcachecli: $(ZXCACHECLI_OBJ) $(LIBZXID_A)
+	$(CC) $(OUTOPT)$@ $^ $(LIBS)
+
+zxcachecli-static-x64: $(ZXCACHECLI_OBJ) $(LIBZXID_A)
 	diet gcc $(OUTOPT)$@ $^ -static -L. -lzxid -pthread -lpthread -L$(DIET_ROOT)/lib -L$(DIET_ROOT)/ssl/lib-x86_64 -lcurl -lssl -lcrypto -lz
 
 zxidhrxml: zxidhrxmlwsc zxidhrxmlwsp

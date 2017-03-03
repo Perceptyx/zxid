@@ -1,4 +1,4 @@
-/* zxbusprod.c  -  Liberty oriented logging facility with log signing and encryption
+/* zxbusprod.c  -  Audit bus logging facility with log signing and encryption
  * Copyright (c) 2012-2013 Synergetics (sampo@synergetics.be), All Rights Reserved.
  * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
@@ -21,6 +21,10 @@
  * See also:  http://stomp.github.com/stomp-specification-1.1.html (20110331)
  * Todo: implement anti fragmentation option (tcp CORK (check Nagle algo) or
  * bundle writes in this code).
+ *
+ * See also:: zxbustailf -- commandline to send contents of tailed log to the bus
+ *   zxbuslist -- commandline to listen to the bus
+ *   zxbusd    -- message broker daemon of the bus
  */
 
 #include "platform.h"  /* needed on Win32 for pthread_mutex_lock() et al. */
@@ -819,7 +823,8 @@ zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
    }
 
  #if 0
-   nonblock(bu->fd);
+   so_nonblock(bu->fd);
+   tcp_nodelay(bu->fd);
    if (nkbuf)
      setkernelbufsizes(bu->fd, nkbuf, nkbuf);
  #endif

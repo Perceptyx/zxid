@@ -8,6 +8,9 @@
  * $Id$
  *
  * 3.4.2016, created, based on stomp.c --Sampo
+ * 20170228, added sending requests and dealing with their responses --Sampo
+ *
+ * Hint: in wireshark the memcached binary protocol can be viewed using syslog decoder
  */
 
 #include "platform.h"
@@ -57,6 +60,148 @@ static struct hi_pdu* mcdb_encode_start(struct hi_thr* hit)
 #endif
 
 const char* mcdb_zero_cas = "\0\0\0\0\0\0\0\0";  /* When no real cas is needed */
+
+/* -------------------- Client side -------------------- */
+
+/*() Send get request to remote server
+ *
+ * keylen, key:: Key for the request. Must be supplied. keylen can be supplied as -2 to invoke strlen(key)
+ * cas:: 8byte string for cas value. Supply as  "\0\0\0\0\0\0\0\0" if not needed
+ * return:: 0 for success in scheduling for write (real success is determined later) */
+
+/* Called by: */
+int mcdb_send_get(struct hi_thr* hit, struct hi_io* io, int keylen, const char* key, const char* cas)
+{
+  int len;
+  char* p;
+  struct hi_pdu* req = hi_pdu_alloc(hit, io, "mcdb_send_get");
+  p = req->ap;
+  p[0] = MCDB_REQ_MAGIC;  /* 0x81 */
+  p[1] = MCDB_GET;
+
+  if (keylen == -2)
+    keylen = strlen(key);
+  p[2] = (keylen >> 8) & 0xff;  /* network byte order (big endian) */
+  p[3] = keylen & 0xff;
+  len = keylen;
+  p[4] = 0; //extralen;
+  p[5] = 0; //datatype;
+  p[6] = p[7] = 0; /* reserved */
+  //len += extralen + vallen;
+  p[8] = (len >> 24) & 0xff;  /* network byte order (big endian) */
+  p[9] = (len >> 16) & 0xff;
+  p[10] = (len >> 8) & 0xff;
+  p[11] = len & 0xff;
+  p[12] = p[13] = p[14] = p[15] = 0;  /* Opaque */
+  //memcpy(p+12, req->ad.mcdb.opaque, 4);
+  memset(p+16, 0, 8);  /* CAS */
+  //memcpy(p+16, cas, 8);
+  //if (extralen) memcpy(p+24, extra, extralen);
+  //req->ap += 24+extralen;
+  
+  D("get key(%.*s) req=%p", keylen, key, req);
+  hi_send2(hit, io, 0, 0, req, 24 /*+extralen*/, p, keylen, (char*)key);
+  return 0;
+}
+
+/*() Send set request to remote server
+ *
+ * keylen, key:: Key for the request. Must be supplied. keylen can be supplied as -2 to invoke strlen(key)
+ * vallen, val:: Value field of response. Supply as 0,0 if not needed
+ * cas:: 8byte string for cas value. Supply as  "\0\0\0\0\0\0\0\0" if not needed
+ * return:: 0 for success in scheduling for write (real success is determined later) */
+
+/* Called by: */
+int mcdb_send_set(struct hi_thr* hit, struct hi_io* io, int keylen, const char* key, int vallen, const char* val, const char* cas)
+{
+  int len;
+  char* p;
+  struct hi_pdu* req = hi_pdu_alloc(hit, io, "mcdb_send_get");
+  p = req->ap;
+  p[0] = MCDB_REQ_MAGIC;  /* 0x81 */
+  p[1] = MCDB_SET;
+
+  if (keylen == -2)
+    keylen = strlen(key);
+  if (vallen == -2)
+    vallen = strlen(val);
+  
+  p[2] = (keylen >> 8) & 0xff;  /* network byte order (big endian) */
+  p[3] = keylen & 0xff;
+  len = 8+keylen+vallen;
+  p[4] = 8; //extralen;
+  p[5] = 0; //datatype;
+  p[6] = p[7] = 0; /* reserved */
+  p[8] = (len >> 24) & 0xff;  /* network byte order (big endian) */
+  p[9] = (len >> 16) & 0xff;
+  p[10] = (len >> 8) & 0xff;
+  p[11] = len & 0xff;
+  p[12] = p[13] = p[14] = p[15] = 0;  /* Opaque */
+  //memcpy(p+12, req->ad.mcdb.opaque, 4);
+  memset(p+16, 0, 8);  /* CAS */
+  //memcpy(p+16, cas, 8);
+  p[24] = 0xde; p[25] = 0xad; p[26] = 0xbe; p[27] = 0xef;  /* flags */
+  p[28] = 0; p[29] = 0; p[30] = 0; p[31] = 0;  /* expiry */
+  req->ap += 24+len;
+  
+  D("ok req=%p req=%p vallen=%d", req, req, vallen);
+  hi_send3(hit, io, 0, 0, req, 24+8, p, keylen, (char*)key, vallen, (void*)val);
+  return 0;
+}
+
+/*() Process response to cache get operation (in application dependent way) */
+
+/* Called by:  mcdb_decode x2 */
+static void mcdb_got_get_resp(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* resp)
+{
+  //struct zx_val* val;
+#if 0
+  if (resp->ad.mcdb.extraslen || resp->ad.mcdb.vallen) {
+    mcdb_err(hit, io, resp, MCDB_STATUS_INVALID_ARGS, "must not have extras or value");
+    return;
+  }
+#endif
+  D("HERE %ld",resp->ad.mcdb.vallen);
+  if (!ONE_OF_2(resp->ad.mcdb.status, MCDB_STATUS_OK, MCDB_STATUS_KEY_NOT_FOUND)) {
+    ERR("get response indicated a MCDB error %x", resp->ad.mcdb.status);
+    exit(1);
+  }
+  DHEXDUMP("got: ", resp->ad.mcdb.val, resp->ad.mcdb.val+resp->ad.mcdb.vallen, 2000);
+  /* For zxcachecli(1) the right action is to just blurt it to stdout */
+  if (resp->ad.mcdb.status == MCDB_STATUS_OK)
+    printf("%.*s", (int)resp->ad.mcdb.vallen, resp->ad.mcdb.val);
+  else {
+    D("KEY_NOT_FOUND %d",0);
+  }
+}
+
+/*() Process response to cache set operation (also add, replace) (in application dependent way) */
+
+/* Called by:  mcdb_decode x2 */
+static void mcdb_got_set_resp(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* resp, int quiet)
+{
+#if 0
+  if (resp->ad.mcdb.extraslen != 8) {
+    mcdb_err(hit, io, resp, MCDB_STATUS_INVALID_ARGS, "must have extras, key, and value");
+    return;
+  }
+  p = resp->ad.mcdb.extras;
+#endif
+  D("HERE %ld",resp->ad.mcdb.vallen);
+  if (!ONE_OF_2(resp->ad.mcdb.status, MCDB_STATUS_OK, MCDB_STATUS_KEY_EXISTS)) {
+    ERR("set response indicated a MCDB error %x", resp->ad.mcdb.status);
+    exit(1);
+  }
+  DHEXDUMP("got: ", resp->ad.mcdb.val, resp->ad.mcdb.val+resp->ad.mcdb.vallen, 2000);
+  /* For zxcachecli(1) the right action is to just blurt it to stdout */
+  if (resp->ad.mcdb.status == MCDB_STATUS_OK) {
+    //printf("%.*s", resp->ad.mcdb.vallen, resp->ad.mcdb.val);
+  } else {
+    D("KEY_EXISTS %d",0);
+  }
+}
+
+/* -------------------- Server side -------------------- */
 
 /*() Send success response to remote client.
  * Response has many optional parts depending on op or circumstances.
@@ -152,7 +297,11 @@ int mcdb_err(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* req, int statu
   memcpy(p+24, emsg, len);
   resp->ap += 24+len;
 
-  ERR("%s (%d)", emsg, status);
+  if (status) {
+    ERR("%s (%d)", emsg, status);
+  } else {
+    D("%s (%d)", emsg, status);
+  }
   hi_send1(hit, io, 0, req, resp, 24+len, p);
   return HI_CONN_CLOSE;
 }
@@ -403,7 +552,7 @@ static void mcdb_got_get(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
     mcdb_ok(hit, io, req, 4, "\0\0\0\0", cpkey, 0,
 	    gb->b.val.len, gb->b.val.ue.s, mcdb_zero_cas);
   } else {
-    if (val = zx_global_read_last(zx_cf, req->ad.mcdb.keylen, req->ad.mcdb.key, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" /* *** */)) {
+    if (val = zx_global_read_last(zx_cf, req->ad.mcdb.keylen, req->ad.mcdb.key, (unsigned char*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" /* *** */)) {
       gb = zx_global_set_by_len_key(req->ad.mcdb.keylen, req->ad.mcdb.key, val);
       D("GET(%.*s) gb=%p val(%.*s) cpkey=%d from disk", req->ad.mcdb.keylen, req->ad.mcdb.key, gb, (int)gb->b.val.len, gb->b.val.ue.s, cpkey);
       mcdb_ok(hit, io, req, 4, "\0\0\0\0", cpkey, 0,
@@ -429,7 +578,7 @@ static void mcdb_got_set(struct hi_thr* hit, struct hi_io* io, struct hi_pdu* re
   }
   p = req->ad.mcdb.extras;
   expires = p[4] << 24 | p[5] << 16 | p[6] << 8 | p[7];
-  D("SET key(%.*s) val(%.*s) expires=%d", req->ad.mcdb.keylen, req->ad.mcdb.key, req->ad.mcdb.vallen, req->ad.mcdb.val, expires);
+  D("SET key(%.*s) val(%.*s) expires=%d", (int)req->ad.mcdb.keylen, req->ad.mcdb.key, (int)req->ad.mcdb.vallen, req->ad.mcdb.val, expires);
 
   /* store the value in global hash */
   memset(&val, 0, sizeof(val));
@@ -484,9 +633,9 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
   /* Extract header fields */
 
   req->ad.mcdb.magic  = p[0];
-  if (req->ad.mcdb.magic != MCDB_REQ_MAGIC) {
+  if (!ONE_OF_2(req->ad.mcdb.magic, MCDB_REQ_MAGIC, MCDB_RESP_MAGIC)) {
     D_DEDENT("mcdb_dec: ");
-    return mcdb_frame_err(hit, io, req, "Request Magic 0x80 expected.");
+    return mcdb_frame_err(hit, io, req, "Request or Response Magic (0x80 or 0x81) expected.");
   }
   req->ad.mcdb.op     = p[1];
   req->ad.mcdb.keylen = p[2] << 8 | p[3];  /* Network byte order (bigendian) */
@@ -522,38 +671,75 @@ int mcdb_decode(struct hi_thr* hit, struct hi_io* io)
 
   /* Operation dispatch */
 
-  switch (req->ad.mcdb.op) {
-  case MCDB_GETQ: // 0x09
-  case MCDB_GET:   mcdb_got_get(hit,io,req,0); break; //  0x00
-  case MCDB_GETKQ: // 0x0D
-  case MCDB_GETK:  mcdb_got_get(hit,io,req,1); break; //  0x0C
-  case MCDB_ADD: //  0x02
-  case MCDB_REPLACE: // 0x03
-  case MCDB_SET:   mcdb_got_set(hit,io,req,0); break; //  0x01
-  case MCDB_ADDQ: // 0x12
-  case MCDB_REPLACEQ: // 0x13
-  case MCDB_SETQ:  mcdb_got_set(hit,io,req,1); break; //  0x11
-  case MCDB_ZXMSGPACK: mcdb_got_zxmsgpack(hit,io,req); break; // 0x21
-  case MCDB_QUIT:  D_DEDENT("mcdb_dec: "); return mcdb_err(hit, io, req, MCDB_STATUS_OK, "bye"); // 0x07
-  case MCDB_QUITQ: D_DEDENT("mcdb_dec: "); return HI_CONN_CLOSE; // 0x17
-  case MCDB_NOP:   mcdb_err(hit, io, req, MCDB_STATUS_OK, "nop"); break; //  0x0A
-  case MCDB_VERS:  mcdb_err(hit, io, req, MCDB_STATUS_OK, ZXID_REL); break; // 0x0B
-  case MCDB_DEL: //  0x04
-  case MCDB_INC: //  0x05
-  case MCDB_DEC: //  0x06
-  case MCDB_FLUSH: // 0x08
-  case MCDB_APPEND: // 0x0E
-  case MCDB_PREPEND: // 0x0F
-  case MCDB_STAT: // 0x10
-  case MCDB_DELQ: // 0x14
-  case MCDB_INCQ: // 0x15
-  case MCDB_DECQ: // 0x16
-  case MCDB_FLUSHQ: // 0x18
-  case MCDB_APPENDQ: // 0x19
-  case MCDB_PREPENDQ: // 0x1A
-  default:
-    D("Unknown op 0x%02x ignored.", req->ad.mcdb.op);
-    mcdb_cmd_ni(hit,io,req,req->ad.mcdb.op);
+  if (req->ad.mcdb.magic == MCDB_REQ_MAGIC) {
+    switch (req->ad.mcdb.op) {
+    case MCDB_GETQ: // 0x09
+    case MCDB_GET:   mcdb_got_get(hit,io,req,0); break; //  0x00
+    case MCDB_GETKQ: // 0x0D
+    case MCDB_GETK:  mcdb_got_get(hit,io,req,1); break; //  0x0C
+    case MCDB_ADD: //  0x02
+    case MCDB_REPLACE: // 0x03
+    case MCDB_SET:   mcdb_got_set(hit,io,req,0); break; //  0x01
+    case MCDB_ADDQ: // 0x12
+    case MCDB_REPLACEQ: // 0x13
+    case MCDB_SETQ:  mcdb_got_set(hit,io,req,1); break; //  0x11
+    case MCDB_ZXMSGPACK: mcdb_got_zxmsgpack(hit,io,req); break; // 0x21
+    case MCDB_QUIT:  D_DEDENT("mcdb_dec: "); return mcdb_err(hit, io, req, MCDB_STATUS_OK, "bye"); // 0x07
+    case MCDB_QUITQ: D_DEDENT("mcdb_dec: "); return HI_CONN_CLOSE; // 0x17
+    case MCDB_NOP:   mcdb_err(hit, io, req, MCDB_STATUS_OK, "nop"); break; //  0x0A
+    case MCDB_VERS:  mcdb_err(hit, io, req, MCDB_STATUS_OK, ZXID_REL); break; // 0x0B
+    case MCDB_DEL: //  0x04
+    case MCDB_INC: //  0x05
+    case MCDB_DEC: //  0x06
+    case MCDB_FLUSH: // 0x08
+    case MCDB_APPEND: // 0x0E
+    case MCDB_PREPEND: // 0x0F
+    case MCDB_STAT: // 0x10
+    case MCDB_DELQ: // 0x14
+    case MCDB_INCQ: // 0x15
+    case MCDB_DECQ: // 0x16
+    case MCDB_FLUSHQ: // 0x18
+    case MCDB_APPENDQ: // 0x19
+    case MCDB_PREPENDQ: // 0x1A
+    default:
+      D("Unknown op 0x%02x ignored.", req->ad.mcdb.op);
+      mcdb_cmd_ni(hit,io,req,req->ad.mcdb.op);
+    }
+  } else {
+    /* Responses to requests */
+    switch (req->ad.mcdb.op) {
+    case MCDB_GETQ: // 0x09
+    case MCDB_GET:   mcdb_got_get_resp(hit,io,req); break; //  0x00
+    case MCDB_GETKQ: // 0x0D
+    case MCDB_GETK:  mcdb_got_get_resp(hit,io,req); break; //  0x0C
+    case MCDB_ADD: //  0x02
+    case MCDB_REPLACE: // 0x03
+    case MCDB_SET:   mcdb_got_set_resp(hit,io,req,0); break; //  0x01
+    case MCDB_ADDQ: // 0x12
+    case MCDB_REPLACEQ: // 0x13
+    case MCDB_SETQ:  mcdb_got_set_resp(hit,io,req,1); break; //  0x11
+      //case MCDB_ZXMSGPACK: mcdb_got_zxmsgpack(hit,io,req); break; // 0x21
+      //case MCDB_QUIT:  D_DEDENT("mcdb_dec: "); return mcdb_err(hit, io, req, MCDB_STATUS_OK, "bye"); // 0x07
+      //case MCDB_QUITQ: D_DEDENT("mcdb_dec: "); return HI_CONN_CLOSE; // 0x17
+      //case MCDB_NOP:   mcdb_err(hit, io, req, MCDB_STATUS_OK, "nop"); break; //  0x0A
+      //case MCDB_VERS:  mcdb_err(hit, io, req, MCDB_STATUS_OK, ZXID_REL); break; // 0x0B
+    case MCDB_DEL: //  0x04
+    case MCDB_INC: //  0x05
+    case MCDB_DEC: //  0x06
+    case MCDB_FLUSH: // 0x08
+    case MCDB_APPEND: // 0x0E
+    case MCDB_PREPEND: // 0x0F
+    case MCDB_STAT: // 0x10
+    case MCDB_DELQ: // 0x14
+    case MCDB_INCQ: // 0x15
+    case MCDB_DECQ: // 0x16
+    case MCDB_FLUSHQ: // 0x18
+    case MCDB_APPENDQ: // 0x19
+    case MCDB_PREPENDQ: // 0x1A
+    default:
+      D("Unknown op 0x%02x ignored.", req->ad.mcdb.op);
+    }
+    exit(0);  /* Responses are for client program so we just terminate */
   }
   D_DEDENT("mcdb_dec: ");
   return 0;
