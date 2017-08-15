@@ -65,7 +65,7 @@
 /*() Convert configuration string ~conf~ to configuration object ~cf~.
  * cf:: Configuration object, already allocated
  * conf_len:: length of conf string, or -1 to use strlen(conf)
- * conf:: Configuration string in query string format
+ * conf:: Configuration string in query string format. NULL allowed.
  * See also: zxid_conf_to_cf() */
 
 /* Called by:  dirconf, main x2, zxid_az, zxid_az_base, zxid_fed_mgmt_len, zxid_idp_list_len, zxid_idp_select_len, zxid_new_conf_to_cf, zxid_simple_len */
@@ -155,11 +155,12 @@ int zxid_conf_to_cf_len(zxid_conf* cf, int conf_len, const char* conf)
  * possibly configuration file.
  *
  * zxid_new_conf_to_cf() parses first the default config file, then the string (i.e. string
- * can override config file). However, if the string contains PATH specification,
+ * can override config file). However, if the string contains CPATH specification,
  * then the config file is reread from (presumably new) location and overrides
- * eariler config.
+ * eariler config. Later specifications override earlier ones, e.g. use CPATH to
+ * read new configuration file and then override something in it with later specification.
  *
- * conf::   Configuration string
+ * conf::   Configuration string. NULL allowed.
  * return:: Configuration object */
 
 /* Called by:  main x6, opt x2, test_receipt, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxidwspcgi_main x2, zxumacall_main */

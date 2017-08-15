@@ -638,7 +638,7 @@ const command_rec zxid_apache_commands[] = {
  * directives. This is then augmented by ZXIDConf directives.
  * This code may run twice: once for syntax check, and then again for
  * production use. Currently we just redo the work. Apache stores the
- * return value of this function and it can be read in chkuid() hook using
+ * return value of this function and it is read in chkuid() hook using dir_cf() which calls
  *    ap_get_module_config((r)->per_dir_config, &auth_saml_module)
  *
  * This is considered internal function to mod_auth_saml. Do not call directly. */

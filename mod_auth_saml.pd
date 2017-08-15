@@ -40,12 +40,12 @@ reading in <<link:../html/README.zxid.html: README.zxid>>.
 ===============================
 <<fi: >>
 
-For avoidance of doubt, ~mod_auth_saml~ - based on zxid.org - is
-a separate project from ~mod_authn_casa~, ~mod_scalp~ and ~mod_mellon~,
-which provide somewhat similar functionality, but have
+For avoidance of doubt, ~mod_auth_saml~ - based on zxid.org - is a
+separate project from ~mod_authn_casa~, ~mod_scalp~, ~mod_shib~, and
+~mod_mellon~, which provide somewhat similar functionality, but have
 different code bases. It may be possible to use all of these
-simultaneously, but this is not recommended unless you are an expert
-that can sort out the differences.
+simultaneously on same server, but this is not recommended unless you
+are an expert that can sort out the differences.
 
 ~mod_auth_saml~ provides Apache2 native integration at authentication
 layer. The objective of ~mod_auth_saml~ is to cause Apache to trigger
@@ -137,7 +137,7 @@ Next you should configure the Location protected by SSO:
   <Location /protected>
     Require valid-user
     AuthType "saml"
-    ZXIDConf "URL=https://sp1.zxidsp.org:5443/protected/saml"
+    ZXIDConf "BURL=https://sp1.zxidsp.org:5443/protected/saml"
   </Location>
 
 The /protected is the directory you choose to protect. AuthType must
@@ -154,7 +154,7 @@ exchanges. You can choose any word you want (i.e. need not be "saml"),
 but it must not conflict with any actual content in the directory
 and must be immediate child of the directory.
 
-As of version 0.28 (Sept 2008) you still need to create actual
+As of version 1.43 (Sept 2017) you still need to create actual
 file to correspond to the URL:
 
   touch /usr/local/httpd/htdocs/protected/saml

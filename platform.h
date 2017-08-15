@@ -193,6 +193,9 @@ int chroot(const char* path);
 int nice(int inc);
 #define F_LOCK 1
 #define F_ULOCK 0
+#define STDIN_FILENO  0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
 #endif
 
 #ifdef _GNU_SOURCE
