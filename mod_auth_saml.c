@@ -421,6 +421,7 @@ static int chkuid(request_rec* r)
       break;
   if (cp == cf->burl)
     cp = cf->burl + url_len;
+  url_len = cp - cf->burl;
   
   if (url_len >= uri_len && !memcmp(cp - uri_len, uri, uri_len)) {  /* Suffix match */
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("matched uri(%s) cf->burl(%s) qs(%s) rs(%s) op(%c)", uri, cf->burl, STRNULLCHKNULL(HRR_args(r)), STRNULLCHKNULL(cgi.rs), cgi.op);
@@ -464,7 +465,7 @@ static int chkuid(request_rec* r)
 	goto process_zxid_simple_outcome;
     }
     /* not logged in, fall thru */
-  } else if (zx_match(cf->wsp_pat, uri)) {
+  } else if (zx_match(cf->wsp_pat, -2, uri)) {
     /* WSP case */
     if (HRR_method_number(r) == M_POST) {
       res = read_post(cf, r);   /* Will print some debug output */
@@ -486,7 +487,7 @@ static int chkuid(request_rec* r)
       D_DEDENT("chkuid: ");
       return HTTP_METHOD_NOT_ALLOWED;
     }
-  } else if (zx_match(cf->uma_pat, uri)) {
+  } else if (zx_match(cf->uma_pat, -2, uri)) {
     /* UMA case */
     if (HRR_method_number(r) == M_POST) {
       res = read_post(cf, r);   /* Will print some debug output */
@@ -520,7 +521,7 @@ static int chkuid(request_rec* r)
 	goto process_zxid_simple_outcome;
     } else {
       D("No active session(%s) op(%c)", STRNULLCHK(cgi.sid), cgi.op?cgi.op:'-');
-      if (cf->optional_login_pat && zx_match(cf->optional_login_pat, uri)) {
+      if (cf->optional_login_pat && zx_match(cf->optional_login_pat, -2, uri)) {
 	D("optional_login_pat matches %d", OK);
 	HRR_set_user(r, "-anon-");  /* httpd-2.4 anz framework requires this, 2.2 does not care */
 	D_DEDENT("chkuid: ");

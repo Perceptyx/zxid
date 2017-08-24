@@ -27,10 +27,11 @@
  * 14.2.2014, added redirafter feature for local IdP logins (e.g. zxidatsel.pl) --Sampo
  * 1.4.2015,  fixed skin based template path in case it does not have directory --Sampo
  * 6.3.2016,  eliminated some commented out code --Sampo 
- * 16.4.2016, fixed premature nul termination in Location redirects, added cookies ot redirects --Sampo
+ * 16.4.2016, fixed premature nul termination in Location redirects, added cookies to redirects --Sampo
  * 8.10.2016, added possibility of specifying default skin in configuration --Sampo
  * 1.12.2016, added generation of OAUTH2 state --Sampo
  * 20170109,  improvement on processing DEFAULTQS when accessing protected pages directly --Sampo
+ * 20170824   handle BARE_URL_ENTITYID correctly for no session case --Sampo
  *
  * Login button abbreviations
  * A2 = SAML 2.0 Artifact Profile
@@ -1590,7 +1591,9 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
     if (cf->defaultqs && cf->defaultqs[0]) {
       zxid_parse_cgi(cf, cgi, cf->defaultqs);
       INFO("DEFAULTQS(%s) op(%c)", cf->defaultqs, cgi->op?cgi->op:'-');
-    } else
+    } if (cf->bare_url_entityid)
+	return zxid_simple_show_meta(cf, cgi, res_len, auto_flags);
+    else
       cgi->op = 'E';  /* Trigger IdP selection screen */
   }
   

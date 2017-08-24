@@ -18,6 +18,7 @@
  * 30.11.2013, fixed seconds handling re gmtime_r() - found by valgrind --Sampo
  * 18.12.2015, applied patch from soconnor, perceptyx --Sampo
  * 20170202    added indent and dedent --Sampo
+ * 20170824    eliminated deadlocks related to cert generation in zxlog_write_line() --Sampo
  *
  * See also: Logging chapter in README.zxid
  */
@@ -119,10 +120,8 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
       break;
     case 0x04:      /* Rx RSA-SHA1 signature */
       sigletter = 'R';
-      LOCK(cf->mx, "logsign wrln");      
       if (!(log_sign_pkey = cf->log_sign_pkey))
 	log_sign_pkey = cf->log_sign_pkey = zxid_read_private_key(cf, "logsign-nopw-cert.pem");
-      UNLOCK(cf->mx, "logsign wrln");      
       if (!log_sign_pkey)
 	break;
       len = zxsig_data(cf->ctx, zlen, zbuf, &sig, log_sign_pkey, "enc_log_line", cf->blobsig_digest_algo);
@@ -147,11 +146,9 @@ void zxlog_write_line(zxid_conf* cf, char* c_path, int encflags, int n, const ch
       AES_cbc_encrypt((unsigned char*)zbuf+16, (unsigned char*)zbuf+16, zlen-16, &aes_key, (unsigned char*)ivec, 1);
       ROUND_UP(zlen, 16);        /* Round up to block size */
 
-      LOCK(cf->mx, "logenc wrln");
       if (!cf->log_enc_cert)
 	cf->log_enc_cert = zxid_read_cert(cf, "logenc-nopw-cert.pem");
       rsa_pkey = zx_get_rsa_pub_from_cert(cf->log_enc_cert, "log_enc_cert");
-      UNLOCK(cf->mx, "logenc wrln");
       if (!rsa_pkey)
 	break;
       

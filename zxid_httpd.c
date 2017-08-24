@@ -1615,7 +1615,7 @@ static void do_file(void) {
 
   if (cgi_pattern) {
     D("cgi_pattern(%s) file(%s)", cgi_pattern, file);
-    if (zx_match(cgi_pattern, file)) {  /* Is it CGI? */
+    if (zx_match(cgi_pattern, -2, file)) {  /* Is it CGI? */
       do_cgi();
       return;
     }
@@ -2382,7 +2382,7 @@ void send_error_and_exit(int err_code, char* title, char* extra_header, char* te
   buflen = snprintf(buf, sizeof(buf), "<TITLE>%d %s</TITLE><BODY BGCOLOR=\"#cc9999\" TEXT=\"#000000\" LINK=\"#2020ff\" VLINK=\"#4040cc\">\n<H4>%d %s</H4>\n%s\n",err_code,title,err_code,title,text);
   add_to_response(buf, buflen);
 
-  if (zx_match("**MSIE**", useragent)) {
+  if (zx_match("**MSIE**", -2, useragent)) {
     int n;
     buflen = snprintf(buf, sizeof(buf), "<!--\n");
     add_to_response(buf, buflen);
@@ -2516,7 +2516,7 @@ static int really_check_referer(void)
   /* Check for an empty referer. */
   if (!referer || !*referer || !(cp1 = strstr(referer, "//"))) {
     /* Disallow if we require a referer and the url matches. */
-    if (no_empty_referers && zx_match(url_pattern, path))
+    if (no_empty_referers && zx_match(url_pattern, -2, path))
       return 0;
     /* Otherwise ok. */
     return 1;
@@ -2556,9 +2556,9 @@ static int really_check_referer(void)
     }
   }
   
-  /* If the referer host doesn't match the local host pattern, and
-  ** the URL does match the url pattern, it's an illegal reference. */
-  if (! zx_match(lp, refhost) && zx_match(url_pattern, path))
+  /* If the referer host does not match the local host pattern, and
+  ** the URL does match the url pattern, it is an illegal reference. */
+  if (!zx_match(lp, -2, refhost) && zx_match(url_pattern, -2, path))
     return 0;
   /* Otherwise ok. */
   return 1;

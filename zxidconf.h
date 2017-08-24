@@ -1527,7 +1527,7 @@
  * Does not affect metadata. */
 
 #define ZXID_IDP_SEL_TEMPL "<title>SP SSO: Choose IdP</title>"\
-  "<link type=\"text/css\" rel=stylesheet href=\"idpsel.css\"><body bgcolor=white>"\
+  "<link type=\"text/css\" rel=stylesheet href=\"/idpsel.css\"><body bgcolor=white>"\
   "<h1 class=zxtop>SP Federated SSO (user NOT logged in, no session)</h1>"\
   "<form method=get action=\"!!URL\">"\
   "<div class=zxerr>!!ERR</div><div class=zxmsg>!!MSG</div><div class=zxdbg>!!DBG</div>"\
@@ -1678,7 +1678,7 @@
   "<input type=hidden name=zxapp value=\"!!ZXAPP\">"\
   "</form><div class=zxbot>!!VERSION (builtin)</div>"
 
-#define ZXID_MGMT_START "<title>ZXID SP Mgmt</title><link type=\"text/css\" rel=stylesheet href=\"idpsel.css\"><body bgcolor=white><h1 class=zxtop>ZXID SP Management (user logged in, session active)</h1>\n"
+#define ZXID_MGMT_START "<title>ZXID SP Mgmt</title><link type=\"text/css\" rel=stylesheet href=\"/idpsel.css\"><body bgcolor=white><h1 class=zxtop>ZXID SP Management (user logged in, session active)</h1>\n"
 
 #define ZXID_MGMT_LOGOUT "<input type=submit name=gl value=\" Local Logout \">\n<input type=submit name=gr value=\" Single Logout (R) \">\n<input type=submit name=gs value=\" Single Logout (S) \">\n"
 

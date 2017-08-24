@@ -441,7 +441,7 @@ extern FILE* errmac_debug_log;    /* Defined in zxidlib.c as 0 alias to stderr *
 /* In some scenarios multithreaded access can cause errmac_indent to be scrambled.
  * However, it should not under- or overflow. Thus no lock. */
 #define D_INDENT(s) strncat(errmac_indent, (s), sizeof(errmac_indent)-1)
-#define D_DEDENT(s) (errmac_indent[MAX(0, strlen(errmac_indent)-sizeof(s)+1)] = 0)
+#define D_DEDENT(s) (errmac_indent[MAX(0, (int)strlen(errmac_indent)-(int)sizeof(s)+1)] = 0)
 #else
 #define D_INDENT(s) /* no locking issues */
 #define D_DEDENT(s)

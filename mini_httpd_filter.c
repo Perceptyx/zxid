@@ -383,7 +383,7 @@ static zxid_ses* zxid_mini_httpd_sso(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses
     D("No session(%s) active op(%c)", STRNULLCHK(cgi->sid), cgi->op);
   }
   D("other page: no_ses uri(%s) templ(%s) tf(%s) k(%s) cgi=%p rs(%s)", uri_path, STRNULLCHKNULL(cgi->templ), STRNULLCHKNULL(cf->idp_sel_templ_file), cgi->skin, cgi, cgi->rs);
-  if (cf->optional_login_pat && zx_match(cf->optional_login_pat, uri_path)) {
+  if (cf->optional_login_pat && zx_match(cf->optional_login_pat, -2, uri_path)) {
     D("optional_login_pat matches ok %s", cf->optional_login_pat);
     return ses;
   }
@@ -556,15 +556,15 @@ zxid_ses* zxid_mini_httpd_filter(zxid_conf* cf, const char* method, const char* 
   
   zxid_is_wsp = 0;
   D("wsp_pat(%s) uri_path(%s)", cf->wsp_pat, uri_path);
-  if (zx_match(cf->wsp_pat, uri_path)) {
+  if (zx_match(cf->wsp_pat, -2, uri_path)) {
     zxid_is_wsp = 1;
     ses = zxid_mini_httpd_wsp(cf, ses, method, uri_path, qs);
     return ses;
-  } else if (zx_match(cf->uma_pat, uri_path)) {
+  } else if (zx_match(cf->uma_pat, -2, uri_path)) {
     zxid_is_wsp = 1;
     ses = zxid_mini_httpd_uma(cf, ses, method, uri_path, qs);
     return ses;
-  } else if (zx_match(cf->sso_pat, uri_path)) {
+  } else if (zx_match(cf->sso_pat, -2, uri_path)) {
     ses = zxid_mini_httpd_sso(cf, &cgi, ses, method, uri_path, qs, cookie_hdr);
     return ses;
   } else {

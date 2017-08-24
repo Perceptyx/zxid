@@ -1051,7 +1051,7 @@ int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid)
     if (grp_map->ns && strcmp(grp_map->ns, "") /* none of the wild card cases */
 	&& strcmp(grp_map->ns, "*") && strcmp(grp_map->ns, "**")) {
       at = zxid_find_at(ses->at, "affid");
-      if (!at || !zx_match(grp_map->ns, at->val /*ses->nameid->NameQualifier*/))
+      if (!at || !zx_match(grp_map->ns, -2, at->val /*ses->nameid->NameQualifier*/))
 	continue;
     }
 
@@ -1059,7 +1059,7 @@ int zxid_unix_grp_az_check(zxid_conf* cf, zxid_ses* ses, int gid)
     if (grp_map->src && strcmp(grp_map->src, "") /* none of the wild card cases */
 	&& strcmp(grp_map->src, "*") && strcmp(grp_map->src, "**")) {
       at = zxid_find_at(ses->at, grp_map->src);
-      if (!at || !zx_match(grp_map->dst, at->val /*ses->nameid->NameQualifier*/))
+      if (!at || !zx_match(grp_map->dst, -2, at->val /*ses->nameid->NameQualifier*/))
 	continue;
     }
     D("%s=%s maps to gid=%d", STRNULLCHKD(grp_map?grp_map->src:0), STRNULLCHKD(at?at->val:0), gid);

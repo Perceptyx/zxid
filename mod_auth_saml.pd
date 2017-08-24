@@ -146,7 +146,7 @@ all ZXID configuration directives, using query string format. Please
 see main ZXID documentation (README.zxid) for full discussion
 of the configuration options.
 
-While most options can be left at their default value, the ~URL~
+While most options can be left at their default value, the ~BURL~
 always needs to be specified. It must match the domain name
 and the directory that you choose to protect. The final suffix
 /saml is used as communications end point during protocol
