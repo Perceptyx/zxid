@@ -734,7 +734,7 @@ static ngx_int_t ngx_http_zxid_version_get(ngx_http_request_t *r, ngx_http_varia
 
 static ngx_http_variable_t  ngx_http_auth_saml_static_vars[] = {
     { ngx_string("ZXID_VERSION"), 0, ngx_http_zxid_version_get, 0, 0, 0 },
-      ngx_http_null_variable
+    { {0,0}, 0, 0, 0, 0, 0 }
 };
 
 static ngx_int_t ngx_http_auth_saml_add_static_vars(ngx_conf_t* ncf)
