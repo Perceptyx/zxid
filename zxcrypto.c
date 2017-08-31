@@ -149,17 +149,21 @@ int zx_raw_digest2(struct zx_ctx* c, char* md, const char* algo, int len, const 
 int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
   int i,n;
   unsigned int b;
+  /* Since OpenSSL 1.1.0 the EVP_CIPHER_CTX was made opaque and writing
+   * this function in a protable way was made near impossible. However
+   * as long as struct evp_cipher_ctx_st fields stay same, this should work. */
+  struct evp_cipher_ctx_st* ctx_st = (struct evp_cipher_ctx_st*)ctx;
   
   *outl=0;
   //b=ctx->cipher->block_size;
   b=EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(ctx));
   if (b > 1) {
-    if (ctx->buf_len || !ctx->final_used) {
+    if (ctx_st->buf_len || !ctx_st->final_used) {
       //EVPerr(EVP_F_EVP_DECRYPTFINAL_EX,EVP_R_WRONG_FINAL_BLOCK_LENGTH);
       return(0);
     }
-    ASSERTOPI(b, <=, sizeof ctx->final);
-    n=ctx->final[b-1];
+    ASSERTOPI(b, <=, sizeof ctx_st->final);
+    n=ctx_st->final[b-1];
     if (n == 0 || n > (int)b) {
       //EVPerr(EVP_F_EVP_DECRYPTFINAL_EX,EVP_R_BAD_DECRYPT);
       return(0);
@@ -173,13 +177,13 @@ int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
      * [XMLENC] D. Eastlake, ed., XML Encryption Syntax and
      * Processing, W3C Recommendation 10. Dec. 2002,
      * www.w3.org/TR/2002/REC-xmlenc-core-20021210">http://www.w3.org/TR/2002/REC-xmlenc-core-20021210 */
-    if (ctx->final[b-1] != n) {
+    if (ctx_st->final[b-1] != n) {
       //EVPerr(EVP_F_EVP_DECRYPTFINAL_EX,EVP_R_BAD_DECRYPT);
       return(0);
     }
-    n=ctx->cipher->block_size-n;
+    n=ctx_st->cipher->block_size-n;
     for (i=0; i<n; i++)
-      out[i]=ctx->final[i];
+      out[i]=ctx_st->final[i];
     *outl=n;
   } else
     *outl=0;
