@@ -757,7 +757,7 @@ int zxsig_validate(struct zx_ctx* c, X509* cert, struct zx_ds_Signature_s* sig, 
   return ZXSIG_OK;
 
 certerr:
-  ERR("Certificate error. Maybe the certificate does not have any public key type=0x%x matching the algorithm(%.*s)? Or corrupt or wrong cert?", evp_pkey?evp_pkey->type:-1, algo?algo->len:0, algo?algo->s:"");
+  ERR("Certificate error. Maybe the certificate does not have any public key type=0x%x matching the algorithm(%.*s)? Or corrupt or wrong cert?", evp_pkey?EVP_PKEY_base_id(evp_pkey):-1, algo?algo->len:0, algo?algo->s:"");
   zx_report_openssl_err("certificate error");
   ZX_FREE(c, ss);
   return ZXSIG_BAD_CERT;
