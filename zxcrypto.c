@@ -34,6 +34,7 @@
 #include <sys/stat.h>  /* umask(2) */
 
 #ifdef USE_OPENSSL
+#include <openssl/opensslv.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include <openssl/sha.h>
@@ -43,6 +44,13 @@
 #include <openssl/x509v3.h>
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+/* Since OpenSSL 1.1.0 the EVP_CIPHER_CTX was made opaque and writing
+ * zx_EVP_DecryptFinal_ex() in a protable way was made near impossible. However
+ * as long as struct evp_cipher_ctx_st fields stay same, this should work. */
+#include "openssl-1.1.0-fixes/evp/evp_locl.h"
+#endif
 #endif
 
 /* Called by:  zxid_mk_jwt x6 */
@@ -149,9 +157,6 @@ int zx_raw_digest2(struct zx_ctx* c, char* md, const char* algo, int len, const 
 int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
   int i,n;
   unsigned int b;
-  /* Since OpenSSL 1.1.0 the EVP_CIPHER_CTX was made opaque and writing
-   * this function in a protable way was made near impossible. However
-   * as long as struct evp_cipher_ctx_st fields stay same, this should work. */
   struct evp_cipher_ctx_st* ctx_st = (struct evp_cipher_ctx_st*)ctx;
   
   *outl=0;

@@ -498,6 +498,12 @@ recoverpw-main.html
 
 index-idp.html
 
+# nginx authentication module
+
+config                 - Configuration snippet understood by nginx build process
+nginx.conf             - Sample nginx configuration snippet for using the module
+ngx_http_auth_saml_module.c - nginx auth saml module (comparable to mod_auth_saml in Apache httpd)
+
 # Apache authentication module
 
 mod_auth_saml.c        - Apache auth module to SAML protect web pages
@@ -728,6 +734,10 @@ t/azrq1.xml; t/XML2.out
 t/azrs1.xml; t/XML3.out
 t/x-foobar-rq.xml
 t/id-hrxml-rq.xml
+
+# Library compatibility
+
+openssl-1.1.0-fixes/evp/evp_locl.h  - Copy from openssl-1.1.0f distribution
 
 # Precheck. These are build time tests for dependency libraries.
 
