@@ -416,7 +416,7 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
     break;
 #endif
   default:
-    ERR("Unknown private key type 0x%x. Wrong or corrupt private key?", priv_key->type);
+    ERR("Unknown private key type 0x%x. Wrong or corrupt private key?", EVP_PKEY_base_id(priv_key));
     return 0;
   }
   
@@ -960,7 +960,7 @@ int zx_report_openssl_err(const char* logkey)
 #endif
 
   default:
-    ERR("%s: Unknown private key type 0x%x. Wrong or corrupt private key?", lk, priv_key->type);
+    ERR("%s: Unknown private key type 0x%x. Wrong or corrupt private key?", lk, EVP_PKEY_base_id(priv_key));
     return -1;
   }
 }
@@ -1080,7 +1080,7 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
       return 0;
     }
   default:
-    ERR("%s: Unknown public key type 0x%x. Wrong or corrupt certificate key?", lk, evp_pubk->type);
+    ERR("%s: Unknown public key type 0x%x. Wrong or corrupt certificate key?", lk, EVP_PKEY_base_id(evp_pubk));
     return -1;
   }    
 }
