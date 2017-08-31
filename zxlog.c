@@ -920,11 +920,13 @@ char* zxbus_mint_receipt(zxid_conf* cf, int sigbuf_len, char* sigbuf, int mid_le
     sigbuf[3+ZXLOG_TIME_SIZ+1+mid_len] = ' ';
     p = base64_fancy_raw(zbuf, zlen, sigbuf+3+ZXLOG_TIME_SIZ+1+mid_len+1, safe_basis_64, 1<<31, 0, 0, '.');
     *p = 0;
-    switch (EVP_PKEY_type(cf->sign_pkey->type)) {
+    //switch (EVP_PKEY_type(cf->sign_pkey->type)) {
+    switch (EVP_PKEY_base_id(cf->sign_pkey)) {
     case EVP_PKEY_RSA: sigbuf[0] = 'R'; break;
     case EVP_PKEY_DSA: sigbuf[0] = 'D'; break;
     case EVP_PKEY_EC:  sigbuf[0] = 'C'; break;
-    default: sigbuf[0] = 'E'; ERR("Unknown pkey type=%d", EVP_PKEY_type(cf->sign_pkey->type));
+    //default: sigbuf[0] = 'E'; ERR("Unknown pkey type=%d", EVP_PKEY_type(cf->sign_pkey->type));
+    default: sigbuf[0] = 'E'; ERR("Unknown pkey type=%d", EVP_PKEY_base_id(cf->sign_pkey));
     }
     break;
   case 0:      /* Plain logging, no signing, no encryption. */

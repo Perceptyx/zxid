@@ -72,7 +72,7 @@ static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
 /* Called by:  zxid_saml2_post_enc, zxsig_sign */
 const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* dig_alg)
 {
-  switch (EVP_PKEY_type(priv_key->type)) {
+  switch (EVP_PKEY_base_id(priv_key)) {
   case EVP_PKEY_RSA:
     if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_RSA_SHA1;
     if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_RSA_SHA224;
@@ -105,7 +105,7 @@ const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* di
     break;
 #endif
   default:
-    ERR("Unknown private key type=%x", EVP_PKEY_type(priv_key->type));
+    ERR("Unknown private key type=%x", EVP_PKEY_base_id(priv_key));
     return "#pkerr";
   }
   ERR("Unknown digest algo(%s)", STRNULLCHKQ(dig_alg));
@@ -116,7 +116,7 @@ const char* zxsig_choose_xmldsig_sig_meth_url(EVP_PKEY* priv_key, const char* di
 /* Called by:  zxid_saml2_post_enc, zxid_saml2_redir_enc */
 const char* zxsig_choose_xmldsig_sig_meth_urlenc(EVP_PKEY* priv_key, const char* dig_alg)
 {
-  switch (EVP_PKEY_type(priv_key->type)) {
+  switch (EVP_PKEY_base_id(priv_key)) {
   case EVP_PKEY_RSA:
     if (!strcmp(dig_alg, "SHA1"))   return SIG_ALGO_RSA_SHA1_URLENC;
     if (!strcmp(dig_alg, "SHA224")) return SIG_ALGO_RSA_SHA224_URLENC;
@@ -149,7 +149,7 @@ const char* zxsig_choose_xmldsig_sig_meth_urlenc(EVP_PKEY* priv_key, const char*
     break;
 #endif
   default:
-    ERR("Unknown private key type=%x", EVP_PKEY_type(priv_key->type));
+    ERR("Unknown private key type=%x", EVP_PKEY_base_id(priv_key));
     return "#pkerr";
   }
   ERR("Unknown digest algo(%s)", STRNULLCHKQ(dig_alg));
@@ -349,7 +349,7 @@ struct zx_ds_Signature_s* zxsig_sign(struct zx_ctx* c, int n, struct zxsig_ref* 
   /* *** Following section should be rewritten to use EVP API, e.g. SVP_SignInit_ex(),
    * EVP_SignUpdate(), and EVP_SignFinal(). However the present lower level
    * formulation makes it easier to debug broken signatures. */
-  switch (EVP_PKEY_type(priv_key->type)) {
+  switch (EVP_PKEY_base_id(priv_key)) {
   case EVP_PKEY_RSA:
     rsa = EVP_PKEY_get1_RSA(priv_key);
     siglen = RSA_size(rsa);
@@ -853,7 +853,7 @@ int zx_report_openssl_err(const char* logkey)
     return 0;
   }
 
-  switch (EVP_PKEY_type(priv_key->type)) {
+  switch (EVP_PKEY_base_id(priv_key)) {
   case EVP_PKEY_RSA:
     rsa = EVP_PKEY_get1_RSA(priv_key);
     len = RSA_size(rsa);
@@ -1010,7 +1010,7 @@ int zxsig_verify_data(int len, char* data, int siglen, char* sig, X509* cert, co
     zx_report_openssl_err("zxsig rsa vfy get_pub");
     return ZXSIG_BAD_CERT;
   }
-  switch (EVP_PKEY_type(evp_pubk->type)) {
+  switch (EVP_PKEY_base_id(evp_pubk)) {
   case EVP_PKEY_RSA:
     rsa_pubk = EVP_PKEY_get1_RSA(evp_pubk);
     if (!rsa_pubk) {
