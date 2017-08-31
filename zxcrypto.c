@@ -1,6 +1,6 @@
 /* zxid/zxcrypto.c  -  Glue for cryptographical functions
  * Copyright (c) 2015-2016 Synergetics NV (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2009 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -15,6 +15,7 @@
  * 6.6.2015,   added aes-256-gcm --Sampo
  * 16.10.2015, upgraded sha256 support, eliminated MD5 from certs --Sampo
  * 6.3.2016,   eliminated obsolete, commented out code --Sampo
+ * 20170831   cleaned up references to OpenSSL opaque structs --Sampo
  *
  * See paper: Tibor Jager, Kenneth G. Paterson, Juraj Somorovsky: "One Bad Apple: Backwards Compatibility Attacks on State-of-the-Art Cryptography", 2013 http://www.nds.ruhr-uni-bochum.de/research/publications/backwards-compatibility/ /t/BackwardsCompatibilityAttacks.pdf
  *
@@ -80,7 +81,8 @@ const char* zxid_get_cert_signature_algo(X509* cert)
 {
     if (!cert)
        return "";
-    return OBJ_nid2ln(OBJ_obj2nid(cert->sig_alg->algorithm));
+    //return OBJ_nid2ln(OBJ_obj2nid(cert->sig_alg->algorithm));
+    return OBJ_nid2ln(X509_get_signature_type(cert));
 }
 
 /*() zx_raw_digest2() computes a message digest over two items. The result
@@ -97,7 +99,7 @@ int zx_raw_raw_digest2(struct zx_ctx* c, char* md, const EVP_MD* evp_digest, int
   EVP_MD_CTX* mdctx;
   unsigned int mdlen;
   mdctx = EVP_MD_CTX_create();
-    
+  
   if (!EVP_DigestInit_ex(mdctx, evp_digest, 0 /* engine */)) {
     where = "EVP_DigestInit_ex()";
     goto sslerr;
@@ -149,7 +151,8 @@ int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
   unsigned int b;
   
   *outl=0;
-  b=ctx->cipher->block_size;
+  //b=ctx->cipher->block_size;
+  b=EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(ctx));
   if (b > 1) {
     if (ctx->buf_len || !ctx->final_used) {
       //EVPerr(EVP_F_EVP_DECRYPTFINAL_EX,EVP_R_WRONG_FINAL_BLOCK_LENGTH);
@@ -198,11 +201,13 @@ struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, i
   struct zx_str* out;
   int outlen=0, tmplen, alloclen;
   const EVP_CIPHER* evp_cipher;
-  EVP_CIPHER_CTX ctx;
+  //EVP_CIPHER_CTX ctx;
+  EVP_CIPHER_CTX* cctx;
   OpenSSL_add_all_algorithms();
   if ((errmac_debug&ERRMAC_DEBUG_MASK) > 2) hexdmp("plain  ", s, len, 256);  
   D("len=%d s=%p", len, s);
-  EVP_CIPHER_CTX_init(&ctx);
+  //EVP_CIPHER_CTX_init(&ctx);
+  cctx = EVP_CIPHER_CTX_new();
   evp_cipher = EVP_get_cipherbyname(algo);
   if (!evp_cipher) {
     ERR("Cipher algo name(%s) not recognized by the crypto library (OpenSSL)", algo);
@@ -244,18 +249,18 @@ struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, i
   else
     iv_len = 0;  /* When decrypting, the iv has already been stripped. */
     
-  if (!EVP_CipherInit_ex(&ctx, evp_cipher, 0 /* engine */, (unsigned char*)key, (unsigned char*)ivv, encflag)) {
+  if (!EVP_CipherInit_ex(cctx, evp_cipher, 0 /* engine */, (unsigned char*)key, (unsigned char*)ivv, encflag)) {
     where = "EVP_CipherInit_ex()";
     goto sslerr;
   }
   
-  if (!EVP_CIPHER_CTX_set_key_length(&ctx, keylen)) {
+  if (!EVP_CIPHER_CTX_set_key_length(cctx, keylen)) {
     D("key->len=%d", keylen);
     where = "wrong key length for algorithm (block ciphers only accept keys of determined length)";
     goto sslerr;
   }
   
-  if (!EVP_CipherUpdate(&ctx, (unsigned char*)out->s + iv_len, &outlen, (unsigned char*)s, len)) { /* Actual crypto happens here */
+  if (!EVP_CipherUpdate(cctx, (unsigned char*)out->s + iv_len, &outlen, (unsigned char*)s, len)) { /* Actual crypto happens here */
     D("len=%d s=%p iv_len=%d outlen=%d out->s=%p", len, s, iv_len, outlen, out->s);
     where = "EVP_CipherUpdate()";
     goto sslerr;
@@ -265,7 +270,7 @@ struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, i
 
   /* Patch from Eric Rybski <rybskej@yahoo.com> */
   if (encflag) {
-    if(!EVP_CipherFinal_ex(&ctx, (unsigned char*)out->s + iv_len + outlen, &tmplen)) { /* Append final block */
+    if(!EVP_CipherFinal_ex(cctx, (unsigned char*)out->s + iv_len + outlen, &tmplen)) { /* Append final block */
       where = "EVP_CipherFinal_ex()";
       goto sslerr;
     }
@@ -273,13 +278,14 @@ struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, i
     /* Perform our own padding check, as XML Enc is not guaranteed compatible
      * with OpenSSL & RFC 1423. See OpenSSL bug 1067
      * http://rt.openssl.org/Ticket/Display.html?user=guest&;pass=guest&id=1067 */
-    EVP_CIPHER_CTX_set_padding(&ctx, 0);
-    if(!zx_EVP_DecryptFinal_ex(&ctx, (unsigned char*)out->s + iv_len + outlen, &tmplen)) { /* Append final block */
+    EVP_CIPHER_CTX_set_padding(cctx, 0);
+    if(!zx_EVP_DecryptFinal_ex(cctx, (unsigned char*)out->s + iv_len + outlen, &tmplen)) { /* Append final block */
       where = "zx_EVP_DecryptFinal_ex()";
       goto sslerr;
     }
   }
-  EVP_CIPHER_CTX_cleanup(&ctx);
+  //EVP_CIPHER_CTX_cleanup(&ctx);
+  EVP_CIPHER_CTX_free(cctx);
   
   outlen += tmplen;
   ASSERTOPI(outlen + iv_len, <=, alloclen);
@@ -292,7 +298,8 @@ struct zx_str* zx_raw_cipher2(struct zx_ctx* c, const char* algo, int encflag, i
   D("where(%s)", where);
   zx_report_openssl_err(where);
  clean:
-  EVP_CIPHER_CTX_cleanup(&ctx);
+  //EVP_CIPHER_CTX_cleanup(&ctx);
+  EVP_CIPHER_CTX_free(cctx);
   return 0;
 }
 
