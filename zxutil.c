@@ -5,7 +5,7 @@
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
- * Distrtion prohibited unless authorized in writing.
+ * Distribution prohibited unless authorized in writing.
  * Licensed under Apache License 2.0, see file COPYING.
  * $Id: zxutil.c,v 1.53 2009-11-29 12:23:06 sampo Exp $
  *
@@ -327,6 +327,8 @@ int write_all_fd(fdtype fd, const char* p, int pending)
 {
 #ifdef MINGW
   DWORD wrote;
+  if (pending == -2)
+    pending = strlen(p);
   if ((fd == BADFD) || !pending || !p) {
     ERR("Bad fd(%x) or no data p=%p pending=%d", fd, p, pending);
     return 0;
@@ -337,6 +339,8 @@ int write_all_fd(fdtype fd, const char* p, int pending)
   DD("write_all_fd(%x, `%.*s', %d) wrote=%d\n", fd, pending, p, pending, wrote);
 #else
   int wrote;
+  if (pending == -2)
+    pending = strlen(p);
   if ((fd == BADFD) || !pending || !p) {
     ERR("Bad fd(%x) or no data p=%p pending=%d", fd, p, pending);
     return 0;
@@ -1336,8 +1340,8 @@ scan_end:
      * for how these fields are URL decoded at later stage. */
     if (!((*name)[0] != 'S' && (*name)[0] != 'R'
 	  || strcmp(*name, "SAMLRequest") && strcmp(*name, "SAMLResponse")
-	  && strcmp(*name, "SigAlg") && strcmp(*name, "Signature")
-	  && strcmp(*name, "RelayState"))) {
+	     && strcmp(*name, "SigAlg") && strcmp(*name, "Signature")
+	     && strcmp(*name, "RelayState"))) {
       p = qs;
       break;
     }

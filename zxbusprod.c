@@ -943,7 +943,7 @@ zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
     }
     if (X509_cmp(meta->enc_cert, peer_cert)) {
       ERR("Peer certificate does not match metadata for eid(%s)", bu->eid);
-      D("compare: %d", memcmp(meta->enc_cert->sha1_hash, peer_cert->sha1_hash, SHA_DIGEST_LENGTH));
+      DD("compare: %d", memcmp(meta->enc_cert->sha1_hash, peer_cert->sha1_hash, SHA_DIGEST_LENGTH));
       PEM_write_X509(ERRMAC_DEBUG_LOG, peer_cert);
       goto sslerrout;
     }

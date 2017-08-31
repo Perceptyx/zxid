@@ -1,6 +1,6 @@
 /* zxpasswd.c  -  Password creation and user management tool
  * Copyright (c) 2012-2015 Synergetics SA (sampo@synergetics.be), All Rights Reserved.
- * Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2009-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * This is confidential unpublished proprietary source code of the author.
  * NO WARRANTY, not even implied warranties. Contains trade secrets.
  * Distribution prohibited unless authorized in writing.
@@ -14,6 +14,7 @@
  * 5.2.2012,   changed -c flag to -n to reserve -c for config (to be consistent with other utils) --Sampo
  * 24.4.2012,  obsoleted PATH=/var/zxid/idp. From now on, just use /var/zxid/ or VPATH --Sampo
  * 29.5.2015,  added generation of PINs --Sampo
+ * 20170830    Fixed misleading error messages on user creation (-new) --Sampo
  *
  * See also: http://www.users.zetnet.co.uk/hopwood/crypto/scan/ph.html
  * http://www.usenix.org/events/usenix99/provos/provos_html/index.html
@@ -53,7 +54,7 @@
 char* help =
 "zxpasswd  -  Password creation and user management tool R" ZXID_REL "\n\
 Copyright (c) 2012-2015 Synergetics SA (sampo@synergetics.be), All Rights Reserved.\n\
-Copyright (c) 2009-2011,2016 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
+Copyright (c) 2009-2011,2016-2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.\n\
 NO WARRANTY, not even implied warranties. Licensed under Apache License v2.0\n\
 See http://www.apache.org/licenses/LICENSE-2.0\n\
 Send well researched bug reports to the author. Home: zxid.org\n\
@@ -471,7 +472,10 @@ int main(int argc, char** argv, char** env)
   if (create) {
     /* See also zxid_put_user() for account creation. */
     if (MKDIR(userdir, 0770) == -1) {
-      ERR("User already exists %s", userdir);
+      if (errno == EEXIST)
+	ERR("User already exists %s", userdir);
+      else
+	ERR("Failed to create user directory %s %d %s", userdir, errno, STRERROR(errno));
       return 3;
     }
     snprintf(buf, sizeof(buf)-1, "%s/.bs", userdir);

@@ -191,7 +191,7 @@ extern int trace;   /* this gets manipulated by -v or similar flag */
 #define ROUND_UP(x,n) if ((n) && (x) % (n)) x += (n) - (x) % (n);
 
 /* Original Base64  Len  (x+2) / 3
- * ""       ""        0  2     0(2)     Suitable original(packed) sizes = bits
+ * ""       ""        0  2     0(2)     Suitable original(encoded) sizes = bits
  * 1        WX==      4  3     1(0)     to avoid padding are
  * 12       WXY=      4  4     1(1)      3(4) = 24,   6(8)= 48,  9(12)= 72, 12(16)= 96,
  * 123      WXYZ      4  5     1(2)     15(20)=120, 18(24)=144, 21(28)=168, 24(32)=192,

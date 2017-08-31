@@ -271,7 +271,7 @@ struct zx_gbucket* zx_global_set_by_len_key(int len, const char* key, struct zx_
  *
  * N.B. Current implementation of normal hashes still uses global hash for keeping
  * the keys (so every key is only stored once). Thus a normal hash insert can cause
- * a globabl hash insert, with consequent locking.
+ * a global hash insert, with consequent locking.
  */
 
 /* Called by:  zx_msgpack2val2 */

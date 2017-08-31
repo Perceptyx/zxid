@@ -22,15 +22,18 @@
  * so changing the values does not cause contention on the global lock.
  *
  * Th local hashes use the global hash as key store, i.e. each key
- * kets stored exactly once irrespective of how many times it is
+ * gets stored exactly once irrespective of how many times it is
  * used by the local hashes.
  */
 
 #ifndef _zxdata_h
 #define _zxdata_h
 
-#include "zx.h"
-#include "zxid.h"
+struct zx_ctx;
+zxid_conf;
+
+//#include "zx.h"
+//#include "zxid.h"
 #include "hiios.h"    /* for struct hi_lock */
 
 /* Possible data type kinds for execution environment */
@@ -56,6 +59,7 @@ struct zx_val {
     float f;
     double d;
     char* s;
+    void* v;
     struct zx_val** a;
     struct zx_bucket** h;
     struct zx_gbucket** gh;
@@ -71,7 +75,8 @@ struct zx_val {
 //  struct zx_val val[];
 //};
 
-/* Normal hash bucket. If there is a hash collision, n (next) pointer chains the buckets. */
+/* Normal hash bucket. If there is a hash collision, n (next) pointer chains the buckets.
+ * Hash itself is an array of buckets. */
 
 struct zx_bucket {
   struct zx_bucket* n;
