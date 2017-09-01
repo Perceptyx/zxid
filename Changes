@@ -124,7 +124,8 @@ Here are example docs for SimpleSAMLPHP, or Shibboleth:
 
 No authentication done but request not allowed without authentication for Authentication not configured?
 
-zxid-1.43:: 16.4.2016 - 8.1.2017
+zxid-1.43:: 16.4.2016 - 1.9.2017
+    - Upgraded to support OpenSSL-1.1.0 (at least 1.0.2 is supposted as well)
     - Eliminated commented out code regarding crypto setup
     - Fixed premature nul termination in Location redirects, added cookies ot redirects
     - Added CSharp support

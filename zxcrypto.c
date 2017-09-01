@@ -161,7 +161,7 @@ int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
   
   *outl=0;
   //b=ctx->cipher->block_size;
-  block_size=b=EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(ctx));
+  block_size = b = EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(ctx));
   if (b > 1) {
     if (ctx_st->buf_len || !ctx_st->final_used) {
       //EVPerr(EVP_F_EVP_DECRYPTFINAL_EX,EVP_R_WRONG_FINAL_BLOCK_LENGTH);

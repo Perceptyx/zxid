@@ -844,8 +844,9 @@ zlen = zxsig_data(cf->ctx, n-1, logbuf, &zbuf, log_sign_pkey, "log line", 0);
        SSL_library_init();
  #if 0
        cf->ssl_ctx = SSL_CTX_new(SSLv23_method());
- #else
        cf->ssl_ctx = SSL_CTX_new(TLSv1_client_method());
+ #else
+       cf->ssl_ctx = SSL_CTX_new(TLSv1_2_client_method());
  #endif
      }
      if (!cf->ssl_ctx) {

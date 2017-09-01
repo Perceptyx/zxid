@@ -57,12 +57,12 @@ ZXID_DECL struct zx_ds_KeyInfo_s* zxid_key_info(zxid_conf* cf, struct zx_elem_s*
 /* Called by:  zxsig_sign x3 */
 static const char* zxsig_extract_hash_algo(const char* spec, const char** dsp)
 {
-  if (!spec || strstr(spec, "sha1") || strstr(spec, "SHA1")) if (dsp) *dsp = DIGEST_ALGO_SHA1; return "SHA1";
-  if (strstr(spec, "sha224") || strstr(spec, "SHA224")) if (dsp) *dsp = DIGEST_ALGO_SHA224; return "SHA224";
-  if (strstr(spec, "sha256") || strstr(spec, "SHA256")) if (dsp) *dsp = DIGEST_ALGO_SHA256; return "SHA256";
-  if (strstr(spec, "sha384") || strstr(spec, "SHA384")) if (dsp) *dsp = DIGEST_ALGO_SHA384; return "SHA384";
-  if (strstr(spec, "sha512") || strstr(spec, "SHA512")) if (dsp) *dsp = DIGEST_ALGO_SHA512; return "SHA512";
-  if (strstr(spec, "sha2")   || strstr(spec, "SHA2"))   if (dsp) *dsp = DIGEST_ALGO_SHA256; return "SHA256";
+  if (!spec || strstr(spec, "sha1") || strstr(spec, "SHA1")) { if (dsp) *dsp = DIGEST_ALGO_SHA1; return "SHA1"; }
+  if (strstr(spec, "sha224") || strstr(spec, "SHA224")) { if (dsp) *dsp = DIGEST_ALGO_SHA224; return "SHA224"; }
+  if (strstr(spec, "sha256") || strstr(spec, "SHA256")) { if (dsp) *dsp = DIGEST_ALGO_SHA256; return "SHA256"; }
+  if (strstr(spec, "sha384") || strstr(spec, "SHA384")) { if (dsp) *dsp = DIGEST_ALGO_SHA384; return "SHA384"; }
+  if (strstr(spec, "sha512") || strstr(spec, "SHA512")) { if (dsp) *dsp = DIGEST_ALGO_SHA512; return "SHA512"; }
+  if (strstr(spec, "sha2")   || strstr(spec, "SHA2"))   { if (dsp) *dsp = DIGEST_ALGO_SHA256; return "SHA256"; }
   ERR("Could not determine hash algorithm from spec(%s)", spec);
   if (dsp) *dsp = "err";
   return 0;
