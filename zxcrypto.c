@@ -530,6 +530,7 @@ static void zxid_add_name_field(X509_NAME* subj, int typ, int nid, char* val)
 int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, const char* name)
 {
 #ifdef USE_OPENSSL
+  X509_NAME* subj;
   BIO* wbio_cert;
   BIO* wbio_pkey;
   BIO* wbio_csr;
@@ -540,7 +541,7 @@ int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, 
   time_t    ts;
   X509*     x509ss;
   X509_REQ* req;
-  X509_REQ_INFO* ri;
+  //X509_REQ_INFO* ri;
   EVP_PKEY* pkey;
   EVP_PKEY* tmp_pkey;
   RSA*      rsa;
@@ -602,13 +603,15 @@ int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, 
   /* Now handle the public key part, i.e. create self signed and
    * certificate request. This starts by making a request that
    * contains all relevant fields.   */
-  
+
   req=X509_REQ_new();
-  ri=req->req_info;
+  subj = X509_REQ_get_subject_name(req);
 
   DD("keygen populate: set version %d (real vers is one higher)", 2);
-  ASN1_INTEGER_set(ri->version, 2L /* version 3 (binary value is one less) */);
-
+  //ri=req->req_info;
+  //ASN1_INTEGER_set(ri->version, 2L);
+  X509_REQ_set_version(req, 2L); /* version 3 (binary value is one less) */
+  
   /* Note on string types and allowable char sets:
    * V_ASN1_PRINTABLESTRING  [A-Za-z0-9 '()+,-./:=?]   -- Any domain name, but not query string
    * V_ASN1_IA5STRING        Any 7bit string
@@ -617,14 +620,14 @@ int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, 
   /* Construct DN part by part. We want cn=www.site.com,o=ZXID Auto-Cert */
 
   if (cf->contact_email)
-    zxid_add_name_field(ri->subject, V_ASN1_IA5STRING, NID_pkcs9_emailAddress, cf->contact_email);
-  zxid_add_name_field(ri->subject, V_ASN1_PRINTABLESTRING, NID_commonName, cn);
-  zxid_add_name_field(ri->subject, V_ASN1_T61STRING, NID_organizationalUnitName, ou);
-  zxid_add_name_field(ri->subject, V_ASN1_T61STRING, NID_organizationName, cf->org_name);
+    zxid_add_name_field(subj, V_ASN1_IA5STRING, NID_pkcs9_emailAddress, cf->contact_email);
+  zxid_add_name_field(subj, V_ASN1_PRINTABLESTRING, NID_commonName, cn);
+  zxid_add_name_field(subj, V_ASN1_T61STRING, NID_organizationalUnitName, ou);
+  zxid_add_name_field(subj, V_ASN1_T61STRING, NID_organizationName, cf->org_name);
 
-  zxid_add_name_field(ri->subject, V_ASN1_T61STRING, NID_localityName, cf->locality);
-  zxid_add_name_field(ri->subject, V_ASN1_T61STRING, NID_stateOrProvinceName, cf->state);
-  zxid_add_name_field(ri->subject, V_ASN1_T61STRING, NID_countryName, cf->country);
+  zxid_add_name_field(subj, V_ASN1_T61STRING, NID_localityName, cf->locality);
+  zxid_add_name_field(subj, V_ASN1_T61STRING, NID_stateOrProvinceName, cf->state);
+  zxid_add_name_field(subj, V_ASN1_T61STRING, NID_countryName, cf->country);
 
 #if 0
   X509_ATTRIBUTE*  xa;
