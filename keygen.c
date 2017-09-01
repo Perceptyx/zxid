@@ -152,6 +152,7 @@ err:
   return 0;
 }
 
+#if 0
 /* attribute objects are more complicated because they can be multivalued */
 
 /* Called by: */
@@ -160,14 +161,19 @@ static int add_attribute_object(STACK_OF(X509_ATTRIBUTE) *n, int nid, unsigned c
   X509_ATTRIBUTE *xa=NULL;
   ASN1_BIT_STRING *bs=NULL;
   ASN1_TYPE *at=NULL;
-  
+
+#if 0
   /* add object plus value */
   if ((xa=X509_ATTRIBUTE_new()) == NULL) GOTO_ERR("no memory?");
   if ((xa->value.set=sk_ASN1_TYPE_new_null()) == NULL) GOTO_ERR("no memory?");
   /*xa->single = 1; **** this may also be set on some versions */
   
-  if (xa->object != NULL) ASN1_OBJECT_free(xa->object);
+  if (xa->object != NULL) ASN1_OBJECT_free(xa->object); leak because OpenSSL-1.1.0 hides */
   xa->object=OBJ_nid2obj(nid);
+  //X509_ATTRIBUTE_set1_object(xa, OBJ_nid2obj(nid));
+#else
+  if ((xa=X509_ATTRIBUTE_create(nid, V_ASN1_NULL, sk_ASN1_TYPE_new_null())) == NULL) GOTO_ERR("no memory?");
+#endif
   
   if ((bs=ASN1_BIT_STRING_new()) == NULL) GOTO_ERR("no memory?");  
   bs->type=ASN1_PRINTABLE_type(val,-1 /* use strlen() */);
@@ -192,6 +198,7 @@ err:
   if (bs != NULL) ASN1_BIT_STRING_free(bs);
   return 0;
 }
+#endif
 
 /* Construct req structure. Basically we expect dn and attr to
  * be new line separated attribute lists, each line containing
@@ -209,18 +216,18 @@ static X509_REQ* populate_request(const unsigned char* dn, const unsigned char* 
   char* v;  /* value */  
   int nid;
   X509_REQ* req = NULL;
-  X509_REQ_INFO* ri;
+  //X509_REQ_INFO* ri;
   
   LOG_PRINT("populate");
   if (!dn) goto err;
   if (!(req=X509_REQ_new())) GOTO_ERR("no memory?");
-  ri=req->req_info;
+  //ri=req->req_info;
 
   LOG_PRINT("populate: set version");
   /* setup version number */
-  if (!ASN1_INTEGER_set(ri->version,0L /*version 1*/))
+  //if (!ASN1_INTEGER_set(ri->version,0L /*version 1*/))
+  if (!X509_REQ_set_version(req, 0L /*version 1*/))
     GOTO_ERR("ASN1_INTEGER_set");
-  
   /* Add fields of distinguished name. strtok() alters the buffer,
    * and so do I, so lets get some fresh memory to play with. */
   
@@ -239,7 +246,7 @@ static X509_REQ* populate_request(const unsigned char* dn, const unsigned char* 
     if ((nid=OBJ_txt2nid(t)) == NID_undef)
       GOTO_ERR("06 Unregistered DN attribute name (OBJ_txt2nid)");
     LOG_PRINT2("NID %x",nid);
-    if (!add_DN_object(ri->subject,nid,(unsigned char*)v)) goto err;
+    if (!add_DN_object(X509_REQ_get_subject_name(req),nid,(unsigned char*)v)) goto err;
     LOG_PRINT("DN object added");
   }
   OPENSSL_free(p);
@@ -259,7 +266,8 @@ static X509_REQ* populate_request(const unsigned char* dn, const unsigned char* 
     if ((nid=OBJ_txt2nid(t)) == NID_undef)
       GOTO_ERR("07 Unregistered attribute name (OBJ_txt2nid)");
     LOG_PRINT3("attr: %s=%s",t,v);
-    if (!add_attribute_object(ri->attributes, nid, (unsigned char*)v))
+    //if (!add_attribute_object(ri->attributes, nid, (unsigned char*)v))
+    if (!X509_REQ_add1_attr_by_NID(req, nid, V_ASN1_T61STRING, (unsigned char*) v, strlen(v)))
       goto err;
   }
   OPENSSL_free(p);
