@@ -134,7 +134,7 @@ x509_and_pkey_to_pkcs12(const char* friendly_name,  /* e.g. foo@bar.com */
   /* Include the cert */
   
   if (!(bags = (STACK_OF(PKCS12_SAFEBAG)*)sk_new(NULL))) GOTO_ERR("no memory?");  
-  if (!(bag = M_PKCS12_x5092certbag(x509))) GOTO_ERR("M_PKCS12_x5092certbag");
+  if (!(bag = PKCS12_x5092certbag(x509))) GOTO_ERR("PKCS12_x5092certbag");
   
   if (friendly_name) PKCS12_add_friendlyname(bag, friendly_name, -1);
   PKCS12_add_localkeyid(bag, keyid, keyidlen);
@@ -182,7 +182,7 @@ x509_and_pkey_to_pkcs12(const char* friendly_name,  /* e.g. foo@bar.com */
   
   if (!(p12 = PKCS12_init(NID_pkcs7_data))) GOTO_ERR("no memory?");
   
-  M_PKCS12_pack_authsafes (p12, safes);
+  PKCS12_pack_authsafes (p12, safes);
   sk_pop_free((_STACK*)safes, (void (*)(void *))PKCS7_free);
   safes = NULL;
   PKCS12_set_mac (p12, pkcs12_passwd, -1 /*strlen*/,
@@ -310,8 +310,8 @@ smime_pem_to_pkcs12_generic(const char* friendly_name,  /* e.g. foo@bar.com */
   
   for(i = 0; i < sk_X509_num(certs); i++) {
     cert = sk_X509_value(certs, i);
-    if (!(bag = M_PKCS12_x5092certbag(cert)))
-      GOTO_ERR("M_PKCS12_x5092certbag");
+    if (!(bag = PKCS12_x5092certbag(cert)))
+      GOTO_ERR("PKCS12_x5092certbag");
 
     if(cert == ucert) {      /* If it matches private key set id */
       if (friendly_name) PKCS12_add_friendlyname(bag, friendly_name, -1);
@@ -359,7 +359,7 @@ smime_pem_to_pkcs12_generic(const char* friendly_name,  /* e.g. foo@bar.com */
   
   if (!(p12 = PKCS12_init(NID_pkcs7_data))) GOTO_ERR("no memory?");
   
-  M_PKCS12_pack_authsafes (p12, safes);  
+  PKCS12_pack_authsafes (p12, safes);  
   sk_pop_free((_STACK*)safes, (void (*)(void *))PKCS7_free);  
   PKCS12_set_mac (p12, pkcs12_passwd, -1 /*strlen*/,
 		  NULL /*salt*/, 0, 1 /*maciter*/,
@@ -401,8 +401,8 @@ pkcs12_to_x509_and_pkey(PKCS12* p12,
   if (!PKCS12_verify_mac(p12, pkcs12_passwd, -1))
     GOTO_ERR("03 bad PKCS12 import password? (PKCS12_verify_mac)");
 
-  if (!(authsafes = M_PKCS12_unpack_authsafes(p12)))
-    GOTO_ERR("02 M_PKCS12_unpack_authsafes");
+  if (!(authsafes = PKCS12_unpack_authsafes(p12)))
+    GOTO_ERR("02 PKCS12_unpack_authsafes");
   
   /* Go through all bags. As we see cert bags, write them to cbio,
    * as we see shrouded keybags decrypt and re-encrypt them and
@@ -413,10 +413,10 @@ pkcs12_to_x509_and_pkey(PKCS12* p12,
     int bagnid = OBJ_obj2nid(authsafe->type);
     
     if (bagnid == NID_pkcs7_data) {
-      bags = M_PKCS12_unpack_p7data(authsafe);
+      bags = PKCS12_unpack_p7data(authsafe);
     } else if (bagnid == NID_pkcs7_encrypted) {
       /* undo transport armour encryption */
-      bags = M_PKCS12_unpack_p7encdata(authsafe, pkcs12_passwd, -1);
+      bags = PKCS12_unpack_p7encdata(authsafe, pkcs12_passwd, -1);
     } else continue; /* unrecognized bag type */    
     if (!bags) GOTO_ERR("02 no bags found (is this a PKCS12 file?)");
     
@@ -437,9 +437,8 @@ pkcs12_to_x509_and_pkey(PKCS12* p12,
 	
       case NID_pkcs8ShroudedKeyBag:
 	if (!pkey_out) break; /*skip*/
-	if (!(p8 = M_PKCS12_decrypt_skey(bag, pkcs12_passwd,
-					 strlen(pkcs12_passwd))))
-	  GOTO_ERR("03 bad PKCS12 import password? (M_PKCS12_decrypt_skey)");
+	if (!(p8 = PKCS12_decrypt_skey(bag, pkcs12_passwd, strlen(pkcs12_passwd))))
+	  GOTO_ERR("03 bad PKCS12 import password? (PKCS12_decrypt_skey)");
 	if (!(*pkey_out = EVP_PKCS82PKEY (p8))) GOTO_ERR("EVP_PKCS82PKEY");
 	PKCS8_PRIV_KEY_INFO_free(p8);
 	p8 = NULL;
@@ -453,8 +452,8 @@ pkcs12_to_x509_and_pkey(PKCS12* p12,
 	  } else if (options & CLCERTS) return 1;*/
 	
 	if (M_PKCS12_cert_bag_type(bag) != NID_x509Certificate ) break;
-	if (!(*x509_out = M_PKCS12_certbag2x509(bag)))
-	  GOTO_ERR("M_PKCS12_certbag2x509");
+	if (!(*x509_out = PKCS12_certbag2x509(bag)))
+	  GOTO_ERR("PKCS12_certbag2x509");
 	break;
 
       case NID_safeContentsBag:
@@ -543,8 +542,8 @@ smime_pkcs12_to_pem_generic(const char* pkcs12, int pkcs12_len,
     GOTO_ERR("03 bad import password? (PKCS12_verify_mac)");
   BIO_free(rbio);
 
-  if (!(authsafes = M_PKCS12_unpack_authsafes(p12)))
-    GOTO_ERR("02 M_PKCS12_unpack_authsafes");
+  if (!(authsafes = PKCS12_unpack_authsafes(p12)))
+    GOTO_ERR("02 PKCS12_unpack_authsafes");
   
   /* Go through all bags. As we see cert bags, write them to cbio,
    * as we see shrouded keybags decrypt and re-encrypt them and
@@ -558,10 +557,10 @@ smime_pkcs12_to_pem_generic(const char* pkcs12, int pkcs12_len,
     int bagnid = OBJ_obj2nid(authsafe->type);
     
     if (bagnid == NID_pkcs7_data) {
-      bags = M_PKCS12_unpack_p7data(authsafe);
+      bags = PKCS12_unpack_p7data(authsafe);
     } else if (bagnid == NID_pkcs7_encrypted) {
       /* undo transport armour encryption */
-      bags = M_PKCS12_unpack_p7encdata(authsafe, pkcs12_passwd, -1);
+      bags = PKCS12_unpack_p7encdata(authsafe, pkcs12_passwd, -1);
     } else continue; /* unrecognized bag type */    
     if (!bags) GOTO_ERR("02 no bags found (is this a PKCS12 file?)");
     
@@ -586,9 +585,9 @@ smime_pkcs12_to_pem_generic(const char* pkcs12, int pkcs12_len,
 
       case NID_pkcs8ShroudedKeyBag:
 	if (!priv_passwd || !priv_key_pem) break; /*skip*/
-	if (!(p8 = M_PKCS12_decrypt_skey (bag, pkcs12_passwd,
+	if (!(p8 = PKCS12_decrypt_skey (bag, pkcs12_passwd,
 					  strlen(pkcs12_passwd))))
-	  GOTO_ERR("03 bad password? (M_PKCS12_decrypt_skey)");
+	  GOTO_ERR("03 bad password? (PKCS12_decrypt_skey)");
 	if (!(pkey = EVP_PKCS82PKEY (p8))) GOTO_ERR("EVP_PKCS82PKEY");
 	PKCS8_PRIV_KEY_INFO_free(p8);
 	if (!PEM_write_bio_PrivateKey(pkbio, pkey, EVP_des_ede3_cbc(),
@@ -606,8 +605,8 @@ smime_pkcs12_to_pem_generic(const char* pkcs12, int pkcs12_len,
 	  } else if (options & CLCERTS) return 1;*/
 	
 	if (M_PKCS12_cert_bag_type(bag) != NID_x509Certificate ) break;
-	if (!(x509 = M_PKCS12_certbag2x509(bag)))
-	  GOTO_ERR("M_PKCS12_certbag2x509");
+	if (!(x509 = PKCS12_certbag2x509(bag)))
+	  GOTO_ERR("PKCS12_certbag2x509");
 	PEM_write_bio_X509 (cbio, x509);
 	X509_free(x509);
 	break;
