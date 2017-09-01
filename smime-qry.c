@@ -65,7 +65,18 @@ get_cert_info(X509* x509,
     if (!(wbio = BIO_new(BIO_s_mem()))) GOTO_ERR("no memory?");
     
     pubkey = X509_get_pubkey(x509);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+    {
+      const BIGNUM* n_bn;
+      const BIGNUM* e_bn;
+      const BIGNUM* d_bn;
+      RSA* rsa = EVP_PKEY_get1_RSA(pubkey);
+      RSA_get0_key(rsa, &n_bn, &e_bn, &d_bn);
+      BN_print(wbio,&n_bn);
+    }
+#else
     BN_print(wbio,pubkey->pkey.rsa->n);
+#endif
     if (get_written_BIO_data(wbio, modulus) == -1) goto err;
     BIO_free_all(wbio);
     wbio = NULL;
