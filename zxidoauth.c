@@ -49,10 +49,8 @@
 #include "c/zx-data.h"
 #include "c/zxidvers.h"
 
-#if 1
-
 /* Called by:  zxid_mk_jwk x2 */
-char* zxid_bn2b64(zxid_conf* cf, BIGNUM* bn)
+static char* zxid_bn2b64(zxid_conf* cf, const BIGNUM* bn)
 {
   char* bin;
   char* b64;
@@ -303,8 +301,6 @@ char* zxid_mk_oauth2_rsrc_reg_res(zxid_conf* cf, zxid_cgi* cgi, char* rev)
   ZX_FREE(cf->ctx, rs_id);
   return buf;
 }
-
-#endif
 
 /*() Prepare state
  * Either deflate and safe_base64 encode state for inline passage or

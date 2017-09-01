@@ -89,6 +89,7 @@
 #include <openssl/asn1.h>
 #include <openssl/pem.h>
 #include <openssl/evp.h>
+#include <openssl/asn1.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/pkcs12.h>
@@ -197,8 +198,18 @@ certification_authority(X509* ca_cert,
   
   /* set names */
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+  {
+    ASN1_INTEGER serial_asn;
+    if (!ASN1_INTEGER_set(&serial_asn, serial))
+      GOTO_ERR("cant set serial number");
+    if (!X509_set_serialNumber(cert, &serial_asn))
+      GOTO_ERR("cant set serial number");
+  }
+#else
   if (!ASN1_INTEGER_set(cert->cert_info->serialNumber, serial))
     GOTO_ERR("cant set serial number");
+#endif
   if (!(name = X509_get_subject_name(ca_cert)))
     GOTO_ERR("cant get issuer name");
   if (!X509_set_issuer_name(cert,name)) GOTO_ERR("cant set issuer name");
