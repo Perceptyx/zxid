@@ -200,10 +200,10 @@ static ngx_int_t ngx_http_auth_saml_hdr_out(ngx_http_request_t* req, const char*
 
 static ngx_int_t ngx_http_auth_saml_send_content(ngx_http_request_t* req, char* cont)
 {
-  int ctype_len, len;
+  int ctype_len, len, ret;
   const char* ctype;
-  ngx_buf_t    *b;
-  ngx_chain_t   out;
+  ngx_buf_t*  buf;
+  ngx_chain_t out;
 
   if (!memcmp(cont, "Content-Type: ", 14)) {
     /* res returned by zxid_simple() always has the same format: it starts
@@ -224,21 +224,23 @@ static ngx_int_t ngx_http_auth_saml_send_content(ngx_http_request_t* req, char* 
   req->headers_out.content_length_n = len;
   req->headers_out.content_type.len = ctype_len;
   req->headers_out.content_type.data = (u_char *)ctype;
-  ngx_http_send_header(req);
-
-  b = ngx_pcalloc(req->pool, sizeof(ngx_buf_t));
-  if (!b) {
+  ret = ngx_http_send_header(req);
+  if (ret == NGX_ERROR || ret > NGX_OK || req->header_only)
+    return ret;
+  
+  buf = ngx_pcalloc(req->pool, sizeof(ngx_buf_t));
+  if (!buf) {
     ERR("failed to alloc buf %d", (int)sizeof(ngx_buf_t));
     return NGX_HTTP_INTERNAL_SERVER_ERROR;
   }
 
-  b->pos = (unsigned char*)cont; /* first position in memory of the data */
-  b->last = (unsigned char*)cont + len; /* last position */
-  b->memory = 1; /* content is in read-only memory */
+  buf->pos = buf->start = (unsigned char*)cont; /* first position in memory of the data */
+  buf->last = (unsigned char*)cont + len; /* last position */
+  buf->memory = 1; /* content is in read-only memory */
   /* (i.e., filters should copy it rather than rewrite in place) */
-  b->last_buf = 1; /* there will be no more buffers in the responset */
+  buf->last_buf = 1; /* there will be no more buffers in the response */
   
-  out.buf = b;
+  out.buf = buf;
   out.next = 0;
   return ngx_http_output_filter(req, &out);
 }
@@ -302,6 +304,7 @@ static ngx_int_t ngx_http_auth_saml_process_zxid_simple_outcome(ngx_http_request
  * from ngx_http_read_client_request_body()) once the body is complete
  * and has been analyzed into CGI variables.
  * For GET requests, this is called directly by ngx_http_auth_saml_handler().
+ * Returns ngx result code, e.g. NGX_OK or NGX_ERROR.
  */
 
 static ngx_int_t ngx_http_auth_saml_handler_rest(ngx_http_request_t* req, zxid_conf* loc_cf, ngx_http_auth_saml_ctx_t* req_ctx)
@@ -310,17 +313,14 @@ static ngx_int_t ngx_http_auth_saml_handler_rest(ngx_http_request_t* req, zxid_c
   D_INDENT("rest: ");
   switch (req_ctx->req_kind) {
   case NGXMAS_KIND_ENDPT:
-    if (ONE_OF_2(req_ctx->cgi.op, 'L', 'A')) /* SSO (Login, Artifact) activity overrides current session. */
-      goto step_up;
+    if (ONE_OF_2(req_ctx->cgi.op, 'L', 'A')) /* SSO (Login, Artifact) activity */
+      break;                                 /*     overrides current session. */
     if (!req_ctx->cgi.sid || !zxid_get_ses(loc_cf, &req_ctx->ses, req_ctx->cgi.sid)) {
       D("No session(%s) active op(%c)", STRNULLCHK(req_ctx->cgi.sid), req_ctx->cgi.op);
-      goto step_up;
-    } else {
-      res = zxid_simple_ses_active_cf(loc_cf, &req_ctx->cgi, &req_ctx->ses, 0, AUTO_FLAGS);
-      D_DEDENT("rest: ");
-      return ngx_http_auth_saml_process_zxid_simple_outcome(req, loc_cf, &req_ctx->ses, res);
+      break;
     }
-    break;
+    res = zxid_simple_ses_active_cf(loc_cf, &req_ctx->cgi, &req_ctx->ses, 0, AUTO_FLAGS);
+    goto out;
   case NGXMAS_KIND_WSP:
     if (zxid_wsp_validate(loc_cf, &req_ctx->ses, 0, req_ctx->post_body)) {
       D("WSP(%.*s) request valid", (int)req->uri.len, req->uri.data);
@@ -343,52 +343,12 @@ static ngx_int_t ngx_http_auth_saml_handler_rest(ngx_http_request_t* req, zxid_c
   default:
     ERR("Unknown request kind=%d req_ctx=%p req=%p uri(%.*s)", req_ctx->req_kind, req_ctx, req, (int)req->uri.len, req->uri.data);
   }
- step_up:
   res = zxid_simple_no_ses_cf(loc_cf, &req_ctx->cgi, &req_ctx->ses, 0, AUTO_FLAGS);
 
   D("final ok %d", NGX_DECLINED);
+ out:
   D_DEDENT("rest: ");
   return ngx_http_auth_saml_process_zxid_simple_outcome(req, loc_cf, &req_ctx->ses, res);
-  
-#if 0
-  /* nginx can call handler from multiple phases. We want to run only on first try
-   * so we check and set the internal flag. */
-  if (req->main->internal) {
-    return NGX_DECLINED;
-  }
-  req->main->internal = 1;
-#endif
-#if 0
-  // check if cookie session ok
-  
-  /* Prepare response in buffer */
-  nb = ngx_pcalloc(req->pool, sizeof(ngx_buf_t));
-  if (!nb) {
-    ngx_log_error(NGX_LOG_ERR, req->connection->log, 0, 
-		  "Failed to allocate response buffer.");
-    return NGX_HTTP_INTERNAL_SERVER_ERROR;
-  }
-  
-  nb->pos = some_bytes; /* first position in memory of the data */
-  nb->last = some_bytes + some_bytes_length; /* last position */
-
-  nb->memory = 1; /* content is in read-only memory */
-  /* (i.e., filters should copy it rather than rewrite in place) */
-
-  nb->last_buf = 1; /* there will be no more buffers in the request */
-  
-  out.buf = nb;
-  out.next = NULL;
-#endif
-#if 0
-  // adding header to request
-  ngx_table_elt_t *h;
-  h = ngx_list_push(&r->headers_out.headers);
-  h->hash = 1;
-  ngx_str_set(&h->key, "X-NGINX-Tutorial");
-  ngx_str_set(&h->value, "Hello World!");
-#endif
-  
   //return NGX_DECLINED;
   //return ngx_http_output_filter(req, &out);
 }
@@ -397,6 +357,8 @@ static ngx_int_t ngx_http_auth_saml_handler_rest(ngx_http_request_t* req, zxid_c
  * When POST method is used (and thus POST body needs to be read in), this
  * function is called by ngx_http_read_client_request_body() once the
  * body is complete. Eventually this calls ngx_http_auth_saml_handler_rest(req).
+ * Only protocol posts to /saml come here. Payload posts follow normal
+ * path through nginx.
  */
 
 static void ngx_http_auth_saml_post_read(ngx_http_request_t* req)
@@ -404,7 +366,8 @@ static void ngx_http_auth_saml_post_read(ngx_http_request_t* req)
   int len, ret;
   zxid_conf* loc_cf;
   ngx_http_auth_saml_ctx_t* req_ctx;  /* per request per module variables */
-  ngx_buf_t* buf;
+  ngx_chain_t* in;
+  char* cp;
   
   D_INDENT("post_read: ");
   loc_cf = ngx_http_get_module_loc_conf(req, ngx_http_auth_saml_module);
@@ -412,19 +375,21 @@ static void ngx_http_auth_saml_post_read(ngx_http_request_t* req)
     ERR("NULL configuration %p", loc_cf);
     goto err;
   }
+  req_ctx = ngx_http_get_module_ctx(req, ngx_http_auth_saml_module);
+  if (!req_ctx) {
+    ERR("request context missing %p", req);
+    goto err;
+  }
   if (!req->request_body || !req->request_body->bufs) {
     ERR("No POST request_body %p", req->request_body);
     goto err;
   }
+#if 0
+  ngx_buf_t* buf;
   if (req->request_body->bufs->next) {
     ERR("POST request body split in more than one buffer. Consider adjusting client_body_buffer_size in configuration. Only first buffer is processed. %p", req->request_body->bufs->next->next);
   }
-  req_ctx = ngx_http_get_module_ctx(req, ngx_http_auth_saml_module);
-  if (!req_ctx) {
-    ERR("request contect not allocated %p", req);
-    goto err;
-  }
-  /* We need to make a copy of the query string because zxid_parse_cgi() modifies the buffer
+  /* We need to make a copy of the POST content because zxid_parse_cgi() modifies the buffer
    * and points cgi fields inside the buffer. Also guarantee nul termination. */
   buf = req->request_body->bufs->buf;
   D("request_body start=%p end=%p pos=%p last=%p", buf->start, buf->end, buf->pos, buf->last);
@@ -437,6 +402,26 @@ static void ngx_http_auth_saml_post_read(ngx_http_request_t* req)
   }
   memcpy(req_ctx->post_body, buf->start, len);
   req_ctx->post_body[len] = 0;
+#else
+  /* We need to make a copy of the POST content because zxid_parse_cgi() modifies the buffer
+   * and points cgi fields inside the buffer. Also guarantee nul termination.
+   * Gather the content from chain of ngx buffers. */
+  
+  for (len=0,in = req->request_body->bufs; in; in = in->next)
+    len += ngx_buf_size(in->buf);
+  req_ctx->post_body = ngx_pcalloc(req->pool, len+1);
+  if (!req_ctx->post_body) {
+    ERR("Failed to allocate buffer for POST content parson len=%d", len);
+    goto err;
+  }
+  cp = req_ctx->post_body;
+  for (in = req->request_body->bufs; in; in = in->next) {
+    len = ngx_buf_size(in->buf);
+    memcpy(cp, in->buf->pos, len);
+    cp += len;
+  }
+  *cp = 0;
+#endif
   
   if (req_ctx->cgi.op == 'S') {
     ret = zxid_sp_soap_parse(loc_cf, &req_ctx->cgi, &req_ctx->ses, len, req_ctx->post_body);
@@ -446,43 +431,10 @@ static void ngx_http_auth_saml_post_read(ngx_http_request_t* req)
     zxid_parse_cgi(loc_cf, &req_ctx->cgi, req_ctx->post_body);
     ret = ngx_http_auth_saml_handler_rest(req, loc_cf, req_ctx);
     D("POST ngx_http_auth_saml_handler_rest() returned %d", ret);
-    // *** process outcome of ret
   }
+  ngx_http_finalize_request(req, ret);
   D_DEDENT("post_read: ");
   return;
-  
-#if 0  
-  ngx_buf_t    *buf;
-  ngx_int_t     rc;
-  ngx_chain_t  *in, out;
-  for (in = req->request_body->bufs; in; in = in->next) {
-    len += ngx_buf_size(in->buf);
-  }
-  
-  buf = ngx_create_temp_buf(req->pool, NGX_OFF_T_LEN);
-  if (!buf) {
-    ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-    return;
-  }
-
-  buf->last = ngx_sprintf(buf->pos, "%O", len);
-  buf->last_buf = (req == req->main) ? 1: 0;
-  buf->last_in_chain = 1;
-  
-  r->headers_out.status = NGX_HTTP_OK;
-  r->headers_out.content_length_n = buf->last - buf->pos;
-  rc = ngx_http_send_header(r);
-  if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
-    ngx_http_finalize_request(r, rc);
-    return;
-  }
-  
-  out.buf = b;
-  out.next = NULL;
-  rc = ngx_http_output_filter(r, &out);
-  
-  ngx_http_finalize_request(r, rc);
-#endif
  err:
   ngx_http_finalize_request(req, NGX_HTTP_INTERNAL_SERVER_ERROR);
   D_DEDENT("post_read: ");
@@ -530,6 +482,16 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
     ngx_http_set_ctx(req, req_ctx, ngx_http_auth_saml_module);
   }
   
+  if (req->uri.len && req->uri.data) {
+    /* We need to make copy of the uri because we might modify it. Also guarantee nul termination. */
+    req_ctx->cgi.uri_path = ngx_pcalloc(req->pool, req->uri.len+1);
+    if (!req_ctx->cgi.uri_path) {
+      ERR("Failed to allocate uri_path buffer. len=%d", (int)req->uri.len);
+      goto err;
+    }
+    memcpy(req_ctx->cgi.uri_path, req->uri.data, req->uri.len);
+    req_ctx->cgi.uri_path[req->uri.len] = 0;
+  }
   if (req->args.len && req->args.data) {
     /* We need to make copy of the query string because zxid_parse_cgi() modifies the buffer
      * and points cgi fields inside the buffer. Also guarantee nul termination. */
@@ -569,7 +531,7 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
       }
 #endif
     } else {
-      D("cookie(%.*s) not found", (int)cookie_value.len, STRNULLCHKNULL(cookie_value.data));
+      D("cookie(%s) not found", loc_cf->ses_cookie_name);
     }
   }
 
