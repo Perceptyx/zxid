@@ -79,8 +79,8 @@ char* zxid_mk_jwk(zxid_conf* cf, char* pem, int enc_use)
   char derbuf[4096];
   X509* x = 0;  /* Forces d2i_X509() to alloc the memory. */
   RSA* rsa;
-  BIGNUM* n_bn;
-  BIGNUM* e_bn;
+  const BIGNUM* n_bn;
+  const BIGNUM* e_bn;
   char* buf;
   char* p;
   char* e;
@@ -99,7 +99,7 @@ char* zxid_mk_jwk(zxid_conf* cf, char* pem, int enc_use)
   rsa = zx_get_rsa_pub_from_cert(x, "mk_jwk");
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
   {
-    BIGNUM* d_bn;
+    const BIGNUM* d_bn;
     RSA_get0_key(rsa, &n_bn, &e_bn, &d_bn);
   }
 #else
