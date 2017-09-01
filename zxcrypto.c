@@ -155,13 +155,13 @@ int zx_raw_digest2(struct zx_ctx* c, char* md, const char* algo, int len, const 
 
 /* Called by:  zx_raw_cipher2 */
 int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
-  int i,n;
+  int i,n,block_size;
   unsigned int b;
   struct evp_cipher_ctx_st* ctx_st = (struct evp_cipher_ctx_st*)ctx;
   
   *outl=0;
   //b=ctx->cipher->block_size;
-  b=EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(ctx));
+  block_size=b=EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(ctx));
   if (b > 1) {
     if (ctx_st->buf_len || !ctx_st->final_used) {
       //EVPerr(EVP_F_EVP_DECRYPTFINAL_EX,EVP_R_WRONG_FINAL_BLOCK_LENGTH);
@@ -186,7 +186,8 @@ int zx_EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl) {
       //EVPerr(EVP_F_EVP_DECRYPTFINAL_EX,EVP_R_BAD_DECRYPT);
       return(0);
     }
-    n=ctx_st->cipher->block_size-n;
+    //n=ctx->cipher->block_size-n;
+    n=block_size-n;
     for (i=0; i<n; i++)
       out[i]=ctx_st->final[i];
     *outl=n;
@@ -492,7 +493,7 @@ void zx_rand(char* buf, int n_bytes)
 {
 #ifdef USE_OPENSSL
 #if ZXID_TRUE_RAND
-  RAND_bytes(buf, n_bytes);
+  RAND_bytes((unsigned char*)buf, n_bytes);
 #else
   RAND_pseudo_bytes((unsigned char*)buf, n_bytes);
 #endif
@@ -586,6 +587,8 @@ int zxid_mk_self_sig_cert(zxid_conf* cf, int buflen, char* buf, const char* lk, 
   /* Crypto analysis (2015) suggests 1024bit key is too weak. */
   //rsa = RSA_generate_key(1024 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
   rsa = RSA_generate_key(2048 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
+  //rsa = malloc(sizeof(RSA));
+  //RSA_generate_key_ex(rsa, 2048 /*bits*/, 0x10001 /*65537*/, 0 /*req_cb*/, 0 /*arg*/);
   DD("keygen rsa key generated %s", name);
   EVP_PKEY_assign_RSA(pkey, rsa);
 
