@@ -738,6 +738,7 @@ t/id-hrxml-rq.xml
 # Library compatibility
 
 openssl-1.1.0-fixes/evp/evp_locl.h  - Copy from openssl-1.1.0f distribution
+openssl-1.1.0-fixes/pkcs12/p12_lcl.h  - Copy from openssl-1.1.0f distribution
 
 # Precheck. These are build time tests for dependency libraries.
 

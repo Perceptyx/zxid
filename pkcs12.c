@@ -92,6 +92,11 @@
 #include <openssl/x509v3.h>
 #include <openssl/pkcs12.h>
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+/* Since OpenSSL 1.1.0 the PKCS12_SAFEBAG was made opaque. */
+#include "openssl-1.1.0-fixes/evp/p12_lcl.h"
+#endif
+
 #define SMIME_INTERNALS  /* we want also our internal helper functions */
 #include "smimeutil.h"
 
@@ -423,7 +428,13 @@ pkcs12_to_x509_and_pkey(PKCS12* p12,
     /* Now iterate over all bags found */
     
     for (j = 0; j < sk_num((_STACK*)bags); j++) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
       PKCS12_SAFEBAG* bag = (PKCS12_SAFEBAG*)sk_value((_STACK*)bags, j);
+      struct PKCS12_SAFEBAG_st* bag_st = (struct PKCS12_SAFEBAG_st*)bag_st;
+#else
+      PKCS12_SAFEBAG* bag = (PKCS12_SAFEBAG*)sk_value((_STACK*)bags, j);
+      PKCS12_SAFEBAG* bag_st = bag;
+#endif
       
       switch (M_PKCS12_bag_type(bag)) {
       case NID_keyBag:
@@ -431,7 +442,7 @@ pkcs12_to_x509_and_pkey(PKCS12* p12,
 	 * unencrypted private key */
 	
 	if (!pkey_out) break; /*skip*/
-	if (!(*pkey_out = EVP_PKCS82PKEY (bag->value.keybag /*p8*/)))
+	if (!(*pkey_out = EVP_PKCS82PKEY(bag_st->value.keybag /*p8*/)))
 	  GOTO_ERR("EVP_PKCS82PKEY");
 	break;
 	
@@ -439,7 +450,7 @@ pkcs12_to_x509_and_pkey(PKCS12* p12,
 	if (!pkey_out) break; /*skip*/
 	if (!(p8 = PKCS12_decrypt_skey(bag, pkcs12_passwd, strlen(pkcs12_passwd))))
 	  GOTO_ERR("03 bad PKCS12 import password? (PKCS12_decrypt_skey)");
-	if (!(*pkey_out = EVP_PKCS82PKEY (p8))) GOTO_ERR("EVP_PKCS82PKEY");
+	if (!(*pkey_out = EVP_PKCS82PKEY(p8))) GOTO_ERR("EVP_PKCS82PKEY");
 	PKCS8_PRIV_KEY_INFO_free(p8);
 	p8 = NULL;
 	break;
