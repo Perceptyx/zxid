@@ -438,7 +438,7 @@ int main(int argc, char** argv, char** env)
       
       rsa = EVP_PKEY_get1_RSA(log_decrypt_pkey);
       if (!rsa) {
-	ERR("No RSA key found in log decryption key type=0x%x", log_decrypt_pkey->type);
+	ERR("No RSA key found in log decryption key type=0x%x", EVP_PKEY_id(log_decrypt_pkey) /*->type*/);
 	break;
       }
       seslen = RSA_private_decrypt(seslen, (unsigned char*)buf+2, (unsigned char*)ses, rsa, RSA_PKCS1_OAEP_PADDING);
