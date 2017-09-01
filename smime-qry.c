@@ -40,6 +40,28 @@
 #define SMIME_INTERNALS  /* we want also our internal helper functions */
 #include "smimeutil.h"
 
+static char* rsa_modulus2str(EVP_PKEY* pubkey)
+{
+  char* modulus;
+  BIO* wbio = NULL;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+  {
+    const BIGNUM* n_bn;
+    const BIGNUM* e_bn;
+    const BIGNUM* d_bn;
+    RSA* rsa = EVP_PKEY_get1_RSA(pubkey);
+    RSA_get0_key(rsa, &n_bn, &e_bn, &d_bn);
+    BN_print(wbio, n_bn);
+  }
+#else
+  BN_print(wbio,pubkey->pkey.rsa->n);
+#endif
+  if (get_written_BIO_data(wbio, &modulus) == -1)
+    modulus = 0;
+  BIO_free_all(wbio);
+  return modulus;
+}
+
 /* ----------------------- get info ----------------------- */
 
 /* Obtain some human readable descriptions of the certificate. This is
@@ -53,34 +75,14 @@ get_cert_info(X509* x509,
 		    char** modulus,      /* public key modulus */
 		    char** fingerprint)  /* finger print that identifies */
 {
-  BIO* wbio = NULL;
   if (modulus) *modulus = NULL;
   if (fingerprint) *fingerprint = NULL;
   if (!x509) GOTO_ERR("NULL arg");
 
   /* Extract the public key part to be printed on paper */
   
-  if (modulus) {
-    EVP_PKEY* pubkey;
-    if (!(wbio = BIO_new(BIO_s_mem()))) GOTO_ERR("no memory?");
-    
-    pubkey = X509_get_pubkey(x509);
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-    {
-      const BIGNUM* n_bn;
-      const BIGNUM* e_bn;
-      const BIGNUM* d_bn;
-      RSA* rsa = EVP_PKEY_get1_RSA(pubkey);
-      RSA_get0_key(rsa, &n_bn, &e_bn, &d_bn);
-      BN_print(wbio,&n_bn);
-    }
-#else
-    BN_print(wbio,pubkey->pkey.rsa->n);
-#endif
-    if (get_written_BIO_data(wbio, modulus) == -1) goto err;
-    BIO_free_all(wbio);
-    wbio = NULL;
-  }
+  if (modulus)
+    *modulus = rsa_modulus2str(X509_get_pubkey(x509));
   
   /* Extract conventional message digest */
   
@@ -90,10 +92,11 @@ get_cert_info(X509* x509,
     if (!X509_digest(x509,EVP_md5(),md,&md_size)) GOTO_ERR("X509_digest");
     if (!md_size) goto err;
     if (!(*fingerprint = smime_dotted_hex((char*)md,md_size))) goto err;
-  }  
-  return ASN1_INTEGER_get(x509->cert_info->serialNumber);
+  }
+  //return ASN1_INTEGER_get(x509->cert_info->serialNumber);
+  return ASN1_INTEGER_get(X509_get_serialNumber(x509));
+
 err:
-  if (wbio) BIO_free_all(wbio);
   return -1;
 }
 
@@ -121,23 +124,12 @@ err:
 char* /* public key modulus */
 get_req_modulus(X509_REQ* req)
 {
-  char* modulus = NULL;
-  BIO* wbio = NULL;  
-  EVP_PKEY* pubkey;
-
   if (!req) GOTO_ERR("NULL arg");
-  if (!(wbio = BIO_new(BIO_s_mem()))) GOTO_ERR("no memory?");
   
-  /* Extract the public key part to be printed on paper */
-  
-  pubkey = X509_REQ_get_pubkey(req);
-  BN_print(wbio,pubkey->pkey.rsa->n);
-  if (get_written_BIO_data(wbio, &modulus) == -1) goto err;
-  BIO_free_all(wbio);
-  return modulus;
+  /* Extract the public key part to be printed on paper */  
+  return rsa_modulus2str(X509_REQ_get_pubkey(req));
 
 err:
-  if (wbio) BIO_free_all(wbio);
   return NULL;
 }
 
