@@ -94,7 +94,7 @@
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
 /* Since OpenSSL 1.1.0 the PKCS12_SAFEBAG was made opaque. */
-#include "openssl-1.1.0-fixes/evp/p12_lcl.h"
+#include "openssl-1.1.0-fixes/pkcs12/p12_lcl.h"
 #endif
 
 #define SMIME_INTERNALS  /* we want also our internal helper functions */
