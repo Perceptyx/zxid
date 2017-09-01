@@ -155,13 +155,15 @@ err:
 char*  /* returns the md5 hash as hex dump */
 smime_md5(const char* data)
 {
-  EVP_MD_CTX ctx;
+  EVP_MD_CTX* mdctx;
   unsigned int  md_size;
   unsigned char md[EVP_MAX_MD_SIZE];
-  
-  EVP_DigestInit(&ctx,EVP_md5());
-  EVP_DigestUpdate(&ctx,data,strlen(data));
-  EVP_DigestFinal(&ctx,md,&md_size);
+
+  mdctx = EVP_MD_CTX_create();
+  EVP_DigestInit(mdctx, EVP_md5());
+  EVP_DigestUpdate(mdctx, data, strlen(data));
+  EVP_DigestFinal(mdctx, md, &md_size);
+  EVP_MD_CTX_destroy(mdctx);
   return smime_hex((char*)md, md_size);
 }
 
@@ -245,28 +247,30 @@ encode_64bits(unsigned char* md, char*p)
 char*  /* hash, ready to print, or NULL if error */
 get_req_hash(X509_REQ* req)
 {
-  EVP_MD_CTX ctx;
+  EVP_MD_CTX* mdctx;
   unsigned int  md_size;
   unsigned char md[EVP_MAX_MD_SIZE];
   char* p;
 
   if (!req) GOTO_ERR("NULL arg");
   
-  EVP_DigestInit(&ctx,EVP_md5());
+  mdctx = EVP_MD_CTX_create();
+  EVP_DigestInit(mdctx,EVP_md5());
   
   if (!(p = get_req_name(req))) goto err;
-  EVP_DigestUpdate(&ctx,p,strlen(p));
+  EVP_DigestUpdate(mdctx,p,strlen(p));
   OPENSSL_free(p);
   
   if (!(p = get_req_attr(req))) goto err;
-  EVP_DigestUpdate(&ctx,p,strlen(p));
+  EVP_DigestUpdate(mdctx,p,strlen(p));
   OPENSSL_free(p);
   
   if (!(p = get_req_modulus(req))) goto err;
-  EVP_DigestUpdate(&ctx,p,strlen(p));
+  EVP_DigestUpdate(mdctx,p,strlen(p));
   OPENSSL_free(p);
   
-  EVP_DigestFinal(&ctx,md,&md_size);
+  EVP_DigestFinal(mdctx,md,&md_size);
+  EVP_MD_CTX_destroy(mdctx);
 
   if (md_size < 16) goto err;
   if (!(p = (char*)OPENSSL_malloc(13+13+1))) GOTO_ERR("no memory?");
@@ -320,7 +324,8 @@ get_cert_names(X509* x509,
 
   /* extract serial number */
 
-  serial = ASN1_INTEGER_get(x509->cert_info->serialNumber);
+  //serial = ASN1_INTEGER_get(x509->cert_info->serialNumber);
+  serial = ASN1_INTEGER_get(X509_get_serialNumber(x509));
 err:
   return serial;
 }
@@ -354,15 +359,18 @@ err:
 char* /* new line separated list of attribute value pairs */
 get_req_attr(X509_REQ* req)
 {
-  int i;
-  STACK_OF(X509_ATTRIBUTE)* xas = NULL;
+  int i,n;
   X509_ATTRIBUTE* xa;
   ASN1_TYPE* val;
-  STACK_OF(ASN1_TYPE)* vals = NULL;
   char* buf = NULL;
   
   if (!req) GOTO_ERR("NULL arg");
   if (!(buf = strdup(""))) GOTO_ERR("no memory?");
+#if 0
+  {
+  STACK_OF(X509_ATTRIBUTE)* xas = NULL;
+  STACK_OF(ASN1_TYPE)* vals = NULL;
+
   if ((xas = req->req_info->attributes) == NULL) goto err; /* no attributes */
 
   for (i = 0; i < sk_X509_ATTRIBUTE_num(xas); i++) {
@@ -392,6 +400,30 @@ get_req_attr(X509_REQ* req)
     
     if (!(buf = concat(buf,"\n"))) goto err;
   }
+  }
+#else
+  n = X509_REQ_get_attr_count(req);
+  for (i=0; i<n; ++i) {
+    xa = X509_REQ_get_attr(req, i);
+
+    /* print the (long)name of the attribute */
+
+    if (!(buf = concat(buf, OBJ_nid2ln(OBJ_obj2nid(X509_ATTRIBUTE_get0_object(xa)))))) goto err;
+    if (!(buf = concat(buf, "="))) goto err;
+    
+    /* Obtain either the single value or the first value in the set */
+    //X509_ATTRIBUTE_get0_data(X509_ATTRIBUTE *attr, int idx, int atrtype, void *data);
+    val = X509_ATTRIBUTE_get0_type(xa, 0);
+    if (val) {
+      /* print the value. *** for now this only works for various string
+         types */
+      if (!(buf = concatmem(buf, (char*)(val->value.asn1_string->data),
+			    val->value.asn1_string->length))) goto err;
+    }
+    
+    if (!(buf = concat(buf,"\n"))) goto err;
+  }
+#endif
   return buf;
 err:
   return NULL;
