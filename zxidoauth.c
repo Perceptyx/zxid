@@ -22,6 +22,7 @@
  * 30.11.2016, tweaked to make real life Facebook OAUTH pass --Sampo
  * 2.12.2016,  separated Facebook Connect to a separate flow --Sampo
  * 7.12.2016,  added storing ssoreq state on disk instead of shipping to other IdP --Sampo
+ * 20170901    added OpenSSL-1.1.0 support --Sampo
  */
 
 #include "platform.h"
@@ -78,6 +79,8 @@ char* zxid_mk_jwk(zxid_conf* cf, char* pem, int enc_use)
   char derbuf[4096];
   X509* x = 0;  /* Forces d2i_X509() to alloc the memory. */
   RSA* rsa;
+  BIGNUM* n_bn;
+  BIGNUM* e_bn;
   char* buf;
   char* p;
   char* e;
@@ -94,8 +97,17 @@ char* zxid_mk_jwk(zxid_conf* cf, char* pem, int enc_use)
 
   zx_zap_inplace_raw(pem, "\n\r \t");
   rsa = zx_get_rsa_pub_from_cert(x, "mk_jwk");
-  n_b64 = zxid_bn2b64(cf, rsa?rsa->n:0);
-  e_b64 = zxid_bn2b64(cf, rsa?rsa->e:0);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+  {
+    BIGNUM* d_bn;
+    RSA_get0_key(rsa, &n_bn, &e_bn, &d_bn);
+  }
+#else
+  n_bn = rsa?rsa->n:0;
+  e_bn = rsa?rsa->e:0;
+#endif
+  n_b64 = zxid_bn2b64(cf, n_bn);
+  e_b64 = zxid_bn2b64(cf, e_bn);
   X509_free(x);
 
   buf = zx_alloc_sprintf(cf->ctx, 0,
