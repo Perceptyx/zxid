@@ -465,6 +465,7 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
   }
   
   INFO("===== START %s req=%p uri(%.*s) args(%.*s) pid=%d cwd(%s)", ZXID_REL, req, (int)req->uri.len, STRNULLCHK(req->uri.data), (int)req->args.len, STRNULLCHK(req->args.data), getpid(), getcwd(buf,sizeof(buf)));
+  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
   if (loc_cf->wd && *loc_cf->wd)
     chdir(loc_cf->wd);  /* Ensure the working dir is not / (sometimes Apache httpd changes dir) */
 
@@ -603,6 +604,7 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
     }
   }
   D("other page: no_ses uri(%.*s) templ(%s) tf(%s) k(%s)", (int)req->uri.len, req->uri.data, STRNULLCHKNULL(req_ctx->cgi.templ), STRNULLCHKNULL(loc_cf->idp_sel_templ_file), STRNULLCHKNULL(req_ctx->cgi.skin));
+  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
   
   res = zxid_simple_no_ses_cf(loc_cf, &req_ctx->cgi, &req_ctx->ses, 0, AUTO_FLAGS);
   if (res) {
@@ -626,6 +628,10 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
   D_DEDENT("handler: ");
   return NGX_DONE;
 }
+
+/* --------------------------------------------- */
+
+/*() Process ZXIDConf configuration file directive */
 
 char* ngx_http_auth_saml_zxidconf_cmd(ngx_conf_t* ncf, ngx_command_t* cmd, void* conf)
 {
@@ -652,6 +658,7 @@ char* ngx_http_auth_saml_zxidconf_cmd(ngx_conf_t* ncf, ngx_command_t* cmd, void*
   memcpy(buf, value[1].data, value[1].len);
   buf[value[1].len] = 0;
   zxid_parse_conf(loc_cf, buf);
+  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
   return NGX_CONF_OK;
 }
 
@@ -674,8 +681,11 @@ char* ngx_http_auth_saml_zxiddebug_cmd(ngx_conf_t *ncf, ngx_command_t *cmd, void
 
 static void* ngx_http_auth_saml_create_loc_conf(ngx_conf_t *ncf)
 {
+  zxid_conf* loc_cf;
   strncpy(errmac_instance, "\tngxmas", sizeof(errmac_instance));
-  return zxid_new_conf_to_cf(0);
+  loc_cf = zxid_new_conf_to_cf(0);
+  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
+  return loc_cf;
 }
 
 /* Add a variable, referenceable in nginx configuration. */

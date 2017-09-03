@@ -32,6 +32,7 @@
  * 1.12.2016, added generation of OAUTH2 state --Sampo
  * 20170109,  improvement on processing DEFAULTQS when accessing protected pages directly --Sampo
  * 20170824   handle BARE_URL_ENTITYID correctly for no session case --Sampo
+ * 20170903   fix DEFAULTQS allocation for noncgi situation --Sampo
  *
  * Login button abbreviations
  * A2 = SAML 2.0 Artifact Profile
@@ -1510,8 +1511,8 @@ char* zxid_simple_ses_active_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int
 	fflush(stdout);
 	zx_str_free(cf->ctx, ss);
 	goto cgi_exit;
-      } else
-	goto res_zx_str;
+      }
+      goto res_zx_str;
     }
     D("idp err(%.*s) (fall thru)", ss->len, ss->s);
     /* *** */
@@ -1589,10 +1590,12 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
   D("op(%c) cf=%p cgi=%p ses=%p auto=%x wd(%s)", cgi->op?cgi->op:'-', cf, cgi, ses, auto_flags, STRNULLCHKD(cf->wd));
   if (!cgi->op) {
     if (cf->defaultqs && cf->defaultqs[0]) {
-      zxid_parse_cgi(cf, cgi, cf->defaultqs);
-      INFO("DEFAULTQS(%s) op(%c)", cf->defaultqs, cgi->op?cgi->op:'-');
-    } if (cf->bare_url_entityid)
-	return zxid_simple_show_meta(cf, cgi, res_len, auto_flags);
+        /* zxid_parse_cgi() will mod the string and take references to it so we need a new copy. */
+      res = zx_dup_cstr(cf->ctx, cf->defaultqs);
+      zxid_parse_cgi(cf, cgi, res);
+      INFO("DEFAULTQS(%s) op(%c) eid(%s)", cf->defaultqs, cgi->op?cgi->op:' ', STRNULLCHKD(cgi->eid));
+    } else if (cf->bare_url_entityid)
+      return zxid_simple_show_meta(cf, cgi, res_len, auto_flags);
     else
       cgi->op = 'E';  /* Trigger IdP selection screen */
   }
@@ -1607,18 +1610,16 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
 	fflush(stdout);
 	zx_str_free(cf->ctx, ss);
 	goto cgi_exit;
-      } else
-	goto res_zx_str;
-    } else {
-      if (auto_flags & ZXID_AUTO_REDIR) {
-	fprintf(stdout, "Location: %s?o=C" CRLF2, cf->cdc_url);
-	fflush(stdout);
-	goto cgi_exit;
-      } else {
-	ss = zx_strf(cf->ctx, "Location: %s?o=C" CRLF2, cf->cdc_url);
-	goto res_zx_str;
       }
+      goto res_zx_str;
     }
+    if (auto_flags & ZXID_AUTO_REDIR) {
+      fprintf(stdout, "Location: %s?o=C" CRLF2, cf->cdc_url);
+      fflush(stdout);
+      goto cgi_exit;
+    }
+    ss = zx_strf(cf->ctx, "Location: %s?o=C" CRLF2, cf->cdc_url);
+    goto res_zx_str;
   case 'C':  /* CDC Read: Common Domain Cookie Reader */
     ss = zxid_cdc_read(cf, cgi);
     if (auto_flags & ZXID_AUTO_REDIR) {
@@ -1626,8 +1627,8 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
       fflush(stdout);
       zx_str_free(cf->ctx, ss);
       goto cgi_exit;
-    } else
-      goto res_zx_str;
+    }
+    goto res_zx_str;
   case 'E':  /* Return from CDC read, or start here to by-pass CDC read. */
     ss = zxid_lecp_check(cf, cgi);  /* use o=E&fc=1&fn=p  to set allow create true */
     D("LECP check: ss(%.*s)", ss?ss->len:1, ss?ss->s:"?");
@@ -1637,8 +1638,8 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
 	fflush(stdout);
 	zx_str_free(cf->ctx, ss);
 	goto cgi_exit;
-      } else
-	goto res_zx_str;
+      }
+      goto res_zx_str;
     }
     if (zxid_cdc_check(cf, cgi))
       return 0;
@@ -1649,9 +1650,8 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
       if (auto_flags & ZXID_AUTO_REDIR) {
 	printf("%.*s", ss->len, ss->s);
 	goto cgi_exit;
-      } else {
-	goto res_zx_str;
       }
+      goto res_zx_str;
     }
     break;
   case 'A':
@@ -1686,8 +1686,8 @@ char* zxid_simple_no_ses_cf(zxid_conf* cf, zxid_cgi* cgi, zxid_ses* ses, int* re
 	fflush(stdout);
 	zx_str_free(cf->ctx, ss);
 	goto cgi_exit;
-      } else
-	goto res_zx_str;
+      }
+      goto res_zx_str;
     case 'I': goto idp;
     }
     D("Q err (fall thru) %d", 0);
