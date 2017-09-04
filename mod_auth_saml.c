@@ -147,8 +147,6 @@ static int pool2apache(zxid_conf* cf, request_rec* r, struct zxid_attr* pool)
   void* r_pool = HRR_pool(r);
   void* sbe = HRR_subprocess_env(r);
 
-  /* Length computation pass */
-
   for (at = pool; at; at = at->n) {
     DD("HERE name(%s)", at->name);
     map = zxid_find_map(cf->outmap, at->name);

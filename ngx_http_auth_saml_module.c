@@ -154,15 +154,114 @@ ngx_module_t  ngx_http_auth_saml_module;
 
 typedef struct {
   int req_kind;
+  zxid_conf* loc_cf;
   zxid_cgi cgi;
   zxid_ses ses;
   char* post_body;
 } ngx_http_auth_saml_ctx_t;
 
-#define NGXMAS_KIND_PC    (2)
-#define NGXMAS_KIND_ENDPT (3)
-#define NGXMAS_KIND_WSP   (4)
-#define NGXMAS_KIND_UMA   (5)
+#define NGXAS_KIND_PC    (2)
+#define NGXAS_KIND_ENDPT (3)
+#define NGXAS_KIND_WSP   (4)
+#define NGXAS_KIND_UMA   (5)
+
+/*() Convert session attribute pool into nginx variables
+ * that will be passed to Python and other modules using uwsgi_param directives.
+ *
+ * OUTMAP will be applied to decide which attributes to pass to the environment
+ * and to rename them.
+ *
+ * This is considered internal function to auth_saml.
+ * You should not call this directly, unless you know what you are doing.
+ *
+ * return:: ngx error code, typically OK (==0), which allows ngx continue
+ *     processing the request. */
+
+static int pool2ngx(zxid_conf* cf, ngx_http_request_t* req, struct zxid_attr* pool)
+{
+  int ret = 0;
+#if 0
+  char* name;
+  //char* rs = 0;
+  //char* rs_qs;
+  char* setcookie = 0;
+  char* setptmcookie = 0;
+  char* cookie = 0;
+  char* idpnid = 0;
+  struct zxid_map* map;
+  struct zxid_attr* at;
+  struct zxid_attr* av;
+  ngx_http_variable_t  *var, *v;
+  //req_ctx = ngx_http_get_module_ctx(req, ngx_http_auth_saml_module);
+  
+  for (at = pool; at; at = at->n) {
+    map = zxid_find_map(cf->outmap, at->name);
+    if (map) {
+      if (map->rule == ZXID_MAP_RULE_DEL) {
+	D("attribute(%s) filtered out by del rule in OUTMAP", at->name);
+	continue;
+      }
+      at->map_val = zxid_map_val(cf, 0, 0, map, at->name, at->val);
+      if (map->dst && *map->dst && map->src && map->src[0] != '*') {
+	name = map->dst;
+      } else {
+	name = at->name;
+      }
+
+      name = ngx_pcalloc(req->pool, strlen(cf->mod_saml_attr_prefix)+strlen(name)+1);
+      sprintf(name, "%s%s", cf->mod_saml_attr_prefix, name);
+      var = ngx_http_add_variable(ncf, name, 0);
+
+      //***
+      //apr_table_set(sbe, name, at->val);
+      //for (av = at->nv; av; av = av->n) {
+      //av->map_val = zxid_map_val(cf, 0, 0, map, at->name, av->val);
+      //apr_table_set(sbe, name, av->map_val->s);
+      //}
+    } else {
+      if ((errmac_debug & ERRMAC_DEBUG_MASK)>2)
+	D("ATTR(%s)=VAL(%s)", at->name, STRNULLCHKNULL(at->val));
+      else
+	D("ATTR(%s)=VAL(%.*s)", at->name, at->val?(int)MIN(35,strlen(at->val)):6, at->val?at->val:"(null)");
+      name = ngx_pcalloc(req->pool, strlen(cf->mod_saml_attr_prefix)+strlen(name)+1);
+      sprintf(name, "%s%s", cf->mod_saml_attr_prefix, at->name);
+      var = ngx_http_add_variable(ncf, name, 0);
+      /* *** handling of multivalued attributes (right now only last is preserved) */
+
+      //apr_table_set(sbe, name, at->val);
+      //for (av = at->nv; av; av = av->n)
+      //	apr_table_set(sbe, name, av->val);
+    }
+    if      (!strcmp(at->name, "idpnid"))       idpnid = at->val;      /* Capture special */
+    else if (!strcmp(at->name, "setcookie"))    setcookie = at->val;
+    else if (!strcmp(at->name, "setptmcookie")) setptmcookie = at->val;
+    else if (!strcmp(at->name, "cookie"))       cookie = at->val;
+    //else if (!strcmp(at->name, "rs"))         rs = at->val;
+  }
+
+  /* See zxidsimp.c: zxid_show_protected_content_setcookie() */
+#if 0
+  hrr_set_cookies(cf, r, setcookie, setptmcookie);  
+  if (cookie && cookie[0] != '-') {
+    D("Cookie(%s) 2", cookie);
+      var = ngx_http_add_variable(ncf, "Cookie", 0);
+    apr_table_addn(HRR_headers_in(r), "Cookie", cookie);  /* so internal redirect sees it */
+  }
+#endif
+  if (idpnid && idpnid[0] != '-') {
+    D("REMOTE_USER(%s)", idpnid);
+    var = ngx_http_add_variable(ncf, "REMOTE_USER", 0);
+    // ***
+    //apr_table_set(sbe, "REMOTE_USER", idpnid);
+    //HRR_set_user(r, idpnid);  /* set r->user httpd-2.4 anz framework requires this, 2.2 does not care */
+  }
+  
+  //apr_table_setn(r->subprocess_env, apr_psprintf(r->pool, "%sLDIF", cf->mod_saml_attr_prefix), ldif);
+  D("SSO OK ret(%d) uri(%s) filename(%s) path_info(%s) user(%s)=%p", ret, (char*)HRR_uri(r), (char*)HRR_filename(r), (char*)HRR_path_info(r), STRNULLCHKD((char*)HRR_user(r)), HRR_user(r));
+#endif
+  return ret;
+}
+
 
 /* 0x6000 outf QS + JSON = no output on successful sso, the attrubutes are in session
  * 0x1000 debug
@@ -274,7 +373,7 @@ static ngx_int_t ngx_http_auth_saml_process_zxid_simple_outcome(ngx_http_request
     return NGX_HTTP_FORBIDDEN;
   case 0: /* Logged in case */
     D("SSO OK pc %d", 0);
-    // *** ret = pool2apache(cf, r, ses.at);
+    pool2ngx(loc_cf, req, ses->at);
     D_DEDENT("simple_outcome: ");
     return NGX_DECLINED;
 #if 0
@@ -312,7 +411,7 @@ static ngx_int_t ngx_http_auth_saml_handler_rest(ngx_http_request_t* req, zxid_c
   char* res;
   D_INDENT("rest: ");
   switch (req_ctx->req_kind) {
-  case NGXMAS_KIND_ENDPT:
+  case NGXAS_KIND_ENDPT:
     if (ONE_OF_2(req_ctx->cgi.op, 'L', 'A')) /* SSO (Login, Artifact) activity */
       break;                                 /*     overrides current session. */
     if (!req_ctx->cgi.sid || !zxid_get_ses(loc_cf, &req_ctx->ses, req_ctx->cgi.sid)) {
@@ -321,10 +420,10 @@ static ngx_int_t ngx_http_auth_saml_handler_rest(ngx_http_request_t* req, zxid_c
     }
     res = zxid_simple_ses_active_cf(loc_cf, &req_ctx->cgi, &req_ctx->ses, 0, AUTO_FLAGS);
     goto out;
-  case NGXMAS_KIND_WSP:
+  case NGXAS_KIND_WSP:
     if (zxid_wsp_validate(loc_cf, &req_ctx->ses, 0, req_ctx->post_body)) {
       D("WSP(%.*s) request valid", (int)req->uri.len, req->uri.data);
-      //ret = pool2apache(cf, r, ses.at);
+      pool2ngx(loc_cf, req, req_ctx->ses.at);
       D_DEDENT("rest: ");
       return NGX_DECLINED;  /* Let the request be handled in an ordinary way. */
       /* *** how to decorate the CGI return value?!? New hook needed? --Sampo */
@@ -333,11 +432,12 @@ static ngx_int_t ngx_http_auth_saml_handler_rest(ngx_http_request_t* req, zxid_c
       D_DEDENT("rest: ");
       return NGX_HTTP_FORBIDDEN;
     }
-  case NGXMAS_KIND_UMA:
+  case NGXAS_KIND_UMA:
     // *** add UMA Resource Server stuff here
+    pool2ngx(loc_cf, req, req_ctx->ses.at);
     ERR("UMA NOT IMPLEMENTED %.*s", (int)req->uri.len, req->uri.data);
     break;
-  case NGXMAS_KIND_PC:
+  case NGXAS_KIND_PC:
     ERR("Protected Content seen in wrong place %.*s", (int)req->uri.len, req->uri.data);
     break;    
   default:
@@ -465,7 +565,6 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
   }
   
   INFO("===== START %s req=%p uri(%.*s) args(%.*s) pid=%d cwd(%s)", ZXID_REL, req, (int)req->uri.len, STRNULLCHK(req->uri.data), (int)req->args.len, STRNULLCHK(req->args.data), getpid(), getcwd(buf,sizeof(buf)));
-  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
   if (loc_cf->wd && *loc_cf->wd)
     chdir(loc_cf->wd);  /* Ensure the working dir is not / (sometimes Apache httpd changes dir) */
 
@@ -480,7 +579,9 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
       return NGX_ERROR;
     }
     memset(req_ctx, 0, sizeof(ngx_http_auth_saml_ctx_t));
+    req_ctx->loc_cf = loc_cf;
     ngx_http_set_ctx(req, req_ctx, ngx_http_auth_saml_module);
+    D("req_ctx=%p allocated", req_ctx);
   }
   
   if (req->uri.len && req->uri.data) {
@@ -556,7 +657,7 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
     
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("matched uri(%.*s) cf->burl(%s) qs(%.*s) rs(%s) op(%c)", (int)req->uri.len, req->uri.data, loc_cf->burl, (int)req->args.len, STRNULLCHK(req->args.data), STRNULLCHKNULL(req_ctx->cgi.rs), req_ctx->cgi.op);
 
-    req_ctx->req_kind = NGXMAS_KIND_ENDPT;
+    req_ctx->req_kind = NGXAS_KIND_ENDPT;
     if (req->method == NGX_HTTP_POST)
       goto post;
     D_DEDENT("handler: ");
@@ -565,14 +666,14 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
 
   if (loc_cf->wsp_pat || loc_cf->uma_pat) {
     if (zx_match(loc_cf->wsp_pat, req->uri.len, (char*)req->uri.data)) {         /* WSP case */
-      req_ctx->req_kind = NGXMAS_KIND_WSP;
+      req_ctx->req_kind = NGXAS_KIND_WSP;
       if (req->method == NGX_HTTP_POST)
 	goto post;
       ERR("WSP(%.*s) must be called with POST method %d", (int)req->uri.len, req->uri.data, (int)req->method);
       D_DEDENT("handler: ");
       return NGX_HTTP_NOT_ALLOWED;
     } else if (zx_match(loc_cf->uma_pat, req->uri.len, (char*)req->uri.data)) {  /* UMA case */
-      req_ctx->req_kind = NGXMAS_KIND_UMA;
+      req_ctx->req_kind = NGXAS_KIND_UMA;
       if (req->method == NGX_HTTP_POST)
 	goto post;
       ERR("UMA(%.*s) must be called with POST method %d", (int)req->uri.len, req->uri.data, (int)req->method);
@@ -582,7 +683,7 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
   }
   
   /* Ordinary protected content falls thru to here. Just check for session validity. */
-  req_ctx->req_kind = NGXMAS_KIND_PC;
+  req_ctx->req_kind = NGXAS_KIND_PC;
 
   if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("other page uri(%.*s) qs(%.*s) cf->burl(%s) uri_len=%d url_len=%d", (int)req->uri.len, req->uri.data, (int)req->args.len, STRNULLCHK(req->args.data), loc_cf->burl, (int)req->uri.len, url_len);
   
@@ -598,13 +699,12 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
     if (loc_cf->optional_login_pat
 	&& zx_match(loc_cf->optional_login_pat, req->uri.len, (char*)req->uri.data)) {
       D("optional_login_pat matches %d", 0);
-      // *** HRR_set_user(r, "-anon-");  /* httpd-2.4 anz framework requires this, 2.2 does not care */
+      // *** set_user(r, "-anon-");  /* httpd-2.4 anz framework requires this, 2.2 does not care */
       D_DEDENT("handler: ");
       return NGX_DECLINED;  /* Allow normal processing to happen */
     }
   }
   D("other page: no_ses uri(%.*s) templ(%s) tf(%s) k(%s)", (int)req->uri.len, req->uri.data, STRNULLCHKNULL(req_ctx->cgi.templ), STRNULLCHKNULL(loc_cf->idp_sel_templ_file), STRNULLCHKNULL(req_ctx->cgi.skin));
-  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
   
   res = zxid_simple_no_ses_cf(loc_cf, &req_ctx->cgi, &req_ctx->ses, 0, AUTO_FLAGS);
   if (res) {
@@ -638,6 +738,7 @@ char* ngx_http_auth_saml_zxidconf_cmd(ngx_conf_t* ncf, ngx_command_t* cmd, void*
   char* buf;
   ngx_str_t* value;
   zxid_conf* loc_cf = (zxid_conf*)conf;
+#if 0
   ngx_http_core_loc_conf_t  *clcf;
 
   /* Install content (?) handler for location */
@@ -646,7 +747,8 @@ char* ngx_http_auth_saml_zxidconf_cmd(ngx_conf_t* ncf, ngx_command_t* cmd, void*
     ERR("NULL core module local configuration %p", clcf);
   }
   clcf->handler = ngx_http_auth_saml_handler;  /* content handler (?) */
-
+#endif
+  
   if (!ncf->args || !ncf->args->elts) {
     ERR("configuration NULL args %p", ncf->args);
   }
@@ -658,7 +760,7 @@ char* ngx_http_auth_saml_zxidconf_cmd(ngx_conf_t* ncf, ngx_command_t* cmd, void*
   memcpy(buf, value[1].data, value[1].len);
   buf[value[1].len] = 0;
   zxid_parse_conf(loc_cf, buf);
-  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
+  DD("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
   return NGX_CONF_OK;
 }
 
@@ -682,49 +784,150 @@ char* ngx_http_auth_saml_zxiddebug_cmd(ngx_conf_t *ncf, ngx_command_t *cmd, void
 static void* ngx_http_auth_saml_create_loc_conf(ngx_conf_t *ncf)
 {
   zxid_conf* loc_cf;
-  strncpy(errmac_instance, "\tngxmas", sizeof(errmac_instance));
+  strncpy(errmac_instance, "\tngxas", sizeof(errmac_instance));
   loc_cf = zxid_new_conf_to_cf(0);
   D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
   return loc_cf;
 }
 
-/* Add a variable, referenceable in nginx configuration. */
+/* Provide a value for ZXID_VERSION variable. */
 
-static ngx_int_t ngx_http_zxid_version_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data)
+static ngx_int_t ngx_http_zxid_version_get(ngx_http_request_t* req, ngx_http_variable_value_t *v, uintptr_t data)
 {
-    u_char* p = ngx_pnalloc(r->pool, NGX_ATOMIC_T_LEN);
-    if (!p) {
-        return NGX_ERROR;
-    }
-    v->len = ngx_sprintf(p, "0x%x", ZXID_VERSION) - p;
-    v->valid = 1;
-    v->no_cacheable = 0;
-    v->not_found = 0;
-    v->data = p;
-    return NGX_OK;
-}
-
-static ngx_http_variable_t  ngx_http_auth_saml_static_vars[] = {
-    { ngx_string("ZXID_VERSION"), 0, ngx_http_zxid_version_get, 0, 0, 0 },
-    { {0,0}, 0, 0, 0, 0, 0 }
-};
-
-static ngx_int_t ngx_http_auth_saml_add_static_vars(ngx_conf_t* ncf)
-{
-  ngx_http_variable_t  *var, *v;
-
-  for (v = ngx_http_auth_saml_static_vars; v->name.len; ++v) {
-    var = ngx_http_add_variable(ncf, &v->name, v->flags);
-    if (!var) {
-      return NGX_ERROR;
-    }
-    var->get_handler = v->get_handler;
-    var->data = v->data;
+  char* p = (char*)ngx_pnalloc(req->pool, 11);
+  D("HERE %d", 0);
+  if (!p) {
+    return NGX_ERROR;
   }
+  v->len = sprintf(p, "0x%08x", zxid_version());
+  D("len=%d val(%.*s)", v->len, v->len, p);
+  v->valid = 1;
+  v->no_cacheable = 0;
+  v->not_found = 0;
+  v->data = (u_char*)p;
   return NGX_OK;
 }
 
+/* Evaluate variable, referenceable in nginx configuration and request processing */
+
+static ngx_int_t ngx_http_zxid_var_get(ngx_http_request_t* req, ngx_http_variable_value_t* val, uintptr_t data)
+{
+  ngx_http_auth_saml_ctx_t* req_ctx = ngx_http_get_module_ctx(req, ngx_http_auth_saml_module);
+  char* name = (char*)data;
+  struct zxid_map* map;
+  struct zxid_attr* at;
+  //struct zxid_attr* av;
+  
+  D("looking up var(%s) req_ctx=%p at_pool=%p", name, req_ctx, req_ctx?req_ctx->ses.at:0);
+  if (!req_ctx) {
+    D("Missing req_ctx, session attribute(%s) not found. You must have ZXIDConf directive in the location section to enable SSO",name);
+    val->not_found = 1;
+    return NGX_OK;
+  }
+  at = zxid_find_at(req_ctx->ses.at, name);
+  if (!at) {
+    D("session attribute(%s) not found",name);
+    val->not_found = 1;
+    return NGX_OK;
+  }
+  D("HERE %d",0);
+  map = zxid_find_map(req_ctx->loc_cf->outmap, name);
+  D("var(%s) at=%p map=%p", name, at, map);
+  if (map) {
+    if (map->rule == ZXID_MAP_RULE_DEL) {
+      D("attribute(%s) filtered out by del rule in OUTMAP", name);
+      val->not_found = 1;
+      return NGX_OK;
+    }
+    at->map_val = zxid_map_val(req_ctx->loc_cf, &req_ctx->ses, 0, map, name, at->val);
+    val->len = at->map_val->len;
+    val->data = (u_char*)(at->map_val->s);
 #if 0
+    if (map->dst && *map->dst && map->src && map->src[0] != '*') {
+      name = map->dst;
+    } else {
+      name = at->name;
+    }
+#endif
+    //apr_table_set(sbe, name, at->val);
+    //for (av = at->nv; av; av = av->n) {
+    //  av->map_val = zxid_map_val(cf, 0, 0, map, at->name, av->val);
+    //  apr_table_set(sbe, name, av->map_val->s);
+    //}
+  } else {
+    if ((errmac_debug & ERRMAC_DEBUG_MASK)>2)
+      D("ATTR(%s)=VAL(%s)", at->name, STRNULLCHKNULL(at->val));
+    else
+      D("ATTR(%s)=VAL(%.*s)", at->name, at->val?(int)MIN(35,strlen(at->val)):6, at->val?at->val:"(null)");
+    //name = ngx_pcalloc(req->pool, strlen(cf->mod_saml_attr_prefix)+strlen(name)+1);
+    //sprintf(name, "%s%s", cf->mod_saml_attr_prefix, at->name);
+    //var = ngx_http_add_variable(ncf, name, 0);
+    /* *** handling of multivalued attributes (right now only last is preserved) */
+    
+    val->len = strlen(at->val);
+    val->data = (u_char*)(at->val);
+    //apr_table_set(sbe, name, at->val);
+    //for (av = at->nv; av; av = av->n)
+    //	apr_table_set(sbe, name, av->val);
+  }
+  val->valid = 1;
+  val->no_cacheable = 0;
+  val->not_found = 0;
+  return NGX_OK;
+}
+
+static const char* ngx_zxid_vars[] = {
+  "fedusername",
+  "sesid",
+  "sespath",
+  "localuid",
+  "localpath",
+  "lang",
+  "nick",
+  "cn",
+  "tel",
+  "email",
+  0
+};
+
+static ngx_int_t ngx_http_auth_saml_add_vars(ngx_conf_t* ncf)
+{
+  const char** name;
+  ngx_str_t ns = ngx_string("zxid_version");
+  ngx_http_variable_t* var;
+  
+  var = ngx_http_add_variable(ncf, &ns, 0);
+  if (!var)
+    goto err;
+  var->get_handler = ngx_http_zxid_version_get;
+  //ERR("var(%.*s)=%p", (int)ns.len, ns.data, var);
+
+  for (name = ngx_zxid_vars; *name; ++name) {
+    //ns->len = strlen(name); ns->data = (u_char*)name;
+#if 0
+    ns.len = loc_cf->mod_saml_attr_prefix?strlen(loc_cf->mod_saml_attr_prefix):0+strlen(*name);
+    ns.data = ngx_pnalloc(ncf->pool, ns.len+1);
+    sprintf((char*)ns.data, "%s%s", STRNULLCHK(loc_cf->mod_saml_attr_prefix), *name);
+#else
+    ns.len = sizeof("saml_")-1+strlen(*name);
+    ns.data = ngx_pnalloc(ncf->pool, ns.len+1);
+    sprintf((char*)ns.data, "saml_%s", *name);
+#endif
+    //ERR("len=%d var(%s)", (int)ns.len, ns.data);
+    var = ngx_http_add_variable(ncf, &ns, 0);
+    if (!var)
+      goto err;
+    var->get_handler = ngx_http_zxid_var_get;
+    var->data = (uintptr_t)*name;
+    ERR("VAR(%s) len=%d var(%s)=%p handler=%p", (char*)var->data, (int)ns.len, ns.data, var, var->get_handler);
+  }
+  return NGX_OK;
+ err:
+  ERR("var(%.*s) not added", (int)ns.len, ns.data);
+  return NGX_ERROR;
+}
+
+#if 1
 // installing the content (?) handler happens in ngx_http_auth_saml_zxidconf_cmd() when
 // ZXIDConf config stanza is seen.
 static ngx_int_t ngx_http_auth_saml_init(ngx_conf_t *ncf)
@@ -759,8 +962,8 @@ static ngx_command_t  ngx_http_auth_saml_commands[] = {
 };
 
 static ngx_http_module_t  ngx_http_auth_saml_module_ctx = {
-    ngx_http_auth_saml_add_static_vars,           /* preconfiguration */
-    0,  // ngx_http_auth_saml_init,    /* postconfiguration */
+    ngx_http_auth_saml_add_vars,           /* preconfiguration */
+    ngx_http_auth_saml_init,    /* postconfiguration */
     0,                          /* create main configuration */
     0,                          /* init main configuration */
     0,                          /* create server configuration */

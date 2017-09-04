@@ -238,7 +238,9 @@ struct zx_str* zxid_http_cli(zxid_conf* cf, int url_len, const char* url, int le
   switch (res) {
   case 0: break;
   case CURLE_SSL_CONNECT_ERROR:
-    ERR("Is the URL(%s) really an https url? Check that certificate of the server is valid and that certification authority is known to the client. CURLcode(%d) CURLerr(%s) errbuf(%s)", urli, res, CURL_EASY_STRERR(res), errbuf);
+  case CURLE_SSL_CIPHER:
+  case CURLE_SSL_CACERT:
+    ERR("Is the URL(%s) really an https url? Check that certificate of the server is valid and that certification authority is known to the client. (On Ubuntu check /etc/ssl/certs/ca-certificates.crt) CURLcode(%d) CURLerr(%s) errbuf(%s)", urli, res, CURL_EASY_STRERR(res), errbuf);
     DD("buf(%.*s)", rc.lim-rc.buf, rc.buf);
 #if 0
     struct curl_certinfo* ci;

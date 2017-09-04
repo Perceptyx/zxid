@@ -159,7 +159,7 @@ zxid_ses* zxid_alloc_ses(zxid_conf* cf)
 }
 
 /*(i) Allocate memory and get session object from the filesystem, populating
- * attributes to pool so they are available for use. You mus obtain session id
+ * attributes to pool so they are available for use. You must obtain session id
  * from some source. */
 
 /* Called by:  zxcall_main, zxumacall_main */
