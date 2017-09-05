@@ -1,5 +1,5 @@
 /* zxencdectest.c  -  Test XML encoding and decoding using zx generated code
- * Copyright (c) 2010-2011 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
+ * Copyright (c) 2010-2011,2017 Sampo Kellomaki (sampo@iki.fi), All Rights Reserved.
  * Copyright (c) 2006-2007 Symlabs (symlabs@symlabs.com), All Rights Reserved.
  * Author: Sampo Kellomaki (sampo@iki.fi)
  * This is confidential unpublished proprietary source code of the author.
@@ -11,6 +11,7 @@
  * 1.7.2006, started --Sampo
  * 9.2.2007, improved to make basis of a test suite tool --Sampo
  * 1.3.2011, added zx_timegm() testing --Sampo
+ * 20170905  zx_match() tests --Sampo
  *
  * Test encoding and decoding SAML 2.0 assertions and other related stuff.
  */
@@ -55,6 +56,7 @@ Usage: zxencdectest [options] <foo.xml >reencoded-foo.xml\n\
   -rand PATH   Location of random number seed file. On Solaris EGD is used.\n\
                On Linux the default is /dev/urandom. See RFC1750.\n\
   -wo PATH     File to write wire order encoding in\n\
+  -match-test  Test zx_match() function corner cases\n\
   -v           Verbose messages.\n\
   -q           Be extra quiet.\n\
   -d           Turn on debugging.\n\
@@ -455,6 +457,201 @@ void covimp_test()       /* -r 5 */
   printf("covimp ok\n");
 }
 
+struct zx_match_test_s {
+  char* pat;
+  char* str;
+  int outcome;
+};
+
+struct zx_match_test_s match_tests[] = {
+  { "","",1 },
+  { "","a",0 },
+  { "a","",0 },
+  { "a","a",1 },
+  { "a","b",0 },
+  { "a","aa",0 },
+  { "a","ab",0 },
+  { "b","ab",0 },
+  { "ab","ab",1 },
+  { "bb","ab",0 },
+  { "bb","ba",0 },
+  { "aa","ba",0 },
+  { "?","",0 },
+  { "?","a",1 },
+  { "?","ab",0 },
+  { "*","",1 },
+  { "**","",1 },
+  { "*","a",1 },
+  { "**","a",1 },
+  { "*","ab",1 },
+  { "**","ab",1 },
+  { "*","a/",0 },
+  { "**","a/",1 },
+  { "*","/b",0 },
+  { "**","/b",1 },
+  { "*","a/b",0 },
+  { "**","a/b",1 },
+
+  { "/*","",0 },
+  { "/**","",0 },
+  { "/*","a",0 },
+  { "/**","a",0 },
+  { "/*","ab",0 },
+  { "/**","ab",0 },
+  { "/*","a/",0 },
+  { "/**","a/",0 },
+  { "/*","/b",1 },
+  { "/**","/b",1 },
+  { "/*","a/b",0 },
+  { "/**","a/b",0 },
+
+  { "/*","/",1 },
+  { "/**","/",1 },
+  { "/*","/a",1 },
+  { "/**","/a",1 },
+  { "/*","/ab",1 },
+  { "/**","/ab",1 },
+  { "/*","/a/",0 },
+  { "/**","/a/",1 },
+  { "/*","/a/b",0 },
+  { "/**","/a/b",1 },
+
+  { "a*","",0 },
+  { "a**","",0 },
+  { "a*","a",1 },
+  { "a**","a",1 },
+  { "a*","ab",1 },
+  { "a**","ab",1 },
+  { "a*","a/",0 },
+  { "a**","a/",1 },
+  { "a*","/b",0 },
+  { "a**","/b",0 },
+  { "a*","a/b",0 },
+  { "a**","a/b",1 },
+
+  { "ab*","",0 },
+  { "ab**","",0 },
+  { "ab*","a",0 },
+  { "ab**","a",0 },
+  { "ab*","ab",1 },
+  { "ab**","ab",1 },
+  { "ab*","a/",0 },
+  { "ab**","a/",0 },
+  { "ab*","/b",0 },
+  { "ab**","/b",0 },
+  { "ab*","a/b",0 },
+  { "ab**","a/b",0 },
+  { "ab*","ab/",0 },
+  { "ab**","ab/",1 },
+  { "ab*","ab/c",0 },
+  { "ab**","ab/c",1 },
+
+  { "*/","",0 },
+  { "**/","",0 },
+  { "*/","a",0 },
+  { "**/","a",0 },
+  { "*/","ab",0 },
+  { "**/","ab",0 },
+  { "*/","a/",1 },
+  { "**/","a/",1 },
+  { "*/","/b",0 },
+  { "**/","/b",0 },
+  { "*/","a/b",0 },
+  { "**/","a/b",0 },
+
+  { "*/","/",1 },
+  { "**/","/",1 },
+  { "*/","/a",0 },
+  { "**/","/a",0 },
+  { "*/","/ab",0 },
+  { "**/","/ab",0 },
+  { "*/","/a/",0 },
+  { "**/","/a/",1 },
+  { "*/","/a/b",0 },
+  { "**/","/a/b",0 },
+  { "**/","/a/b/",1 },
+
+  { "*a","",0 },
+  { "**a","",0 },
+  { "*a","a",1 },
+  { "**a","a",1 },
+  { "*a","ab",0 },
+  { "**a","ab",0 },
+  { "*a","a/",0 },
+  { "**a","a/",0 },
+  { "*a","/b",0 },
+  { "**a","/b",0 },
+  { "*a","a/b",0 },
+  { "**a","a/b",0 },
+  { "*a","a/b/a",0 },
+  { "**a","a/b/a",1 },
+
+  { "a*c","a/b/a",0 },
+  { "a**c","a/b/a",0 },
+  { "a*c","a/b/c",0 },
+  { "a**c","a/b/c",1 },
+  { "a/*/c","a/b/c",1 },
+  { "a/**/c","a/b/c",1 },
+  { "a*c","a/bb/c",0 },
+  { "a**c","a/bb/c",1 },
+  { "a/*/c","a/bb/c",1 },
+  { "a/**/c","a/bb/c",1 },
+
+  { "a*/b","a/b",1 },
+  { "a/*b","a/b",1 },
+  { "a**/b","a/b",1 },
+  { "a/**b","a/b",1 },
+  { "a*/*b","a/b",1 },
+  { "a*/*b","a/b",1 },
+  { "a**/**b","a/b",1 },
+  { "a**/**b","a/b",1 },
+
+  { "*a*/b","a/b",1 },
+  { "a/*b*","a/b",1 },
+  { "**a**/b","a/b",1 },
+  { "a/**b**","a/b",1 },
+  { "*a*/*b*","a/b",1 },
+  { "**a**/**b**","a/b",1 },
+
+  { "a*b*d","a/b/c/d",0 },
+  { "a**b*d","a/b/c/d",0 },
+  { "a*b**d","a/b/c/d",0 },
+  { "a/*/*/d","a/b/c/d",1 },
+  { "a/**/d","a/b/c/d",1 },
+  { "a*d","a/bb/c/d",0 },
+  { "a**d","a/bb/c/d",1 },
+  { "a/*/d","a/bb/c/d",0 },
+  { "a/**/d","a/bb/c/d",1 },
+
+  { "/a/py*","/a/py",1 },
+  { "/a/py**","/a/py",1 },
+  { "/a/py/*","/a/py",0 },
+  { "/a/py/**","/a/py",0 },
+  { "/a/py*","/a/py/",0 },
+  { "/a/py**","/a/py/",1 },
+  { "/a/py/*","/a/py/",1 },
+  { "/a/py/**","/a/py/",1 },
+  { "/a/py/*","/a/py/c",1 },
+  { "/a/py/**","/a/py/c",1 },
+  { "/a/py/*","/a/py/cd",1 },
+  { "/a/py/**","/a/py/cd",1 },
+  { "/a/py/*","/a/py/cd/",0 },
+  { "/a/py/**","/a/py/cd/",1 },
+  { 0,0,0 }
+};
+
+void zx_match_test()
+{
+  struct zx_match_test_s* mtp;
+  int ret,n;
+  
+  for (n=1, mtp=match_tests; mtp->pat; ++n, ++mtp) {
+    ret = zx_match(mtp->pat, -2, mtp->str);
+    printf("%d %s pat(%s) path(%s) = %d\n",
+	   n, ret == mtp->outcome ? "OK":"ERR", mtp->pat, mtp->str, ret);
+  }
+}
+
 /* Called by:  main x8, zxbusd_main, zxbuslist_main, zxbustailf_main, zxcachecli_main, zxcached_main, zxcall_main, zxcot_main, zxdecode_main, zxumacall_main */
 void opt(int* argc, char*** argv, char*** env)
 {
@@ -620,6 +817,13 @@ void opt(int* argc, char*** argv, char*** env)
 #endif
       continue;
 
+    case 'm':
+      if (!strcmp((*argv)[0],"-match-test")) {
+	zx_match_test();
+	exit(0);
+      }
+      break;
+      
     case 'u':
       switch ((*argv)[0][2]) {
       case 'i': if ((*argv)[0][3] != 'd' || (*argv)[0][4]) break;

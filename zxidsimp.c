@@ -109,8 +109,8 @@ int zxid_conf_to_cf_len(zxid_conf* cf, int conf_len, const char* conf)
 	conf_len = 0;
     }
 
-    if (!conf || conf_len < 5 || memcmp(conf, "PATH=", 5)) {
-      /* No conf, or conf does not start by PATH: read from file default values */
+    if (!conf || conf_len < 6 || memcmp(conf, "CPATH=", 6)) {
+      /* No conf, or conf does not start by CPATH: read from file default values */
       buf = read_all_alloc(cf->ctx, "-conf_to_cf", 1, &len, "%s" ZXID_CONF_FILE, cf->cpath);
       if (!buf || !len)
 	buf = read_all_alloc(cf->ctx, "-conf_to_cf", 1, &len, "%szxid.conf", cf->cpath);

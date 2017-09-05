@@ -1483,12 +1483,13 @@ zxid_conf* zxid_new_conf(const char* zxid_path)
  * is found. This is used by VPATH. */
 
 /* Called by:  zxid_parse_conf_raw, zxid_parse_vpath */
-static void zxid_parse_conf_path_raw(zxid_conf* cf, const char* pth, int check_file_exists)
+static void zxid_parse_and_read_conf_path_raw(zxid_conf* cf, const char* pth, int check_file_exists)
 {
   int len;
   char *buf;
-  if (!pth) {
+  if (!pth || !*pth) {
     ERR("Missing CPATH %p", pth);
+    return;
   }
   
   /* N.B: The buffer read here leaks on purpose as conf parsing takes references inside it. */
@@ -1683,7 +1684,7 @@ static int zxid_parse_vpath(zxid_conf* cf, char* vpath)
   if (--zxid_suppress_vpath_warning > 0) {
     INFO("VPATH(%s) alters CPATH(%s) to new CPATH(%s)", vpath, cf->cpath, newpath);
   }
-  zxid_parse_conf_path_raw(cf, zx_dup_cstr(cf->ctx, newpath), 1);
+  zxid_parse_and_read_conf_path_raw(cf, zx_dup_cstr(cf->ctx, newpath), 1);
   return 1;
 }
 
@@ -1724,7 +1725,7 @@ static int zxid_parse_vurl(zxid_conf* cf, char* vurl)
  *     terminations and performing URL decoding.
  * return:: -1 on failure, 0 on success */
 
-/* Called by:  zxid_conf_to_cf_len x4, zxid_parse_conf, zxid_parse_conf_path_raw, zxid_parse_inc */
+/* Called by:  zxid_conf_to_cf_len x4, zxid_parse_conf, zxid_parse_and_read_conf_path_raw, zxid_parse_inc */
 int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
 {
   int i;
@@ -1893,7 +1894,7 @@ int zxid_parse_conf_raw(zxid_conf* cf, int qs_len, char* qs)
 	  D("Skipping CPATH inside file(%.*s) cpath_supplied=%d", cf->cpath_len, cf->cpath, cf->cpath_supplied);
 	  break;
 	}
-	zxid_parse_conf_path_raw(cf, v, 0);
+	zxid_parse_and_read_conf_path_raw(cf, v, 0);
 	break;
       }
       if (!strcmp(n, "PDP_ENA"))        { SCAN_INT(v, cf->pdp_ena); break; }

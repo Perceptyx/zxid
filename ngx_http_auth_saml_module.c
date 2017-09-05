@@ -51,6 +51,7 @@
  * See also: http://www.evanmiller.org/nginx-modules-guide.html
  *   chkuid() in mod_auth_saml.c
  * http://nginx.org/en/docs/dev/development_guide.html#http_request_finalization
+ * http://www.nginxguts.com/2011/01/phases/
  *
 dot -Tpdf >ngx-calls.pdf <DOT
 
@@ -151,6 +152,8 @@ https://localhost:8443/protected/content.txt
 #include <ngx_http.h>
 
 ngx_module_t  ngx_http_auth_saml_module;
+
+/* Per request, per module, context. */
 
 typedef struct {
   int req_kind;
@@ -541,7 +544,7 @@ static void ngx_http_auth_saml_post_read(ngx_http_request_t* req)
   return;
 }
 
-/*() nginx content handler
+/*() nginx access phase handler
  */
 
 static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
@@ -560,32 +563,65 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
   loc_cf = ngx_http_get_module_loc_conf(req, ngx_http_auth_saml_module);
   if (!req || !loc_cf) {
     ERR("NULL request %p or configuration %p", req, loc_cf);
+  err:
     D_DEDENT("handler: ");
-    return NGX_DECLINED;
+    return NGX_ERROR;
   }
   
-  INFO("===== START %s req=%p uri(%.*s) args(%.*s) pid=%d cwd(%s)", ZXID_REL, req, (int)req->uri.len, STRNULLCHK(req->uri.data), (int)req->args.len, STRNULLCHK(req->args.data), getpid(), getcwd(buf,sizeof(buf)));
-  if (loc_cf->wd && *loc_cf->wd)
-    chdir(loc_cf->wd);  /* Ensure the working dir is not / (sometimes Apache httpd changes dir) */
-
   /* The context object is per module and per request */
   req_ctx = ngx_http_get_module_ctx(req, ngx_http_auth_saml_module);
   if (!req_ctx) {
     req_ctx = ngx_pcalloc(req->pool, sizeof(ngx_http_auth_saml_ctx_t));
     if (!req_ctx) {
       ERR("Failed to allocate request context %d", 0);
-    err:
-      D_DEDENT("handler: ");
-      return NGX_ERROR;
+      goto err;
     }
     memset(req_ctx, 0, sizeof(ngx_http_auth_saml_ctx_t));
     req_ctx->loc_cf = loc_cf;
     ngx_http_set_ctx(req, req_ctx, ngx_http_auth_saml_module);
-    D("req_ctx=%p allocated", req_ctx);
+    D("req_ctx=%p allocated, loc_cf=%p", req_ctx, loc_cf);
   }
   
+  /* Check if we are supposed to enter zxid due to URL suffix - to
+   * process protocol messages rather than ordinary pages. To do this
+   * correctly we need to ignore the query string part. We are looking
+   * here at an exact match, like /protected/saml, rather than any of
+   * the other documents under /protected/ (which are handled in the
+   * else clause). Both then and else -clause URLs are defined as requiring
+   * SSO by virtue of location directive in the web server configuration. */
+  url_len = strlen(loc_cf->burl);
+  for (cp = loc_cf->burl + url_len - 1; cp > loc_cf->burl; --cp)
+    if (*cp == '?')
+      break;
+  if (cp == loc_cf->burl)
+    cp = loc_cf->burl + url_len;
+  url_len = cp - loc_cf->burl;
+  
+  if (url_len >= (int)req->uri.len
+      && !memcmp(cp - req->uri.len, req->uri.data, req->uri.len)) {  /* Suffix match */
+    req_ctx->req_kind = NGXAS_KIND_ENDPT;                                      /* /saml case */
+  } else if (zx_match(loc_cf->wsp_pat, req->uri.len, (char*)req->uri.data)) {  /* WSP case */
+    req_ctx->req_kind = NGXAS_KIND_WSP;
+  } else if (zx_match(loc_cf->uma_pat, req->uri.len, (char*)req->uri.data)) {  /* UMA case */
+    req_ctx->req_kind = NGXAS_KIND_UMA;
+  } else if (zx_match(loc_cf->sso_pat, req->uri.len, (char*)req->uri.data)) {  /* Any SSO case */
+    /* Ordinary protected content falls thru to here. Just check for session validity. */
+    D("Protected SSO_PAT(%s) uri(%.*s) len=%d", loc_cf->sso_pat, (int)req->uri.len, STRNULLCHK(req->uri.data), (int)req->uri.len);
+    req_ctx->req_kind = NGXAS_KIND_PC;
+  } else {
+    /* Access phase handler is called before location has been determined.
+     * Hence we need to pass thru the locations that are not ours. */
+    D("outside SSO_PAT(%s) uri(%.*s) len=%d", loc_cf->sso_pat, (int)req->uri.len, STRNULLCHK(req->uri.data), (int)req->uri.len);
+    D_DEDENT("handler: ");
+    return NGX_DECLINED;
+  }
+  if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("===== START %s kind=%d req=%p uri(%.*s) qs(%.*s) pid=%d cwd(%s)", ZXID_REL, req_ctx->req_kind, req, (int)req->uri.len, STRNULLCHK(req->uri.data), (int)req->args.len, STRNULLCHK(req->args.data), getpid(), getcwd(buf,sizeof(buf)));
+  
+  if (loc_cf->wd && *loc_cf->wd)
+    chdir(loc_cf->wd);  /* Ensure the working dir is not / (sometimes Apache httpd changes dir) */
+  
   if (req->uri.len && req->uri.data) {
-    /* We need to make copy of the uri because we might modify it. Also guarantee nul termination. */
+    /* We need to make copy of the uri as we might modify it. Also guarantee nul termination. */
     req_ctx->cgi.uri_path = ngx_pcalloc(req->pool, req->uri.len+1);
     if (!req_ctx->cgi.uri_path) {
       ERR("Failed to allocate uri_path buffer. len=%d", (int)req->uri.len);
@@ -606,7 +642,7 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
     cp[req->args.len] = 0;
     zxid_parse_cgi(loc_cf, &req_ctx->cgi, cp);
   }
-
+  
   /* Probe for Session ID in cookie. Also propagate the cookie to subrequests. */
   
   if (loc_cf->ses_cookie_name && *loc_cf->ses_cookie_name) {
@@ -619,73 +655,25 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
       req_ctx->cgi.sid = ngx_pcalloc(req->pool, cookie_value.len+1);
       memcpy(req_ctx->cgi.sid, cookie_value.data, cookie_value.len);
       req_ctx->cgi.sid[cookie_value.len] = 0;
-#if 0
-      D("SESSION FOUND %p", loc_cf);
-      D_DEDENT("handler: ");
-      return NGX_DECLINED;
-      apr_table_addn(HRR_headers_out(r), "Cookie", cookie_hdr);       /* Pass cookies to subreq */
-      DD("found cookie(%s) 5", STRNULLCHK(cookie_hdr));
-      /* Kludge to get subrequest to set-cookie, i.e. on return path */
-      set_cookie_hdr = apr_table_get(HRR_headers_in(r), "Set-Cookie");
-      if (set_cookie_hdr) {
-	D("subrequest set-cookie(%s) 2", set_cookie_hdr);
-	apr_table_addn(HRR_headers_out(r), "Set-Cookie", set_cookie_hdr);
-      }
-#endif
     } else {
       D("cookie(%s) not found", loc_cf->ses_cookie_name);
     }
   }
 
-  /* Check if we are supposed to enter zxid due to URL suffix - to
-   * process protocol messages rather than ordinary pages. To do this
-   * correctly we need to ignore the query string part. We are looking
-   * here at an exact match, like /protected/saml, rather than any of
-   * the other documents under /protected/ (which are handled in the
-   * else clause). Both then and else -clause URLs are defined as requiring
-   * SSO by virtue of location directive in the web server configuration. */
-  url_len = strlen(loc_cf->burl);
-  for (cp = loc_cf->burl + url_len - 1; cp > loc_cf->burl; --cp)
-    if (*cp == '?')
-      break;
-  if (cp == loc_cf->burl)
-    cp = loc_cf->burl + url_len;
-  url_len = cp - loc_cf->burl;
-  
-  if (url_len >= (int)req->uri.len
-      && !memcmp(cp - req->uri.len, req->uri.data, req->uri.len)) {  /* Suffix match */
-    
-    if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("matched uri(%.*s) cf->burl(%s) qs(%.*s) rs(%s) op(%c)", (int)req->uri.len, req->uri.data, loc_cf->burl, (int)req->args.len, STRNULLCHK(req->args.data), STRNULLCHKNULL(req_ctx->cgi.rs), req_ctx->cgi.op);
-
-    req_ctx->req_kind = NGXAS_KIND_ENDPT;
+  switch (req_ctx->req_kind) {
+  case NGXAS_KIND_ENDPT:
     if (req->method == NGX_HTTP_POST)
       goto post;
     D_DEDENT("handler: ");
     return ngx_http_auth_saml_handler_rest(req, loc_cf, req_ctx);
+  case NGXAS_KIND_WSP:
+  case NGXAS_KIND_UMA:
+    if (req->method == NGX_HTTP_POST)
+      goto post;
+    ERR("uri(%.*s) must be called with POST method %d", (int)req->uri.len, req->uri.data, (int)req->method);
+    D_DEDENT("handler: ");
+    return NGX_HTTP_NOT_ALLOWED;
   }
-
-  if (loc_cf->wsp_pat || loc_cf->uma_pat) {
-    if (zx_match(loc_cf->wsp_pat, req->uri.len, (char*)req->uri.data)) {         /* WSP case */
-      req_ctx->req_kind = NGXAS_KIND_WSP;
-      if (req->method == NGX_HTTP_POST)
-	goto post;
-      ERR("WSP(%.*s) must be called with POST method %d", (int)req->uri.len, req->uri.data, (int)req->method);
-      D_DEDENT("handler: ");
-      return NGX_HTTP_NOT_ALLOWED;
-    } else if (zx_match(loc_cf->uma_pat, req->uri.len, (char*)req->uri.data)) {  /* UMA case */
-      req_ctx->req_kind = NGXAS_KIND_UMA;
-      if (req->method == NGX_HTTP_POST)
-	goto post;
-      ERR("UMA(%.*s) must be called with POST method %d", (int)req->uri.len, req->uri.data, (int)req->method);
-      D_DEDENT("handler: ");
-      return NGX_HTTP_NOT_ALLOWED;
-    }
-  }
-  
-  /* Ordinary protected content falls thru to here. Just check for session validity. */
-  req_ctx->req_kind = NGXAS_KIND_PC;
-
-  if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("other page uri(%.*s) qs(%.*s) cf->burl(%s) uri_len=%d url_len=%d", (int)req->uri.len, req->uri.data, (int)req->args.len, STRNULLCHK(req->args.data), loc_cf->burl, (int)req->uri.len, url_len);
   
   if (req_ctx->cgi.sid && req_ctx->cgi.sid[0]
       && zxid_get_ses(loc_cf, &req_ctx->ses, req_ctx->cgi.sid)) {
@@ -695,16 +683,16 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
       return ngx_http_auth_saml_process_zxid_simple_outcome(req, loc_cf, &req_ctx->ses, res);
     }
   } else {
-    D("No active session(%s) op(%c)", STRNULLCHK(req_ctx->cgi.sid), req_ctx->cgi.op?req_ctx->cgi.op:'-');
     if (loc_cf->optional_login_pat
 	&& zx_match(loc_cf->optional_login_pat, req->uri.len, (char*)req->uri.data)) {
-      D("optional_login_pat matches %d", 0);
+      D("optional_login_pat(%s) matches", loc_cf->optional_login_pat);
       // *** set_user(r, "-anon-");  /* httpd-2.4 anz framework requires this, 2.2 does not care */
       D_DEDENT("handler: ");
       return NGX_DECLINED;  /* Allow normal processing to happen */
     }
+    D("No active session sid(%s)",STRNULLCHK(req_ctx->cgi.sid));
   }
-  D("other page: no_ses uri(%.*s) templ(%s) tf(%s) k(%s)", (int)req->uri.len, req->uri.data, STRNULLCHKNULL(req_ctx->cgi.templ), STRNULLCHKNULL(loc_cf->idp_sel_templ_file), STRNULLCHKNULL(req_ctx->cgi.skin));
+  D("other page: no_ses op(%c) templ(%s) tf(%s) k(%s)", req_ctx->cgi.op?req_ctx->cgi.op:'-', STRNULLCHKNULL(req_ctx->cgi.templ), STRNULLCHKNULL(loc_cf->idp_sel_templ_file), STRNULLCHKNULL(req_ctx->cgi.skin));
   
   res = zxid_simple_no_ses_cf(loc_cf, &req_ctx->cgi, &req_ctx->ses, 0, AUTO_FLAGS);
   if (res) {
@@ -730,65 +718,6 @@ static ngx_int_t ngx_http_auth_saml_handler(ngx_http_request_t* req)
 }
 
 /* --------------------------------------------- */
-
-/*() Process ZXIDConf configuration file directive */
-
-char* ngx_http_auth_saml_zxidconf_cmd(ngx_conf_t* ncf, ngx_command_t* cmd, void* conf)
-{
-  char* buf;
-  ngx_str_t* value;
-  zxid_conf* loc_cf = (zxid_conf*)conf;
-#if 0
-  ngx_http_core_loc_conf_t  *clcf;
-
-  /* Install content (?) handler for location */
-  clcf = ngx_http_conf_get_module_loc_conf(ncf, ngx_http_core_module);
-  if (!clcf) {
-    ERR("NULL core module local configuration %p", clcf);
-  }
-  clcf->handler = ngx_http_auth_saml_handler;  /* content handler (?) */
-#endif
-  
-  if (!ncf->args || !ncf->args->elts) {
-    ERR("configuration NULL args %p", ncf->args);
-  }
-  value = ncf->args->elts;
-  D("arg(%.*s) loc_cf=%p", (int)value[1].len, value[1].data, loc_cf);
-  /* We make a copy (which is leaked) of the value because zxid_parse_conf() references
-   * places inside the configuration string and we can not assume cf->args is long lived enough. */
-  buf = ZX_ALLOC(loc_cf->ctx, value[1].len+1);
-  memcpy(buf, value[1].data, value[1].len);
-  buf[value[1].len] = 0;
-  zxid_parse_conf(loc_cf, buf);
-  DD("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
-  return NGX_CONF_OK;
-}
-
-char* ngx_http_auth_saml_zxiddebug_cmd(ngx_conf_t *ncf, ngx_command_t *cmd, void *conf)
-{
-  char buf[1024];
-  ngx_str_t* value;
-
-  value = ncf->args->elts;
-  D("old debug=%x, new debug(%.*s)", errmac_debug, (int)value[1].len, value[1].data);
-  sscanf((const char*)value[1].data, "%i", &errmac_debug);
-  INFO("debug=0x%x now arg(%.*s) cwd(%s)", errmac_debug, (int)value[1].len, value[1].data, getcwd(buf, sizeof(buf)));
-  {
-    struct rlimit rlim;
-    getrlimit(RLIMIT_CORE, &rlim);
-    D("MALLOC_CHECK_(%s) core_rlimit=%d,%d", getenv("MALLOC_CHECK_"), (int)rlim.rlim_cur, (int)rlim.rlim_max);
-  }
-  return NGX_CONF_OK;
-}
-
-static void* ngx_http_auth_saml_create_loc_conf(ngx_conf_t *ncf)
-{
-  zxid_conf* loc_cf;
-  strncpy(errmac_instance, "\tngxas", sizeof(errmac_instance));
-  loc_cf = zxid_new_conf_to_cf(0);
-  D("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
-  return loc_cf;
-}
 
 /* Provide a value for ZXID_VERSION variable. */
 
@@ -876,6 +805,7 @@ static ngx_int_t ngx_http_zxid_var_get(ngx_http_request_t* req, ngx_http_variabl
   return NGX_OK;
 }
 
+/* *** this list should be dynamic or runtime configurable */
 static const char* ngx_zxid_vars[] = {
   "fedusername",
   "sesid",
@@ -890,11 +820,13 @@ static const char* ngx_zxid_vars[] = {
   0
 };
 
+//static ngx_int_t ngx_http_auth_saml_add_vars(ngx_conf_t* ncf, zxid_conf* loc_cf)
 static ngx_int_t ngx_http_auth_saml_add_vars(ngx_conf_t* ncf)
 {
   const char** name;
   ngx_str_t ns = ngx_string("zxid_version");
   ngx_http_variable_t* var;
+  //ngx_http_core_main_conf_t* cmcf;
   
   var = ngx_http_add_variable(ncf, &ns, 0);
   if (!var)
@@ -903,7 +835,6 @@ static ngx_int_t ngx_http_auth_saml_add_vars(ngx_conf_t* ncf)
   //ERR("var(%.*s)=%p", (int)ns.len, ns.data, var);
 
   for (name = ngx_zxid_vars; *name; ++name) {
-    //ns->len = strlen(name); ns->data = (u_char*)name;
 #if 0
     ns.len = loc_cf->mod_saml_attr_prefix?strlen(loc_cf->mod_saml_attr_prefix):0+strlen(*name);
     ns.data = ngx_pnalloc(ncf->pool, ns.len+1);
@@ -919,7 +850,7 @@ static ngx_int_t ngx_http_auth_saml_add_vars(ngx_conf_t* ncf)
       goto err;
     var->get_handler = ngx_http_zxid_var_get;
     var->data = (uintptr_t)*name;
-    ERR("VAR(%s) len=%d var(%s)=%p handler=%p", (char*)var->data, (int)ns.len, ns.data, var, var->get_handler);
+    DD("VAR(%s) len=%d var(%s)=%p handler=%p", (char*)var->data, (int)ns.len, ns.data, var, var->get_handler);
   }
   return NGX_OK;
  err:
@@ -927,9 +858,78 @@ static ngx_int_t ngx_http_auth_saml_add_vars(ngx_conf_t* ncf)
   return NGX_ERROR;
 }
 
-#if 1
-// installing the content (?) handler happens in ngx_http_auth_saml_zxidconf_cmd() when
-// ZXIDConf config stanza is seen.
+/*() Process ZXIDConf configuration file directive */
+
+char* ngx_http_auth_saml_zxidconf_cmd(ngx_conf_t* ncf, ngx_command_t* cmd, void* conf)
+{
+  char* buf;
+  ngx_str_t* value;
+  zxid_conf* loc_cf = (zxid_conf*)conf;
+#if 0
+  ngx_http_core_loc_conf_t  *clcf;
+
+  /* Install content (?) handler for location */
+  clcf = ngx_http_conf_get_module_loc_conf(ncf, ngx_http_core_module);
+  if (!clcf) {
+    ERR("NULL core module local configuration %p", clcf);
+  }
+  clcf->handler = ngx_http_auth_saml_handler;  /* content handler (?) */
+#endif
+  
+  if (!ncf->args || !ncf->args->elts) {
+    ERR("configuration NULL args %p", ncf->args);
+  }
+  value = ncf->args->elts;
+  D("arg(%.*s) loc_cf=%p", (int)value[1].len, value[1].data, loc_cf);
+  /* We make a copy (which is leaked) of the value because zxid_parse_conf() references
+   * places inside the configuration string and we can not assume cf->args is long lived enough. */
+  buf = ZX_ALLOC(loc_cf->ctx, value[1].len+1);
+  memcpy(buf, value[1].data, value[1].len);
+  buf[value[1].len] = 0;
+  zxid_parse_conf(loc_cf, buf);
+  DD("DEFAULTQS(%s) loc_cf=%p", loc_cf->defaultqs, loc_cf);
+  return NGX_CONF_OK;
+}
+
+char* ngx_http_auth_saml_zxiddebug_cmd(ngx_conf_t *ncf, ngx_command_t *cmd, void *conf)
+{
+  char buf[1024];
+  ngx_str_t* value;
+
+  value = ncf->args->elts;
+  D("old debug=%x, new debug(%.*s)", errmac_debug, (int)value[1].len, value[1].data);
+  sscanf((const char*)value[1].data, "%i", &errmac_debug);
+  INFO("debug=0x%x now arg(%.*s) cwd(%s)", errmac_debug, (int)value[1].len, value[1].data, getcwd(buf, sizeof(buf)));
+  {
+    struct rlimit rlim;
+    getrlimit(RLIMIT_CORE, &rlim);
+    D("MALLOC_CHECK_(%s) core_rlimit=%d,%d", getenv("MALLOC_CHECK_"), (int)rlim.rlim_cur, (int)rlim.rlim_max);
+  }
+  return NGX_CONF_OK;
+}
+
+static int n_calls = 0;
+
+static void* ngx_http_auth_saml_create_loc_conf(ngx_conf_t* ncf)
+{
+  zxid_conf* loc_cf;
+  strncpy(errmac_instance, "\tngxas", sizeof(errmac_instance));
+  /* Empty CPATH= prevents reading initial conf file /var/zxid/zxid.conf
+   * Empty SSO_PATH= prevents this module applying outside locations. */
+  loc_cf = zxid_new_conf_to_cf("CPATH=&SSO_PAT=");
+  //ngx_http_auth_saml_add_vars(ncf, loc_cf);
+  //loc_cf->redirect_hack_zxid_url = ;
+  D("%d: loc_cf=%p ncf=%p->name(%s)", ++n_calls, loc_cf, ncf, ncf->name);
+  return loc_cf;
+}
+
+/*() Install access handler
+ * auth_saml needs to be access phase handler because there can only be one
+ * content phase handler and that typicallyis uwsgw or fastcgi or similar.
+ * Installing the content handler would happen in ngx_http_auth_saml_zxidconf_cmd() when
+ * ZXIDConf config stanza is seen.
+ */
+
 static ngx_int_t ngx_http_auth_saml_init(ngx_conf_t *ncf)
 {
   ngx_http_handler_pt        *h;
@@ -943,7 +943,6 @@ static ngx_int_t ngx_http_auth_saml_init(ngx_conf_t *ncf)
   *h = ngx_http_auth_saml_handler;
   return NGX_OK;
 }
-#endif
 
 static ngx_command_t  ngx_http_auth_saml_commands[] = {
     { ngx_string("ZXIDConf"),
@@ -962,29 +961,29 @@ static ngx_command_t  ngx_http_auth_saml_commands[] = {
 };
 
 static ngx_http_module_t  ngx_http_auth_saml_module_ctx = {
-    ngx_http_auth_saml_add_vars,           /* preconfiguration */
-    ngx_http_auth_saml_init,    /* postconfiguration */
-    0,                          /* create main configuration */
-    0,                          /* init main configuration */
-    0,                          /* create server configuration */
-    0,                          /* merge server configuration */
-    ngx_http_auth_saml_create_loc_conf,  /* create location configuration */
-    0  //ngx_http_auth_saml_merge_loc_conf /* merge location configuration */
+  ngx_http_auth_saml_add_vars,           /* preconfiguration */
+  ngx_http_auth_saml_init,    /* postconfiguration */
+  0,                          /* create main configuration */
+  0,                          /* init main configuration */
+  0,                          /* create server configuration */
+  0,                          /* merge server configuration */
+  ngx_http_auth_saml_create_loc_conf,  /* create location configuration */
+  0  //ngx_http_auth_saml_merge_loc_conf /* merge location configuration */
 };
 
 ngx_module_t  ngx_http_auth_saml_module = {
-    NGX_MODULE_V1,
-    &ngx_http_auth_saml_module_ctx, /* module context */
-    ngx_http_auth_saml_commands,    /* module directives */
-    NGX_HTTP_MODULE,                /* module type */
-    0,                          /* init master */
-    0,                          /* init module */
-    0,                          /* init process */
-    0,                          /* init thread */
-    0,                          /* exit thread */
-    0,                          /* exit process */
-    0,                          /* exit master */
-    NGX_MODULE_V1_PADDING
+  NGX_MODULE_V1,
+  &ngx_http_auth_saml_module_ctx, /* module context */
+  ngx_http_auth_saml_commands,    /* module directives */
+  NGX_HTTP_MODULE,                /* module type */
+  0,                          /* init master */
+  0,                          /* init module */
+  0,                          /* init process */
+  0,                          /* init thread */
+  0,                          /* exit thread */
+  0,                          /* exit process */
+  0,                          /* exit master */
+  NGX_MODULE_V1_PADDING
 };
 
 /* EOF - ngx_http_auth_saml_module.c */

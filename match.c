@@ -27,13 +27,14 @@
 ** SUCH DAMAGE.
 */
 /* 20131121 slightly modified by Sampo Kellomaki (sampo@zxid.org) for zxid project.
- * 20170817 generalized to strings without nul termination.
+ * 20170817 generalized to strings without nul termination. --Sampo
+ * 20170905 fixe a bug in nul termination --Sampo
  * See also fnmatch(1). */
 
 #include <zx/errmac.h>
 #include <string.h>
 
-/*() Helper function for filename pattern matcher */
+/*() Helper function for filename pattern matcher. len must be true len, not -2. */
 /* Called by:  zx_match x2, zx_match_one */
 static int zx_match_one(int patlen, const char* pat, int len, const char* str)
 {
@@ -42,29 +43,23 @@ static int zx_match_one(int patlen, const char* pat, int len, const char* str)
   int i, pl;
   
   for ( p = pat; p - pat < patlen; ++p, ++str ) {
-    if ( *p == '?' && ((len==-2)?(*str != '\0'):(str < start+len)) )
+    if ( *p == '?' && str < start+len )
       continue;
     if ( *p == '*' ) {
       ++p;
-      if ( *p == '*' ) {
+      if ( (p - pat < patlen) && *p == '*' ) {
 	/* Double-wildcard matches anything. */
 	++p;
-	if (len == -2)
-	  i = strlen( str );
-	else
-	  i = start+len - str;
-      } else
+	i = start+len - str;  /* rest of the string */
+      } else {
 	/* Single-wildcard matches anything but slash. */
-	if (len == -2)
-	  i = strcspn( str, "/" );
-	else {
-	  for (i = 0; i < (start+len - str); ++i)
-	    if (str[i] == '/')
-	      break;
-	}
+	for (i = 0; i < (start+len - str); ++i)
+	  if (str[i] == '/')  /* rest of the string until / */
+	    break;
+      }
       pl = patlen - ( p - pat );
-      for ( ; i >= 0; --i )  /* try the rest of the pat to tails of str */
-	if ( zx_match_one( pl, p, len, &(str[i]) ) )
+      for ( ; i >= 0; --i )  /* try the rest of the pat to tails of str (e.g. a**b -> b) */
+	if ( zx_match_one( pl, p, (start+len - (str+i)), str+i ) )
 	  return 1;
       return 0;
     }
@@ -72,19 +67,16 @@ static int zx_match_one(int patlen, const char* pat, int len, const char* str)
       return 0;
   }
   /* Pattern ended. If string ended as well, this is a match. */
-  if (len == -2) {
-    if ( *str == '\0' )
-      return 1;
-  } else {
-    if ( start+len <= str )
-      return 1;
-  }
+  if ( start+len <= str )
+    return 1;
   return 0;  /* not match, some string left */
 }
 
 /*() Check if simple path glob wild card pattern matches.
  * 
- * pat:: Pattern, nul terminated string.
+ * pat:: Pattern, nul terminated string. Must not be null, but
+ *     can be empty ("") to match nothing but empty str. Use "**" to match anything.
+ *     Pattern must match entire string from beginning to end.
  * len:: Length of the string. Special value: -2 use nul termination
  *     to determine string length
  * str:: String that patterni is matched aganist. If len is positive,
@@ -92,7 +84,7 @@ static int zx_match_one(int patlen, const char* pat, int len, const char* str)
  *     If len == -2, string must be nul terminated
  * return:: 0 on failure and 1 on match.
  *
- * Only does ?, * and **, and multiple patterns separated by |.
+ * Only supports ?, * and **, and multiple patterns separated by |.
  * Exact match, suffix match (*.wsp) and prefix match
  * (/foo/bar*) are supported. The double asterisk (**) matches
  * also slash (/). */
@@ -101,6 +93,8 @@ static int zx_match_one(int patlen, const char* pat, int len, const char* str)
 int zx_match(const char* pat, int len, const char* str)
 {
   const char* or_clause;
+  if (len == -2)
+    len = strlen(str);
   for (;;) {
     or_clause = strchr( pat, '|' );
     if (!or_clause)

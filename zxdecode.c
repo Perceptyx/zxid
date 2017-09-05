@@ -56,6 +56,7 @@ Usage: zxdecode [options] <message >decoded\n\
   -E               Encode instead of decode. If -Z is specified, the input is first\n\
                    deflate compressed. If -B is specified, then safe base64 encoding is\n\
                    applied. Userful for producing fr strings, e.g. -E -Z -B\n\
+  -match pat uri  Test matching a pattern to URI\n\
   -v               Verbose messages.\n\
   -q               Be extra quiet.\n\
   -d               Turn on debugging.\n\
@@ -224,6 +225,27 @@ static void opt(int* argc, char*** argv, char*** env)
       }
       break;
 #endif
+
+    case 'm':
+      if (!strcmp((*argv)[0],"-match")) {
+	++(*argv); --(*argc);
+	if ((*argc) < 2) break;
+	ix = zx_match((*argv)[0], -2, (*argv)[1]);
+	switch (verbose) {
+	case 0:  break;
+	case 1:  printf("%d\n",ix); break;
+	default:
+	  sig_flag = strlen((*argv)[1]);
+	  resp_flag = zx_match((*argv)[0], sig_flag, (*argv)[1]);
+	  printf("zx_match(pat(%s),path(%s))=%d len=%d ret=%d\n",
+		 (*argv)[0], (*argv)[1], ix, sig_flag, resp_flag);
+	  break;
+	}
+	if (ix)
+	  exit(0);
+	exit(1);
+      }
+      break;
 
     case 'q':
       switch ((*argv)[0][2]) {

@@ -182,7 +182,7 @@ struct zxid_conf {
   unsigned int magic;
   struct zx_ctx* ctx; /* ZX parsing context. Usually used for memory allocation. */
   zxid_entity* cot;   /* Linked list of metadata for CoT partners (in-memory CoT cache) */
-  int cpath_supplied; /* FLAG: If config variable PATH is supplied, it may trigger reading config file from the supplied location. */
+  int cpath_supplied; /* FLAG: If config variable CPATH is supplied, it may trigger reading config file from the supplied location. */
   int cpath_len;
   char* cpath;        /* Config PATH */
   char* burl;         /* Base URL */

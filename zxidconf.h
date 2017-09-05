@@ -1106,7 +1106,8 @@
 /*(c) Single Sign-On URL Pattern
  * Any URL matching this pattern requires SSO. However
  * WSP_PAT is matched first. Understood by mod_auth_saml (additional
- * Apache configuration needed), zxid_httpd and mini_httpd_zxid.
+ * Apache configuration needed), zxid_httpd, mini_httpd_zxid,
+ * and ngx_http_auth_saml_module.
  *
  * Does not affect metadata. */
 #define ZXID_SSO_PAT "**"

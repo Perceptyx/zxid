@@ -422,6 +422,7 @@ static int chkuid(request_rec* r)
   url_len = cp - cf->burl;
   
   if (url_len >= uri_len && !memcmp(cp - uri_len, uri, uri_len)) {  /* Suffix match */
+    
     if (errmac_debug & MOD_AUTH_SAML_INOUT) INFO("matched uri(%s) cf->burl(%s) qs(%s) rs(%s) op(%c)", uri, cf->burl, STRNULLCHKNULL(HRR_args(r)), STRNULLCHKNULL(cgi.rs), cgi.op);
     if (HRR_method_number(r) == M_POST) {
       res = read_post(cf, r);   /* Will print some debug output */

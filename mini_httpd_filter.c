@@ -515,7 +515,7 @@ static char* zxid_mini_httpd_check_redirect_hack(zxid_conf* cf, zxid_cgi* cgi, c
   return cgi->qs;
 }
 
-/*() Handle SSO or ID-WSF SSO
+/*() Handle SSO or ID-WSF Web Service
  * Called from mini_httpd handle_request() if zxid is configured.
  * In many cases entire situation is handled in this function
  * and exit is called. In successful SSO or WSP call function
