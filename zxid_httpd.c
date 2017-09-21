@@ -1426,9 +1426,9 @@ static void handle_request(void)
 	       && n_pass_env < MAX_PASS_ENV
 	       && !strncmp(line, env_pass, env_pass_len)) {
       pass_env[n_pass_env] = line;
-      cp = strchr(cp, ':'); /* Scan over header name */
+      cp = strchr(line, ':'); /* Scan over header name */
       pass_env_len[n_pass_env] = cp-line;
-      cp += strspn(cp+1, " \t"); 
+      cp += 1 + strspn(cp+1, " \t"); 
       pass_val[n_pass_env++] = cp;
     } else {
       /* drop the header silently */
@@ -2176,7 +2176,7 @@ static char* build_env(int name_len, char* name, char* val)
 static char** make_envp(void)
 {
   static char* envp[50+200];
-  int envn;
+  int envn, i;
   char* cp;
   char buf[256];
 
@@ -2197,8 +2197,8 @@ static char** make_envp(void)
   envp[envn++] = build_env(sizeof("SCRIPT_NAME")-1, "SCRIPT_NAME", path);
   if (pathinfo) {
     envp[envn] = build_env(sizeof("PATH_INFO_")-1, "PATH_INFO_", pathinfo);
-    envp[envn][sizeof("PATH_INFO_")-1] = '=';
-    envp[envn][sizeof("PATH_INFO_")] = '/';   /* insert initial slash to path */
+    envp[envn][sizeof("PATH_INFO_")-2] = '=';
+    envp[envn][sizeof("PATH_INFO_")-1] = '/';   /* insert initial slash to path */
     envn++;
     (void) snprintf(buf, sizeof(buf), "%s%s", cwd, pathinfo);
     envp[envn++] = build_env(sizeof("PATH_TRANSLATED")-1, "PATH_TRANSLATED", buf);
@@ -2224,8 +2224,13 @@ static char** make_envp(void)
   if (paos[0] != '\0')              envp[envn++] = build_env(sizeof("HTTP_PAOS")-1, "HTTP_PAOS", paos);
   if (cp = getenv("ZXID_PRE_CONF")) envp[envn++] = build_env(sizeof("ZXID_PRE_CONF")-1, "ZXID_PRE_CONF", cp);
   if (cp = getenv("ZXID_CONF"))     envp[envn++] = build_env(sizeof("ZXID_CONF")-1, "ZXID_CONF", cp);
-  for (; n_pass_env; --n_pass_env)
+  while (n_pass_env) {
+    --n_pass_env;
+    for (i=0; i < pass_env_len[n_pass_env]; ++i)
+      if (pass_env[n_pass_env][i] == '-')  /* getenv() will not pass a value that contains '-' */
+	pass_env[n_pass_env][i] = '_';
     envp[envn++] = build_env(pass_env_len[n_pass_env], pass_env[n_pass_env], pass_val[n_pass_env]);
+  }
   if (zxid_session)
     envn = zxid_pool2env(zxid_cf, zxid_session, envp, envn, sizeof(envp)/sizeof(char*), path, query);
   if (remoteuser != 0)
@@ -2370,7 +2375,7 @@ static int send_error_file(char* filename) {
     if (!r)
       break;
     add_to_response(buf, r);
-  }
+   }
   (void) fclose(fp);
   return 1;
 }
