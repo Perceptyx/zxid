@@ -196,6 +196,13 @@ static char* cipher;
 static SSL_CTX* ssl_ctx;
 static char cwd[MAXPATHLEN];
 static int got_hup;
+static char* env_pass;
+static int env_pass_len;
+#define MAX_PASS_ENV 16
+static int n_pass_env;
+static char* pass_env[MAX_PASS_ENV];
+static int   pass_env_len[MAX_PASS_ENV];
+static char* pass_val[MAX_PASS_ENV];
 
 /* Request variables. */
 static int conn_fd;
@@ -255,7 +262,7 @@ static void check_referer(void);
 
 /* Called by:  add_password, main x18 */
 static void usage(void) {
-  (void) fprintf(stderr, "usage:  %s [-S certfile] [-Y cipher] [-p port] [-d dir] [-dd data_dir] [-c cgipat] [-u user] [-h hostname] [-r] [-v] [-l logfile] [-i pidfile] [-T charset] [-P P3P] [-M maxage] [-RT read_timeout_secs] [-WT write_timeout_secs] [-zx CONF]\n", argv0);
+  (void) fprintf(stderr, "usage:  %s [-S certfile] [-Y cipher] [-p port] [-d dir] [-dd data_dir] [-c cgipat] [-u user] [-h hostname] [-r] [-v] [-l logfile] [-i pidfile] [-T charset] [-P P3P] [-M maxage] [-RT read_timeout_secs] [-WT write_timeout_secs] [-EP envprefix] [-zx CONF]\n", argv0);
   exit(1);
 }
 
@@ -453,6 +460,7 @@ void add_to_request(char* str, size_t len) {
   add_to_buf(&request, &request_size, &request_len, str, len);
 }
 
+/* return:: Nul terminates the request line (within the request buffer) */
 /* Called by: */
 static char* get_request_line(void) {
   int i;
@@ -462,7 +470,7 @@ static char* get_request_line(void) {
     c = request[request_idx];
     if (c == '\012' || c == '\015')
       {
-	request[request_idx] = '\0';
+	request[request_idx] = '\0';  /* nul termination */
 	++request_idx;
 	if (c == '\015' && request_idx < request_len &&
 	    request[request_idx] == '\012')
@@ -1019,6 +1027,7 @@ int main(int argc, char** av)
     else if (!strcmp(av[an], "-S") && an + 1 < argc)  { ++an; certfile = av[an]; do_ssl = 1; }
     else if (!strcmp(av[an], "-Y") && an + 1 < argc)  { ++an; cipher = av[an]; }
     else if (!strcmp(av[an], "-zx") && an + 1 < argc) { ++an; zxid_conf_str = av[an]; }
+    else if (!strcmp(av[an], "-EP") && an + 1 < argc) { ++an; env_pass = av[an]; env_pass_len = strlen(env_pass); }
     else if (!strcmp(av[an], "-RT") && an + 1 < argc) { ++an; read_timeout = atoi(av[an]); }
     else if (!strcmp(av[an], "-WT") && an + 1 < argc) { ++an; write_timeout = atoi(av[an]); }
     else if (!strcmp(av[an], "-p") && an + 1 < argc)  { ++an; port =(unsigned short)atoi(av[an]); }
@@ -1315,6 +1324,7 @@ static void handle_request(void)
   referer = "";
   useragent = "";
   paos = "";
+  n_pass_env = 0;
 
 #ifdef TCP_NOPUSH
   /* Set the TCP_NOPUSH socket option, to try and avoid the 0.2 second
@@ -1405,13 +1415,23 @@ static void handle_request(void)
       cp += strspn(cp, " \t");
       useragent = cp;
     } else if (!strncasecmp(line, "Range:", 6)) {
-      cp = &line[11];
+      cp = &line[6];
       cp += strspn(cp, " \t");
       range = cp;
     } else if (!strncasecmp(line, "PAOS:", 5)) {
-      cp = &line[11];
+      cp = &line[5];
       cp += strspn(cp, " \t");
       paos = cp;
+    } else if (env_pass
+	       && n_pass_env < MAX_PASS_ENV
+	       && !strncmp(line, env_pass, env_pass_len)) {
+      pass_env[n_pass_env] = line;
+      cp = strchr(cp, ':'); /* Scan over header name */
+      pass_env_len[n_pass_env] = cp-line;
+      cp += strspn(cp+1, " \t"); 
+      pass_val[n_pass_env++] = cp;
+    } else {
+      /* drop the header silently */
     }
   }
 
@@ -2136,31 +2156,22 @@ static char** make_argp(void)
 }
 
 /* Called by: */
-static char* build_env(char* fmt, char* arg)
+static char* build_env(int name_len, char* name, char* val)
 {
-  char* cp;
   int size;
-  static char* buf;
-  static int maxbuf = 0;
-
-  size = strlen(fmt) + strlen(arg);
-  if (size > maxbuf) {
-    if (maxbuf == 0) {
-      maxbuf = MAX(200, size + 100);
-      buf = (char*) e_malloc(maxbuf);
-    } else {
-      maxbuf = MAX(maxbuf * 2, size * 5 / 4);
-      buf = (char*) e_realloc((void*) buf, maxbuf);
-    }
-  }
-  (void) snprintf(buf, maxbuf, fmt, arg);
-  cp = e_strdup(buf);
-  return cp;
+  char* buf;
+  size = name_len + 1 + strlen(val) + 1;
+  buf = e_malloc(size);
+  memcpy(buf, name, name_len);
+  buf[name_len] = '=';
+  strcpy(buf+name_len+1, val);
+  return buf;
 }
 
 /* Set up CGI environment variables. Be real careful here to avoid
-** letting malicious clients overrun a buffer.  We don't have
-** to worry about freeing stuff since we're a sub-process. */
+** letting malicious clients overrun a buffer.  We do not have
+** to worry about freeing stuff since we are in a sub-process. */
+
 /* Called by: */
 static char** make_envp(void)
 {
@@ -2170,50 +2181,55 @@ static char** make_envp(void)
   char buf[256];
 
   envn = 0;
-  envp[envn++] = build_env("PATH=%s", CGI_PATH);
-  envp[envn++] = build_env("LD_LIBRARY_PATH=%s", CGI_LD_LIBRARY_PATH);
-  envp[envn++] = build_env("SERVER_SOFTWARE=%s", SERVER_SOFTWARE);
+  envp[envn++] = build_env(sizeof("PATH")-1, "PATH", CGI_PATH);
+  envp[envn++] = build_env(sizeof("LD_LIBRARY_PATH")-1, "LD_LIBRARY_PATH", CGI_LD_LIBRARY_PATH);
+  envp[envn++] = build_env(sizeof("SERVER_SOFTWARE")-1, "SERVER_SOFTWARE", SERVER_SOFTWARE);
   if (! vhost)
     cp = hostname;
   else
     cp = req_hostname;	/* already computed by virtual_file() */
-  if (cp) envp[envn++] = build_env("SERVER_NAME=%s", cp);
+  if (cp) envp[envn++] = build_env(sizeof("SERVER_NAME")-1, "SERVER_NAME", cp);
   envp[envn++] = "GATEWAY_INTERFACE=CGI/1.1";
   envp[envn++] = "SERVER_PROTOCOL=HTTP/1.0";
   (void) snprintf(buf, sizeof(buf), "%d", (int) port);
-  envp[envn++] = build_env("SERVER_PORT=%s", buf);
-  envp[envn++] = build_env("REQUEST_METHOD=%s",  method);
-  envp[envn++] = build_env("SCRIPT_NAME=%s", path);
+  envp[envn++] = build_env(sizeof("SERVER_PORT")-1, "SERVER_PORT", buf);
+  envp[envn++] = build_env(sizeof("REQUEST_METHOD")-1, "REQUEST_METHOD",  method);
+  envp[envn++] = build_env(sizeof("SCRIPT_NAME")-1, "SCRIPT_NAME", path);
   if (pathinfo) {
-    envp[envn++] = build_env("PATH_INFO=/%s", pathinfo);
+    envp[envn] = build_env(sizeof("PATH_INFO_")-1, "PATH_INFO_", pathinfo);
+    envp[envn][sizeof("PATH_INFO_")-1] = '=';
+    envp[envn][sizeof("PATH_INFO_")] = '/';   /* insert initial slash to path */
+    envn++;
     (void) snprintf(buf, sizeof(buf), "%s%s", cwd, pathinfo);
-    envp[envn++] = build_env("PATH_TRANSLATED=%s", buf);
+    envp[envn++] = build_env(sizeof("PATH_TRANSLATED")-1, "PATH_TRANSLATED", buf);
   }
   if (query[0] != '\0')
-    envp[envn++] = build_env("QUERY_STRING=%s", query);
-  envp[envn++] = build_env("REMOTE_ADDR=%s", ntoa(&client_addr));
-  if (referer[0] != '\0')           envp[envn++] = build_env("HTTP_REFERER=%s", referer);
-  if (useragent[0] != '\0')         envp[envn++] = build_env("HTTP_USER_AGENT=%s", useragent);
-  if (cookie)                       envp[envn++] = build_env("HTTP_COOKIE=%s", cookie);
-  if (host)                         envp[envn++] = build_env("HTTP_HOST=%s", host);
-  if (content_type)                 envp[envn++] = build_env("CONTENT_TYPE=%s", content_type);
+    envp[envn++] = build_env(sizeof("QUERY_STRING")-1, "QUERY_STRING", query);
+  envp[envn++] = build_env(sizeof("REMOTE_ADDR")-1, "REMOTE_ADDR", ntoa(&client_addr));
+  if (referer[0] != '\0')           envp[envn++] = build_env(sizeof("HTTP_REFERER")-1, "HTTP_REFERER", referer);
+  if (useragent[0] != '\0')         envp[envn++] = build_env(sizeof("HTTP_USER_AGENT")-1, "HTTP_USER_AGENT", useragent);
+  if (cookie)                       envp[envn++] = build_env(sizeof("HTTP_COOKIE")-1, "HTTP_COOKIE", cookie);
+  if (host)                         envp[envn++] = build_env(sizeof("HTTP_HOST")-1, "HTTP_HOST", host);
+  if (content_type)                 envp[envn++] = build_env(sizeof("CONTENT_TYPE")-1, "CONTENT_TYPE", content_type);
   if (content_length != -1) {
     (void) snprintf(buf, sizeof(buf), "%lu", (unsigned long) content_length);
-    envp[envn++] = build_env("CONTENT_LENGTH=%s", buf);
+    envp[envn++] = build_env(sizeof("CONTENT_LENGTH")-1, "CONTENT_LENGTH", buf);
   }
   if (authorization)                {
-    envp[envn++] = build_env("AUTH_TYPE=%s", "Basic");                 /* Of dubious value */
-    envp[envn++] = build_env("HTTP_AUTHORIZATION=%s", authorization);  /* Allow CGI to see it */
+    envp[envn++] = build_env(sizeof("AUTH_TYPE")-1, "AUTH_TYPE", "Basic");                 /* Of dubious value */
+    envp[envn++] = build_env(sizeof("HTTP_AUTHORIZATION")-1, "HTTP_AUTHORIZATION", authorization);  /* Allow CGI to see it */
   }
-  if (cp = getenv("TZ"))            envp[envn++] = build_env("TZ=%s", cp);
-  if (cp = getenv("MALLOC_CHECK_")) envp[envn++] = build_env("MALLOC_CHECK_=%s", cp);
-  if (paos[0] != '\0')              envp[envn++] = build_env("HTTP_PAOS=%s", paos);
-  if (cp = getenv("ZXID_PRE_CONF")) envp[envn++] = build_env("ZXID_PRE_CONF=%s", cp);
-  if (cp = getenv("ZXID_CONF"))     envp[envn++] = build_env("ZXID_CONF=%s", cp);
+  if (cp = getenv("TZ"))            envp[envn++] = build_env(sizeof("TZ")-1, "TZ", cp);
+  if (cp = getenv("MALLOC_CHECK_")) envp[envn++] = build_env(sizeof("MALLOC_CHECK_")-1, "MALLOC_CHECK_", cp);
+  if (paos[0] != '\0')              envp[envn++] = build_env(sizeof("HTTP_PAOS")-1, "HTTP_PAOS", paos);
+  if (cp = getenv("ZXID_PRE_CONF")) envp[envn++] = build_env(sizeof("ZXID_PRE_CONF")-1, "ZXID_PRE_CONF", cp);
+  if (cp = getenv("ZXID_CONF"))     envp[envn++] = build_env(sizeof("ZXID_CONF")-1, "ZXID_CONF", cp);
+  for (; n_pass_env; --n_pass_env)
+    envp[envn++] = build_env(pass_env_len[n_pass_env], pass_env[n_pass_env], pass_val[n_pass_env]);
   if (zxid_session)
     envn = zxid_pool2env(zxid_cf, zxid_session, envp, envn, sizeof(envp)/sizeof(char*), path, query);
   if (remoteuser != 0)
-    envp[envn++] = build_env("REMOTE_USER=%s", remoteuser);
+    envp[envn++] = build_env(sizeof("REMOTE_USER")-1, "REMOTE_USER", remoteuser);
 
   envp[envn] = 0;
   return envp;
