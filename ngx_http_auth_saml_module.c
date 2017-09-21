@@ -919,7 +919,7 @@ static void* ngx_http_auth_saml_create_loc_conf(ngx_conf_t* ncf)
   loc_cf = zxid_new_conf_to_cf("CPATH=&SSO_PAT=&BURL=https://impossible/impossible");
   //ngx_http_auth_saml_add_vars(ncf, loc_cf);
   //loc_cf->redirect_hack_zxid_url = ;
-  D("%d: loc_cf=%p ncf=%p->name(%s)", ++n_calls, loc_cf, ncf, ncf->name);
+  INFO("%d: ncf=%p->name(%s) loc_cf=%p", ++n_calls, ncf, ncf->name, loc_cf);
   return loc_cf;
 }
 

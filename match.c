@@ -28,7 +28,7 @@
 */
 /* 20131121 slightly modified by Sampo Kellomaki (sampo@zxid.org) for zxid project.
  * 20170817 generalized to strings without nul termination. --Sampo
- * 20170905 fixe a bug in nul termination --Sampo
+ * 20170905 fixed a bug in nul termination --Sampo
  * See also fnmatch(1). */
 
 #include <zx/errmac.h>

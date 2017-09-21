@@ -2120,9 +2120,10 @@ SLIM=/home/sampo/slim
 PD=/home/sampo/pd
 APACHE=/aino/httpd-2.2.8
 NGINX=/home/sampo/nginx-1.12.1
+SMARTSO=/home/sampo/ps/tolppa-fw/smartso-fw
 
 megatags:
-	etags *.[hc] c/*.[hc] c/*.ds  mini_httpd-1.19-zxid/*.[hc] $(SSL)/*/*.[hc] $(SSL)/*/*/*.[hc] $(CURL)/*/*.[hc] $(CURL)/*/*/*.[hc] $(PD)/xsd2sg.pl $(PD)/pd2tex $(NGINX)/*/*.[hc] $(NGINX)/*/*/*.[hc] $(NGINX)/*/*/*/*.[hc] $(NGINX)/*/*/*/*/*.[hc]
+	etags *.[hc] c/*.[hc] c/*.ds  mini_httpd-1.19-zxid/*.[hc] $(SSL)/*/*.[hc] $(SSL)/*/*/*.[hc] $(CURL)/*/*.[hc] $(CURL)/*/*/*.[hc] $(PD)/xsd2sg.pl $(PD)/pd2tex $(NGINX)/*/*.[hc] $(NGINX)/*/*/*.[hc] $(NGINX)/*/*/*/*.[hc] $(NGINX)/*/*/*/*/*.[hc] $(SMARTSO)/*.[hc]
 
 # $(BB)/*/*.[hc] $(BB)/*/*/*.[hc] $(BB)/*/*/*/*.[hc]
 

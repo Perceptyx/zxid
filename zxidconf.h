@@ -1131,7 +1131,7 @@
  *
  *    DEFAULTQS=l1https://idsso.com/idp=1%26fc=1%26fn=p
  *
- * If protected content is acceessed, and there is no session, and
+ * If protected content is accessed, and there is no session, and
  * OPTIONAL_LOGIN_PAT does not match (and SSO_PAT matches), then
  * process the request as if the query string had indicated IdP
  * selection form click specifying profile 1 (artifact) of idsso.com.
@@ -1147,7 +1147,7 @@
  * does not block protected content from being
  * shown. While this usually is a security problem, in some circumstances
  * you may want to show error message or nonpersonalized content from the
- * application layer. If application checks that the SSO really happened,
+ * application layer. If application checksweather the SSO really happened,
  * then there is no security problem - the responsibility is application's.
  * Typically ANON_OK=/dir/ is used with IsPassive (fp=1) to implement personalization
  * if user already has session, but allow the user to access page anonymously
@@ -1159,6 +1159,8 @@
  * > controls what happens after IdP redirects back without having
  * > authenticated the user. By clever manupulation of DEFAULTQS and fp=1
  * > this could be made to work, if there is only one IdP.
+ * >
+ * > See also: OPTIONAL_LOGIN_PATH
  *
  * Does not affect metadata. */
 #define ZXID_ANON_OK 0
