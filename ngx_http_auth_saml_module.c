@@ -913,7 +913,8 @@ static int n_calls = 0;
 static void* ngx_http_auth_saml_create_loc_conf(ngx_conf_t* ncf)
 {
   zxid_conf* loc_cf;
-  strncpy(errmac_instance, "\tngxas", sizeof(errmac_instance));
+  //strncpy(errmac_instance, "\tngxas", sizeof(errmac_instance));
+  strncpy(errmac_instance, "\t" CC_BLUY("ngxas"), sizeof(errmac_instance));
   /* Empty CPATH= prevents reading initial conf file /var/zxid/zxid.conf
    * Empty SSO_PATH= prevents this module applying outside locations. */
   loc_cf = zxid_new_conf_to_cf("CPATH=&SSO_PAT=&BURL=https://impossible/impossible");
