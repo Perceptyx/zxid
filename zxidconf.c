@@ -1488,7 +1488,7 @@ static void zxid_parse_and_read_conf_path_raw(zxid_conf* cf, const char* pth, in
   int len;
   char *buf;
   if (!pth || !*pth) {
-    ERR("Missing CPATH %p", pth);
+    ERR("Missing CPATH pth=%p cf=%p", pth, cf);
     return;
   }
   
@@ -1543,12 +1543,12 @@ int zxid_suppress_vpath_warning = 30;
  * URL characters [/:?&=] are left intact. */
 
 /* Called by:  zxid_expand_percent x4 */
-static int zxid_eval_squash_env(char* vorig, const char* exp, char* env_hdr, char* out, char* lim, int squash_type)
+static int zxid_eval_squash_env(zxid_conf* cf, char* vorig, const char* exp, char* env_hdr, char* out, char* lim, int squash_type)
 {
   int len;
   char* val = getenv(env_hdr);
   if (!val) {
-    if (--zxid_suppress_vpath_warning > 0) ERR("VPATH or VURL(%s) %s expansion specified, but env(%s) not defined?!? Violation of CGI spec? SERVER_SOFTWARE(%s)", vorig, exp, env_hdr, STRNULLCHKQ(getenv("SERVER_SOFTWARE")));
+    if (--zxid_suppress_vpath_warning > 0) ERR("VPATH or VURL(%s) %s expansion specified, but env(%s) not defined?!? Violation of CGI spec? SERVER_SOFTWARE(%s) cf=%p", vorig, exp, env_hdr, STRNULLCHKQ(getenv("SERVER_SOFTWARE")), cf);
     return 0;
   }
   len = strlen(val);
@@ -1581,7 +1581,7 @@ static int zxid_eval_squash_env(char* vorig, const char* exp, char* env_hdr, cha
  */
 
 /* Called by:  zxid_parse_vpath, zxid_parse_vurl */
-static char* zxid_expand_percent(char* vorig, char* out, char* lim, int squash_type)
+static char* zxid_expand_percent(zxid_conf* cf, char* vorig, char* out, char* lim, int squash_type)
 {
   int len;
   char* x;
@@ -1607,7 +1607,7 @@ static char* zxid_expand_percent(char* vorig, char* out, char* lim, int squash_t
       strcpy(out, x);
       out += strlen(out);
       break;
-    case 'h': out += zxid_eval_squash_env(vorig, "%h", "HTTP_HOST", out, lim, squash_type); break;
+    case 'h': out += zxid_eval_squash_env(cf, vorig, "%h", "HTTP_HOST", out, lim, squash_type); break;
     case 'P': 
       val = getenv("SERVER_PORT");
       if (!val)
@@ -1618,10 +1618,10 @@ static char* zxid_expand_percent(char* vorig, char* out, char* lim, int squash_t
 	goto toobig;
       *out++ = ':';  /* colon in front of port, e.g. :8080 */
       /* fall thru */
-    case 'p': out += zxid_eval_squash_env(vorig,"%p", "SERVER_PORT", out, lim, squash_type); break;
-    case 's': out += zxid_eval_squash_env(vorig,"%s", "SCRIPT_NAME", out, lim, squash_type); break;
+    case 'p': out += zxid_eval_squash_env(cf, vorig, "%p", "SERVER_PORT", out, lim, squash_type); break;
+    case 's': out += zxid_eval_squash_env(cf, vorig, "%s", "SCRIPT_NAME", out, lim, squash_type); break;
     case 'd':
-      len = zxid_eval_squash_env(vorig, "%d", "SCRIPT_NAME", out, lim, squash_type);
+      len = zxid_eval_squash_env(cf, vorig, "%d", "SCRIPT_NAME", out, lim, squash_type);
       for (out += len; len && out[-1] != '/'; --out, --len) ;
       break;
     case '%': *out++ = '%';  break;
@@ -1680,7 +1680,7 @@ static int zxid_parse_vpath(zxid_conf* cf, char* vpath)
     np +=  cf->cpath_len;
   }
   
-  zxid_expand_percent(vpath, np, lim, 0);
+  zxid_expand_percent(cf, vpath, np, lim, 0);
   if (--zxid_suppress_vpath_warning > 0) {
     INFO("VPATH(%s) alters CPATH(%s) to new CPATH(%s)", vpath, cf->cpath, newpath);
   }
@@ -1694,7 +1694,7 @@ static int zxid_parse_vpath(zxid_conf* cf, char* vpath)
 static int zxid_parse_vurl(zxid_conf* cf, char* vurl)
 {
   char newurl[PATH_MAX];
-  zxid_expand_percent(vurl, newurl, newurl + sizeof(newurl), 1);
+  zxid_expand_percent(cf, vurl, newurl, newurl + sizeof(newurl), 1);
   if (--zxid_suppress_vpath_warning > 0) {
     INFO("VURL(%s) alters BURL(%s) to new BURL(%s)", vurl, cf->burl, newurl);
   }
