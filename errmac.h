@@ -488,9 +488,10 @@ extern FILE* errmac_debug_log;    /* Defined in zxidlib.c as 0 alias to stderr *
 #define DD_XML_BLOB(cf, lk, len, xml) /* Documentative */
 
 int hexdmp(const char* msg, const void* p, int len, int max);
-int hexdump(const char* msg, const void* p, const void* lim, int max);
+int hexdump_zxid(const char* msg, const void* p, const void* lim, int max);
 
-#define HEXDUMP(msg, p, lim, max) if ((errmac_debug&ERRMAC_DEBUG_MASK) > 1) hexdump((msg), (p), (lim), (max))
+
+#define HEXDUMP(msg, p, lim, max) if ((errmac_debug&ERRMAC_DEBUG_MASK) > 1) hexdump_zxid((msg), (p), (lim), (max))
 #define DHEXDUMP(msg, p, lim, max) /* Disabled hex dump */
 
 #define DUMP_CORE() ASSERT(0)
